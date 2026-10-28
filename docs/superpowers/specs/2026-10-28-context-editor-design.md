@@ -235,11 +235,24 @@ edits → keep new packages → re-run fork test suite → rebuild bundles).
 
 ### 4.4 Signed reasoning
 
-DeepSeek Messages-API reasoning blocks may carry signatures. Editing such a
-block strips the signature (the edited text can no longer match it) and the
-UI warns. If the API rejects unsigned reasoning on replay (verified during
-implementation against SLR Runtime / real provider behavior), the editor
-auto-excludes edited reasoning blocks from the outbound request instead and
+Signatures are a PROVIDER-API feature, not a model or harness feature: the
+DeepSeek Messages API signs reasoning server-side (`signature_delta` stream
+chunks; replayed verbatim as `{type:'thinking', thinking, signature}`), and
+Anthropic-style APIs behind pi-ai carry analogous per-block signatures.
+OpenAI-completions providers — SLR Runtime / llama.cpp in particular — have
+no signature concept, so editing and injecting reasoning there is entirely
+unconstrained (primary bundle use case).
+
+Mechanics of an edit on signing providers: signatures are per-block and
+stored in the assistant message's replay envelope; a replacement message
+keeps the original envelope EXCEPT the edited block's signature entry is
+omitted (the upstream `readReplay` validator tolerates per-block omission
+and already produces fully unsigned replay on every model switch, so
+unsigned thinking blocks are a routine, designed request shape). Unedited
+blocks in the same message keep their valid signatures. The UI warns that
+edited reasoning is sent unsigned. If the API still rejects it (verified
+during implementation; no cloud credential is available offline), the
+editor auto-excludes edited reasoning blocks from the outbound request and
 says so in the UI. Unedited signed reasoning is passed through untouched —
 strictly better than the plugin, which refused selection entirely.
 
