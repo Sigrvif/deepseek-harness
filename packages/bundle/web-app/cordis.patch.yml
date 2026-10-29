@@ -142,6 +142,12 @@
     - id: settings-controller
       name: '@deepseek-ai/dsh-api-settings-controller'
 
+    # fork(context-editor): native Context Editor — request capture, context
+    # projection, surface edits, selective condensation, and the contextEditor
+    # remote. See packages/context/context-editor and FORK.md.
+    - id: context-editor
+      name: '@deepseek-ai/dsh-context-editor'
+
     # Workspace commands and reconnect-safe projection over Typert Remote.
     - id: workspace-controller
       name: '@deepseek-ai/dsh-api-workspace-controller'
@@ -243,8 +249,14 @@
     - id: cordis-client-runner
       name: '@deepseek-ai/dsh-cordis-client-runner'
 
+    # fork(local-test): start in the dark palette. The schema default is
+    # 'system', which never resolves dark inside the bundled LibreWolf (it
+    # always reports light as an anti-fingerprinting measure). The user can
+    # still switch themes in Settings -> General -> Appearance.
     - id: ui-theme
       name: '@deepseek-ai/dsh-client-ui-theme'
+      config:
+        preference: dark
 
     - id: locale
       name: '@deepseek-ai/dsh-client-locale'
@@ -298,11 +310,18 @@
     - id: ui-settings
       name: '@deepseek-ai/dsh-client-ui-settings'
 
+    # fork(local-test): pre-acknowledge the first-run preview notice.
     - id: ui-settings-general
       name: '@deepseek-ai/dsh-client-ui-settings-general'
+      config:
+        welcomeNoticeVersion: '2026-09-28.1'
 
+    # fork(local-test): keep first-run credential onboarding from opening by
+    # itself; DeepSeek stays selectable on the Models page.
     - id: ui-settings-models
       name: '@deepseek-ai/dsh-client-ui-settings-models'
+      config:
+        credentialOnboarding: false
 
     # Plugin management: the sidebar Plugins page installs, enables, disables,
     # and removes the profile's bundles through the `pluginManager` Remote.
