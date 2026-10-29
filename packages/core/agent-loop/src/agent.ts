@@ -28,6 +28,7 @@ import {
   markAgentLoopRequest,
 } from '@deepseek-ai/dsh-llm'
 import { assertNever, deepFreeze } from '@deepseek-ai/dsh-util-values'
+import { lookupContextEditOverrides } from './context-edit-registry.ts'
 import type { Scope } from '@deepseek-ai/dsh-scope'
 import { createScope } from '@deepseek-ai/dsh-scope'
 import type { EpochHeader, RequestContext, Session, SessionId, SessionSeq, TurnEndReason, UserMessage } from '@deepseek-ai/dsh-session'
@@ -638,15 +639,22 @@ export class ReactLoopAgent implements Agent {
     if (proposedConfig.reasoningEffort !== selection.reasoningEffort) {
       throw new Error(`agent "${this.id}": agent/request proposed reasoning effort "${proposedConfig.reasoningEffort ?? 'adapter default'}" after step preparation fixed "${selection.reasoningEffort ?? 'adapter default'}"; use agent.model.select() before step preparation`)
     }
+    // fork(context-editor): merge the session's whitelisted parameter overrides
+    // into the proposed config BEFORE prepareCall — the loop rejects config drift
+    // between the prepared call and dispatch, so this is the only safe seam.
+    const prepareOverrides = lookupContextEditOverrides(this.session.id)
+    const effectiveConfig = prepareOverrides?.params === undefined
+      ? proposedConfig
+      : prepareOverrides.params(proposedConfig)
     let config: LlmCallConfig
     let preparedCall: PreparedLlmCall | undefined
     try {
-      preparedCall = await this.loopCtx.llm.prepareCall(proposedConfig, signal)
+      preparedCall = await this.loopCtx.llm.prepareCall(effectiveConfig, signal)
       config = preparedCall.config
     } catch (error: unknown) {
       // Middleware may serve an unregistered route; terminal dispatch still requires an adapter.
       if (!(error instanceof LlmError) || error.code !== 'NO_ADAPTER') throw error
-      config = proposedConfig
+      config = effectiveConfig
     }
     signal.throwIfAborted()
     return { config, ...preparedCall === undefined ? {} : { preparedCall } }
@@ -662,6 +670,11 @@ export class ReactLoopAgent implements Agent {
     signal: AbortSignal,
   ): GenerateOptions {
     const { session } = this
+    // fork(context-editor): apply the session's tool overrides (removals/edits)
+    // before the header snapshot and frozen request are built, so header,
+    // request, token meter, and capture all agree.
+    const buildOverrides = lookupContextEditOverrides(session.id)
+    if (buildOverrides?.tools !== undefined) tools = buildOverrides.tools(tools)
     const surfaceGeneration = session.surface.contentGeneration
     const header = canonicalHeader({
       config,

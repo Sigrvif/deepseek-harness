@@ -835,4 +835,7 @@ export class AgentLoop extends Service implements AgentFactory {
   }
 }
 
+export { lookupContextEditOverrides, registerContextEditOverrides } from './context-edit-registry.ts'
+export type { ContextEditOverrides } from './context-edit-registry.ts'
+
 export default AgentLoop

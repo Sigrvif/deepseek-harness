@@ -35,12 +35,14 @@
     "@deepseek-ai/dsh-session-persistence": "workspace:*",
     "@deepseek-ai/dsh-storage-domain": "workspace:*",
     "@deepseek-ai/dsh-typert-protocol": "workspace:*",
-    "zod": "4.4.3"
+    "zod": "4.4.3",
+    "@deepseek-ai/dsh-agent-loop": "workspace:*"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-compaction-basic": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh-agent-loop": "workspace:*",
     "@deepseek-ai/dsh-compaction": "workspace:*",
+    "@deepseek-ai/dsh-compaction-basic": "workspace:*",
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-session-persistence": "workspace:*",

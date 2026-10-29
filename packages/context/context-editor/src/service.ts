@@ -2,11 +2,13 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
+import { registerContextEditOverrides } from '@deepseek-ai/dsh-agent-loop'
 import type { Domain, KvTable } from '@deepseek-ai/dsh-storage-domain'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { keyFor, installRequestCapture } from './capture.ts'
 import type { RequestCapture } from './capture.ts'
 import { condenseRange } from './condense.ts'
+import { buildOverrides, validateParams } from './overrides.ts'
 import { contextEditorDomain } from './domain.ts'
 import { previewFromEvents } from './projection.ts'
 import type { CapturedRequest, ContextPreview, OverridesRecord } from './types.ts'
@@ -34,6 +36,68 @@ export class ContextEditorService extends TypertRemoteService {
     this.requestsTable = domain.table('requests')
     this.overridesTable = domain.table('overrides')
     this.capture = installRequestCapture(this.ctx, this.requestsTable)
+    void this.installStoredOverrides()
+  }
+
+  /** Re-register every stored override record so edits survive restarts. */
+  private async installStoredOverrides(): Promise<void> {
+    const table = await this.overrides()
+    for (const [sessionId, record] of table.entries()) {
+      registerContextEditOverrides(sessionId, buildOverrides(record))
+    }
+  }
+
+  private async overrides(): Promise<KvTable<string, OverridesRecord>> {
+    await this.ready
+    if (this.overridesTable === undefined) throw new Error('context-editor: overrides table unavailable')
+    return this.overridesTable
+  }
+
+  @Remote('set-tools')
+  async setTools(request: { sessionId: SessionId; removedTools: string[]; toolEdits: Record<string, unknown> }): Promise<OverridesRecord> {
+    const table = await this.overrides()
+    const known = await this.knownToolNames(request.sessionId)
+    for (const name of Object.keys(request.toolEdits)) {
+      if (!known.has(name)) {
+        throw new RemoteError('context-editor/rename', `tool '${name}' is not in the session's recorded tool set; renames are refused`, { name })
+      }
+    }
+    const previous = await table.get(String(request.sessionId))
+    const record: OverridesRecord = {
+      removedTools: [...request.removedTools],
+      toolEdits: { ...request.toolEdits },
+      params: previous?.params ?? {},
+    }
+    await table.put(String(request.sessionId), record)
+    registerContextEditOverrides(String(request.sessionId), buildOverrides(record))
+    return record
+  }
+
+  @Remote('set-params')
+  async setParams(request: { sessionId: SessionId; params: Record<string, number | string[]> }): Promise<OverridesRecord> {
+    validateParams(request.params)
+    const table = await this.overrides()
+    const previous = await table.get(String(request.sessionId))
+    const record: OverridesRecord = {
+      removedTools: previous?.removedTools ?? [],
+      toolEdits: previous?.toolEdits ?? {},
+      params: { ...request.params },
+    }
+    await table.put(String(request.sessionId), record)
+    registerContextEditOverrides(String(request.sessionId), buildOverrides(record))
+    return record
+  }
+
+  @Remote('get-overrides')
+  async getOverrides(request: { sessionId: SessionId }): Promise<{ record: OverridesRecord | undefined; inheritedByForks: false }> {
+    const table = await this.overrides()
+    return { record: await table.get(String(request.sessionId)), inheritedByForks: false }
+  }
+
+  /** Tool names from the session's latest request/header (empty set when none recorded). */
+  private async knownToolNames(sessionId: SessionId): Promise<Set<string>> {
+    const preview = await this.preview({ sessionId })
+    return new Set((preview.tools ?? []).map(tool => (tool as { name?: string }).name ?? ''))
   }
 
   @Remote('preview')
