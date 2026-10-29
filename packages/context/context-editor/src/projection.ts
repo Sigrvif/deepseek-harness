@@ -17,7 +17,8 @@ const ROLES: Record<string, ContextRow['role']> = {
   'tool/result': 'tool',
 }
 
-function messageOf(event: SessionEvent): Message | undefined {
+/** The stored message of a surface event (data layouts differ per event type). */
+export function messageOf(event: SessionEvent): Message | undefined {
   switch (event.type) {
     case 'user/message': return event.data
     case 'system/message':
@@ -35,25 +36,28 @@ function textOf(blocks: readonly ContentBlock[]): string {
     .join('\n')
 }
 
-function isExcluded(message: Message): boolean {
-  const source = message.source as { kind?: string; mode?: string }
-  return source.kind === 'context-edit' && source.mode === 'excluded'
+function isExcluded(event: SessionEvent): boolean {
+  const marker = (event.data as { contextEdit?: { mode?: string } }).contextEdit
+  return marker?.mode === 'excluded'
+}
+
+function replaceRange(event: SessionEvent): { startSeq: number; endSeq: number } | undefined {
+  const op = event.surfaceOp
+  return typeof op === 'object' ? { startSeq: Number(op.startSeq), endSeq: Number(op.endSeq) } : undefined
 }
 
 function isReplacement(event: SessionEvent): boolean {
-  return typeof event.surfaceOp === 'object' && event.surfaceOp !== null && event.surfaceOp.op === 'replace'
+  return replaceRange(event) !== undefined
 }
 
-/** Provenance of a replacement: cited sources, or the shadowed surfaceOp range
- * (assistant replacements may not cite sourceEventSeqs — upstream validation). */
+/** Provenance of a replacement: cited sources, or the shadowed surfaceOp range. */
 function provenanceOf(event: SessionEvent): number[] {
   if (event.sourceEventSeqs !== undefined) return [...event.sourceEventSeqs]
-  if (typeof event.surfaceOp === 'object' && event.surfaceOp !== null && event.surfaceOp.op === 'replace') {
-    const range: number[] = []
-    for (let seq = event.surfaceOp.startSeq; seq <= event.surfaceOp.endSeq; seq += 1) range.push(seq)
-    return range
-  }
-  return []
+  const range = replaceRange(event)
+  if (range === undefined) return []
+  const sources: number[] = []
+  for (let seq = range.startSeq; seq <= range.endSeq; seq += 1) sources.push(seq)
+  return sources
 }
 
 /** Project the effective context from a session's events (live snapshot or cold read). */
@@ -65,8 +69,11 @@ export function previewFromEvents(sessionId: string, events: readonly SessionEve
     const message = event === undefined ? undefined : messageOf(event)
     if (event === undefined || message === undefined) continue
     const replaced = isReplacement(event)
-    const excluded = isExcluded(message)
-    const sources = replaced ? provenanceOf(event) : undefined
+    const excluded = isExcluded(event)
+    // Range-fallback provenance lists the shadowed SURFACE nodes only.
+    const sources = replaced
+      ? provenanceOf(event).filter(candidate => messageOf(events[candidate] ?? { type: 'turn/start', data: {} } as never) !== undefined)
+      : undefined
     rows.push({
       seq,
       role: ROLES[event.type] ?? 'user',
@@ -84,8 +91,8 @@ export function previewFromEvents(sessionId: string, events: readonly SessionEve
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index]
     if (event?.type !== 'request/header') continue
-    config = (event.data.header.config ?? {}) as Record<string, unknown>
-    tools = event.data.header.tools as unknown[] | undefined
+    config = { ...event.data.header.config }
+    tools = event.data.header.tools === undefined ? undefined : [...event.data.header.tools]
     break
   }
   return {

@@ -22,7 +22,7 @@ function conversation(): Session {
   session.append('assistant/message', { turn: 1, step: 1, message: assistant }, { surfaceOp: 'append' })
   session.append('request/header', {
     header: canonicalHeader({
-      config: { provider: 'llm-pi-ai', model: 'm.gguf', temperature: 0.4 } as never,
+      config: { provider: 'llm-pi-ai', model: 'm.gguf', temperature: 0.4 },
       tools: [{ name: 'read' }],
     }),
     reason: 'initial',
@@ -66,10 +66,13 @@ describe('previewFromEvents', () => {
     const session = conversation()
     const userSeq = session.surface.nodes[0]!
     const assistantSeq = session.surface.nodes[1]!
-    session.append('user/message', createUserMessage({
-      content: [],
-      source: { kind: 'context-edit', mode: 'excluded' } as never,
-    }), {
+    session.append('user/message', {
+      ...createUserMessage({
+        content: [],
+        source: { kind: 'user' },
+      }),
+      contextEdit: { mode: 'excluded' },
+    } as never, {
       surfaceOp: { op: 'replace', startSeq: userSeq, endSeq: assistantSeq },
       sourceEventSeqs: [userSeq, assistantSeq],
     })

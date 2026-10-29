@@ -109,13 +109,13 @@ describe('request capture', () => {
     for (let index = 0; index < 35; index += 1) {
       await drained(ctx.llm.stream(options(MODEL, { messages: [{ role: 'user', content: `m${index}` }] })))
     }
-    await vi.waitFor(() => { expect(Array.from(table.entries())).toHaveLength(30) })
-    const entries = Array.from(table.entries())
-    const keys = entries.map(([key]) => key)
-    expect(keys).toHaveLength(30)
-    const seqs = entries.map(([, record]) => record.seq).sort((a, b) => a - b)
-    expect(seqs[0]).toBe(6)
-    expect(seqs[29]).toBe(35)
+    await vi.waitFor(() => {
+      const entries = Array.from(table.entries())
+      expect(entries).toHaveLength(30)
+      const seqs = entries.map(([, record]) => record.seq).sort((a, b) => a - b)
+      expect(seqs[0]).toBe(6)
+      expect(seqs[29]).toBe(35)
+    })
   })
 
   it('records error status on a failed finish and still streams every chunk', async () => {

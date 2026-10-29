@@ -25,8 +25,8 @@ export class ContextEditorService extends TypertRemoteService {
   constructor(ctx: Context, domain?: Domain<typeof contextEditorDomain>) {
     super(ctx, 'contextEditor')
     this.ready = domain !== undefined
-      ? Promise.resolve(this.adopt(domain))
-      : ctx.storageDomain.open(contextEditorDomain).then(opened => this.adopt(opened))
+      ? Promise.resolve().then(() => { this.adopt(domain) })
+      : ctx.storageDomain.open(contextEditorDomain).then((opened) => { this.adopt(opened) })
   }
 
   private adopt(domain: Domain<typeof contextEditorDomain>): void {
@@ -38,7 +38,10 @@ export class ContextEditorService extends TypertRemoteService {
   @Remote('preview')
   async preview(request: { sessionId: SessionId }): Promise<ContextPreview> {
     const live = this.ctx.sessions.get(request.sessionId)
-    if (live !== undefined) return previewFromEvents(request.sessionId, live.snapshotEvents())
+    if (live !== undefined) {
+      // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred (mirrors message-feedback).
+      return previewFromEvents(request.sessionId, live.snapshotEvents())
+    }
     if (await this.ctx.sessionPersistence.stat(request.sessionId) === undefined) {
       throw new RemoteError('context-editor/session-not-found', `unknown session '${request.sessionId}'`, { sessionId: request.sessionId })
     }
