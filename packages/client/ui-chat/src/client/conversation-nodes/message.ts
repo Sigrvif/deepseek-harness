@@ -3,9 +3,8 @@ import type {
   ContextMessageNode, ConversationContextReader, ConversationLocation, ConversationNodeDefinition,
   SteeringMessageNode, UserMessageNode,
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
-// fork(context-editor): replacement markers for the effective-content fold.
-import { isContextEditReplacement } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import { isAppendSurfaceEvent, isReplacementSurfaceEvent } from '@deepseek-ai/dsh-session/surface'
+
+import { isAppendSurfaceEvent, isContextEditReplacement, isReplacementSurfaceEvent } from '@deepseek-ai/dsh-session/surface'
 import type { InboxState } from './inbox.ts'
 import type { ProcessEvidenceState } from './turn-process.ts'
 import { chatNode, contextLocation } from './common.ts'

@@ -3,7 +3,7 @@ import type {
   AssistantBlock, AssistantMessageNode, ConversationLocation, ConversationMatch,
   ConversationNodeContext, ConversationNodeDefinition,
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import { isContextEditReplacement } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import { isContextEditReplacement } from '@deepseek-ai/dsh-session/surface'
 import type { StreamChunk } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-llm-retry/types'
 import type { SessionEvent } from '@deepseek-ai/dsh-session/types'

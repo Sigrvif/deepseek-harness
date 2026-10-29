@@ -140,21 +140,20 @@ export async function applyOperations(
 ): Promise<void> {
   const live = ctx.sessions.get(sessionId)
   if (live !== undefined) {
-    // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred (mirrors message-feedback).
     const events = live.snapshotEvents()
     if (turnOpen(events)) {
       throw new RemoteError('context-editor/busy', `session '${sessionId}' has an open turn`, { sessionId })
     }
-    const append = (r: Replacement): SessionEvent => live.append(
-      r.type,
-      r.data as never,
-      (r.surfaceOp === undefined && r.sourceEventSeqs === undefined
-        ? []
-        : [{
+    const append = (r: Replacement): SessionEvent => (r.surfaceOp === undefined && r.sourceEventSeqs === undefined
+      ? live.append(r.type, r.data as never)
+      : live.append(
+        r.type,
+        r.data as never,
+        {
           ...(r.surfaceOp === undefined ? {} : { surfaceOp: r.surfaceOp }),
           ...(r.sourceEventSeqs === undefined ? {} : { sourceEventSeqs: r.sourceEventSeqs }),
-        } as never]) as never,
-    )
+        } as never,
+      ))
     build(events, append)
     if (!(await ctx.sessions.flush(live))) {
       throw new Error(`context-editor: no durability listener for live session '${sessionId}'`)

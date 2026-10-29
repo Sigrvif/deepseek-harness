@@ -166,7 +166,8 @@ describe('editMessage', () => {
     })
     const assistantSeq = session.surface.nodes[1]!
     await editMessage(ctx, SessionId('edit-signed'), assistantSeq, { text: 'edited thought', blockIndex: 0 })
-    const replacement = session.eventAt(SessionSeq(Number(session.surface.nodes.at(-1))))
+    // The replacement keeps the assistant's surface slot (index 1); the tail node is the tool result.
+    const replacement = session.eventAt(SessionSeq(Number(session.surface.nodes[1])))
     const data = replacement?.data as { message: { source: { replayState?: { blocks: { type: string; signature?: string }[] } } } }
     const blocks = data.message.source.replayState?.blocks ?? []
     expect(blocks).toHaveLength(3)

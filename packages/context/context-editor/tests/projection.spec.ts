@@ -41,7 +41,7 @@ describe('previewFromEvents', () => {
     expect(preview.rows.every(row => row.estimateTokens > 0)).toBe(true)
     expect(preview.totalTokens).toBeGreaterThan(0)
     expect(preview.config).toMatchObject({ temperature: 0.4 })
-    expect(preview.tools).toEqual([{ name: 'read' }])
+    expect(preview.tools).toEqual([{ name: 'read', description: 'read', parameters: {} }])
   })
 
   it('marks replacement rows as edited with their source provenance', () => {

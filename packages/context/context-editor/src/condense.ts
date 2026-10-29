@@ -5,14 +5,29 @@
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import { compactCheckpointSource, CompactionId } from '@deepseek-ai/dsh-compaction'
+import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { BlockAssembler, createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions, Message } from '@deepseek-ai/dsh-llm'
-import { frameSummary } from '@deepseek-ai/dsh-compaction-basic/src/summarizer.ts'
 import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
 import { estimateMessage } from '@deepseek-ai/dsh-token-meter/estimate'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { applyOperations } from './edits.ts'
 import { messageOf } from './projection.ts'
+
+// fork(context-editor): replicated framing constants — the upstream ones live in
+// a source-only subpath that cannot be imported from packaged node_modules.
+const SUMMARY_OPEN_TAG = '<compacted-summary>'
+const SUMMARY_CLOSE_TAG = '</compacted-summary>'
+const CHECKPOINT_PREAMBLE =
+  'This is an automatically generated checkpoint condensing an earlier span of the conversation to free up context. Treat the captured context as established background and build on it without restating it. Continue the task directly from the messages that follow, without acknowledging this checkpoint.'
+
+function frameSummary(summary: readonly ContentBlock[]): ContentBlock[] {
+  return [
+    { type: 'text', text: `${CHECKPOINT_PREAMBLE}\n\n${SUMMARY_OPEN_TAG}` },
+    ...summary,
+    { type: 'text', text: SUMMARY_CLOSE_TAG },
+  ]
+}
 
 function turnOpen(events: readonly SessionEvent[]): boolean {
   let open = false
@@ -26,7 +41,6 @@ function turnOpen(events: readonly SessionEvent[]): boolean {
 async function readEvents(ctx: Context, sessionId: SessionId): Promise<readonly SessionEvent[]> {
   const live = ctx.sessions.get(sessionId)
   if (live !== undefined) {
-    // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred (mirrors message-feedback).
     return live.snapshotEvents()
   }
   if (await ctx.sessionPersistence.stat(sessionId) === undefined) {

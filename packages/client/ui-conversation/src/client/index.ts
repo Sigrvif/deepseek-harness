@@ -75,8 +75,6 @@ export type {
 } from './conversation/assembler.ts'
 export { ConversationDefinitionRegistry } from './conversation/definition-registry.ts'
 export { ConversationEventRegistry } from './conversation/event-registry.ts'
-// fork(context-editor): replacement markers for the effective-content fold.
-export { contextEditShadowedSeqs, isContextEditReplacement } from './conversation/context-edit.ts'
 export { ConversationLocationIndex } from './conversation/location-index.ts'
 export type { ConversationLocationDataChange } from './conversation/location-index.ts'
 export { ConversationViewRegistry } from './conversation/view-registry.ts'

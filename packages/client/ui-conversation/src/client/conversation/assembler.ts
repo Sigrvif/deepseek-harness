@@ -12,7 +12,7 @@ import type {
 } from '../contract/conversation.ts'
 import { conversationContextKey } from '../contract/conversation.ts'
 // fork(context-editor): shadow-set intake filter.
-import { contextEditShadowedSeqs } from './context-edit.ts'
+import { contextEditShadowedSeqs } from '@deepseek-ai/dsh-session/surface'
 import type {
   ConversationGroupData, ConversationGroupDefinition, ConversationGroupedView,
 } from '../contract/groups.ts'

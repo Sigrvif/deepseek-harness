@@ -5,7 +5,7 @@ import { createUserMessage, createMessage } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { messageDefinition } from '../src/client/conversation-nodes/message.ts'
 import { assistantDefinition } from '../src/client/conversation-nodes/assistant.ts'
-import { contextEditShadowedSeqs, isContextEditReplacement } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import { contextEditShadowedSeqs, isContextEditReplacement } from '@deepseek-ai/dsh-session/surface'
 
 function userAppend(seq: number, text: string): SessionEvent {
   return {

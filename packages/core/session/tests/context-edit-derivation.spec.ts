@@ -14,6 +14,7 @@ describe('fork(context-editor) derivation rule', () => {
     session.append('assistant/message', {
       turn: 1,
       step: 1,
+      stream: [],
       message: createMessage({
         role: 'assistant',
         content: [{ type: 'text', text: 'kept answer' }],

@@ -729,3 +729,45 @@ export class SurfaceManager implements SessionSurface {
     }
   }
 }
+
+// fork(context-editor): replacement-marker helpers shared by the host and the
+// client fold. They read the event-data marker written by the Context Editor.
+type ContextEditMarker = { readonly mode?: string }
+
+/** The Context Editor replacement marker of an event, when present. */
+export function contextEditMarkerOf(event: { readonly data?: unknown }): ContextEditMarker | undefined {
+  const marker = (event.data as { contextEdit?: ContextEditMarker } | undefined)?.contextEdit
+  return marker
+}
+
+/** Whether a durable surface event is a Context Editor replacement. */
+export function isContextEditReplacement(event: { readonly data?: unknown; readonly surfaceOp?: unknown }): boolean {
+  return contextEditMarkerOf(event) !== undefined && typeof event.surfaceOp === 'object' && event.surfaceOp !== null
+}
+
+/** One intake entry the client fold reads: the event plus its surface metadata. */
+export interface ContextEditIntakeEntry {
+  readonly event: {
+    readonly data?: unknown
+    readonly surfaceOp?: unknown
+    readonly sourceEventSeqs?: readonly number[]
+  }
+}
+
+/** The surface seqs that context-edit replacements shadow, for intake filtering. */
+export function contextEditShadowedSeqs(entries: readonly ContextEditIntakeEntry[]): Set<number> {
+  const shadowed = new Set<number>()
+  for (const { event } of entries) {
+    if (contextEditMarkerOf(event) === undefined) continue
+    const op = event.surfaceOp
+    if (typeof op !== 'object' || op === null) continue
+    const replaceOp = op as { op?: string; startSeq?: number; endSeq?: number }
+    if (replaceOp.op !== 'replace') continue
+    if (event.sourceEventSeqs !== undefined) {
+      for (const seq of event.sourceEventSeqs) shadowed.add(Number(seq))
+      continue
+    }
+    for (let seq = Number(replaceOp.startSeq); seq <= Number(replaceOp.endSeq); seq += 1) shadowed.add(seq)
+  }
+  return shadowed
+}
