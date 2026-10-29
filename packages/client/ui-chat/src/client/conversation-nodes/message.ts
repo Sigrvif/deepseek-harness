@@ -3,6 +3,8 @@ import type {
   ContextMessageNode, ConversationContextReader, ConversationLocation, ConversationNodeDefinition,
   SteeringMessageNode, UserMessageNode,
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
+// fork(context-editor): replacement markers for the effective-content fold.
+import { isContextEditReplacement } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { isAppendSurfaceEvent, isReplacementSurfaceEvent } from '@deepseek-ai/dsh-session/surface'
 import type { InboxState } from './inbox.ts'
 import type { ProcessEvidenceState } from './turn-process.ts'
@@ -84,6 +86,13 @@ export const messageDefinition: ConversationNodeDefinition<MessageNode> = {
   target: 'chat',
   match: (event) => {
     if (event.type === 'user/message') {
+      // fork(context-editor): context-edit replacements render their effective
+      // content; excluded ones fold away entirely (the model does not see them).
+      if (isContextEditReplacement(event)) {
+        return (event.data as { contextEdit?: { mode?: string } }).contextEdit?.mode === 'excluded'
+          ? null
+          : { id: String(event.data.id), role: 'start' }
+      }
       return isAppendSurfaceEvent(event) && !isCompactionCheckpoint(event)
         ? { id: String(event.data.id), role: 'start' }
         : null

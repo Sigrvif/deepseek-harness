@@ -11,6 +11,8 @@ import type {
   ConversationViewSnapshotStore,
 } from '../contract/conversation.ts'
 import { conversationContextKey } from '../contract/conversation.ts'
+// fork(context-editor): shadow-set intake filter.
+import { contextEditShadowedSeqs } from './context-edit.ts'
 import type {
   ConversationGroupData, ConversationGroupDefinition, ConversationGroupedView,
 } from '../contract/groups.ts'
@@ -238,7 +240,13 @@ export class ConversationNodeAssembler implements ConversationViewSnapshotStore 
     for (const entry of sorted) this.inputs.set(entry.event.seq, entry)
     this.locationIndex.rebuild(sorted)
     this.timelineDirty = true
-    for (const entry of sorted) this.matchInput(entry)
+    // fork(context-editor): appends shadowed by a context-edit replacement never
+    // fold — the replacement carries the effective content.
+    const shadowed = contextEditShadowedSeqs(entries)
+    for (const entry of sorted) {
+      if (shadowed.has(entry.event.seq)) continue
+      this.matchInput(entry)
+    }
     this.replayDependencies()
     this.revised.clear()
     for (const context of this.contexts.values()) this.markDirty(context)
@@ -338,7 +346,9 @@ export class ConversationNodeAssembler implements ConversationViewSnapshotStore 
     if (this.locationIndex.snapshot() !== previousTimeline) this.timelineDirty = true
     const affected = this.refreshMatchLocations(changedLocations)
     const pending = new Map<string, PendingMatch[]>()
+    const liveShadowed = contextEditShadowedSeqs(fresh)
     for (const entry of fresh) {
+      if (liveShadowed.has(entry.event.seq)) continue
       publication = maximumPublication(publication, this.collectInput(entry, pending))
     }
     this.applyPendingMatches(pending, affected)

@@ -3,6 +3,7 @@ import type {
   AssistantBlock, AssistantMessageNode, ConversationLocation, ConversationMatch,
   ConversationNodeContext, ConversationNodeDefinition,
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import { isContextEditReplacement } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { StreamChunk } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-llm-retry/types'
 import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
@@ -297,6 +298,11 @@ export const assistantDefinition: ConversationNodeDefinition<AssistantState> = {
     if (event.type === 'step/start') return { id: `${event.data.turn}:${event.data.step}`, role: 'start' }
     if (event.type === 'assistant/live-chunk'
       || (event.type === 'assistant/message' && event.surfaceOp === 'append')) {
+      return { id: `${event.data.turn}:${event.data.step}`, role: 'update' }
+    }
+    // fork(context-editor): edited assistant answers fold into their step as the
+    // effective content (the edit re-materializes the full step state).
+    if (event.type === 'assistant/message' && isContextEditReplacement(event)) {
       return { id: `${event.data.turn}:${event.data.step}`, role: 'update' }
     }
     if (event.type === 'llm/retry') {
