@@ -117,12 +117,30 @@ export function isReplacementSurfaceEvent(
  * @param projectedMessages - message projections from the same log prefix's surface fold.
  * @returns the derived message, or null when the event produces none.
  */
+/** fork(context-editor): structural block shape for the exclusion marker check. */
+type ContentBlockLike = { type?: string; text?: string }
+
 export function deriveEventMessage(
   event: SessionEvent,
   projectedMessages?: ReadonlyMap<SessionSeq, Message>,
 ): Message | null {
   const projected = projectedMessages?.get(event.seq)
   if (projected !== undefined) return projected
+  // fork(context-editor): an excluded replacement carries nothing and derives to
+  // nothing — the same outcome empty assistant steps already have. The marker is
+  // written by the Context Editor's excludeRange (event data, not message source,
+  // because assistant/tool sources are role-constrained).
+  const contextEditMarker = (event.data as { contextEdit?: { mode?: string } }).contextEdit
+  if (contextEditMarker?.mode === 'excluded') {
+    const candidate = event.type === 'user/message'
+      ? event.data as { content?: ContentBlockLike[] }
+      : (event.data as { message?: { content?: ContentBlockLike[] } }).message
+    const content = candidate?.content
+    const empty = content === undefined || content.length === 0
+      || content.every(block => typeof block === 'object' && block !== null
+        && (block as { type?: string }).type === 'text' && (block as { text?: string }).text === '')
+    if (empty) return null
+  }
   // Intentionally non-exhaustive: only message-producing events derive
   // history; turn/step boundaries, failed attempts, and errors are trace/replay
   // data.
