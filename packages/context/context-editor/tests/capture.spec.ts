@@ -39,7 +39,7 @@ class ScriptedAdapter extends LlmAdapter {
 }
 
 /** Failing-put table: `put`/`update` reject, everything else works — capture must survive it. */
-function brokenTable(working: KvTable<string, CapturedRequest>): KvTable<string, CapturedRequest> {
+function brokenTable<K, V>(working: KvTable<K, V>): KvTable<K, V> {
   return {
     ...working,
     put: async () => { throw new Error('storage unavailable') },
