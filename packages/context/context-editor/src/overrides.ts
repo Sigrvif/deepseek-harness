@@ -6,13 +6,13 @@ import type { GenerateOptions, LlmCallConfig, ToolSchema } from '@deepseek-ai/ds
 import type { ContextEditOverrides } from '@deepseek-ai/dsh-agent-loop'
 import type { OverridesRecord } from './types.ts'
 
-/** The only parameters a session may override (spec Global Constraints). */
+/** The only parameters a session may override — exactly the fields the agent
+ * loop's call config carries (temperature, maxTokens, stop); anything else
+ * would merge into the config without any adapter consuming it. */
 export const PARAM_WHITELIST: ReadonlySet<string> = new Set([
   'temperature',
   'maxTokens',
   'stop',
-  'presencePenalty',
-  'frequencyPenalty',
 ])
 
 /** Reject anything outside the whitelist with an explicit code. */

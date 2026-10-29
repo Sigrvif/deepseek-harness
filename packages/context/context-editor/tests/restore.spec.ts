@@ -114,6 +114,33 @@ describe('restoreRange', () => {
 })
 
 describe('createRecoveryBranch', () => {
+  it('refuses to restore a restore and offers no provenance for the restored row', async () => {
+    const { ctx } = await mounted()
+    questionTurn(ctx, SessionId('restore-restore'))
+    const session = ctx.sessions.get(SessionId('restore-restore'))!
+    const userSeq = session.surface.nodes[0]!
+    await editMessage(ctx, SessionId('restore-restore'), userSeq, { text: 'edited question' })
+    // The edit replacement is whatever surface event now covers the original row.
+    const editedSeq = session.snapshotEvents()
+      .find(event => typeof event.surfaceOp === 'object' && event.surfaceOp !== null
+        && Number(event.surfaceOp.startSeq) <= userSeq && Number(event.surfaceOp.endSeq) >= userSeq)!.seq
+    await restoreRange(ctx, SessionId('restore-restore'), userSeq, userSeq)
+    // The restored row keeps the original text and carries no undo affordance.
+    const preview = previewFromEvents('restore-restore', session.snapshotEvents())
+    const restoredRow = preview.rows.find(row => row.text === 'question one')
+    expect(restoredRow).toBeDefined()
+    expect(restoredRow?.editedFrom).toBeUndefined()
+    expect(restoredRow?.excludes).toBeUndefined()
+    // Restoring the restored row again targets nothing (the UI's fallback)…
+    const restoredSeq = restoredRow!.seq
+    await expect(restoreRange(ctx, SessionId('restore-restore'), restoredSeq, restoredSeq))
+      .rejects.toThrow(/no replacement shadows/u)
+    // …and going through the intermediate edit's event is refused outright
+    // instead of re-applying the edit and duplicating the original.
+    await expect(restoreRange(ctx, SessionId('restore-restore'), editedSeq, editedSeq))
+      .rejects.toThrow(/already restores earlier edits/u)
+  })
+
   it('forks a child whose log ends at the boundary', async () => {
     const { ctx } = await mounted()
     const session = questionTurn(ctx, SessionId('recovery'))

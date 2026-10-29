@@ -346,6 +346,7 @@ export class ConversationNodeAssembler implements ConversationViewSnapshotStore 
     if (this.locationIndex.snapshot() !== previousTimeline) this.timelineDirty = true
     const affected = this.refreshMatchLocations(changedLocations)
     const pending = new Map<string, PendingMatch[]>()
+    // fork(context-editor): live appends shadowed by a context-edit replacement fold away.
     const liveShadowed = contextEditShadowedSeqs(fresh)
     for (const entry of fresh) {
       if (liveShadowed.has(entry.event.seq)) continue

@@ -46,7 +46,11 @@ function contextEditorApi(namespace: unknown): ContextEditorApi {
     const invoke = raw[name]
     if (invoke === undefined) throw new Error(`contextEditor/${name} is not mounted`)
     const result = await invoke(args)
-    if (!result.ok) throw new Error(result.error.message)
+    if (!result.ok) {
+      const failure = new Error(result.error.message) as Error & { code?: string }
+      failure.code = result.error.code
+      throw failure
+    }
     return result.value as T
   }
   return {
@@ -78,6 +82,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-context-editor: dictionaries')
 
   ctx.inject(['remote.contextEditor', 'slots', 'locale'], (scoped: ClientContext) => {
+    const scopedLocale = scoped.locale.bind(NS) as (key: string) => string
     scoped.slots.inject('conversation.view', () => {
       // The runtime shape matches ConvViewOwnerProps + the injected face below; the
       // generic slot contract typing cannot express per-entry inject faces, so the
@@ -89,7 +94,9 @@ export async function apply(ctx: ClientContext): Promise<void> {
         name: 'conversation.view',
         id: 'context-editor',
         order: 20,
-        label: () => 'Context',
+        // Thunk label: viewTabs() refreshes on locale changes, so the tab
+        // follows the active dictionary.
+        label: () => scopedLocale('view.label'),
         locale: NS,
         inject: (sessionId: SessionId) => {
           const t = scoped.locale.bind(NS) as (key: string) => string

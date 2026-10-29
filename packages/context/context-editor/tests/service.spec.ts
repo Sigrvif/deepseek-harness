@@ -11,6 +11,7 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import Storage from '@deepseek-ai/dsh-storage'
 import * as StorageDomain from '@deepseek-ai/dsh-storage-domain'
 import * as StorageJson from '@deepseek-ai/dsh-storage-json'
+import { lookupContextEditOverrides } from '@deepseek-ai/dsh-agent-loop'
 import { contextEditorDomain } from '../src/domain.ts'
 import ContextEditorService from '../src/index.ts'
 import type { CapturedRequest } from '../src/types.ts'
@@ -51,6 +52,49 @@ function captured(seq: number): CapturedRequest {
 }
 
 describe('ContextEditorService', () => {
+  it('re-registers stored overrides after a restart', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-context-editor-durability-'))
+    roots.push(root)
+    const overrides = { removedTools: ['read-file'], toolEdits: {}, params: {} }
+
+    // First boot: store one override record through the service.
+    {
+      const ctx = new Context()
+      contexts.push(ctx)
+      await mountAgentLoopTestDependencies(ctx)
+      await ctx.plugin(JsonlSessionPersistence, { root: join(root, 'sessions'), compression: 'none' })
+      await ctx.plugin(Storage)
+      await ctx.plugin(StorageJson, { root: join(root, 'storage') })
+      await ctx.plugin(StorageDomain, { backend: 'json' })
+      const domain = await ctx.storageDomain.open(contextEditorDomain)
+      const service = new ContextEditorService(ctx, domain)
+      await service.ready
+      ctx.sessions.create(SessionId('persist-s'))
+      await service.setTools({ sessionId: SessionId('persist-s'), removedTools: ['read-file'], toolEdits: {} })
+      await ctx.fiber.dispose()
+      contexts.pop()
+    }
+    // Second boot over the same roots: the record is re-registered into the
+    // agent-loop registry without anyone touching the remotes.
+    {
+      const ctx = new Context()
+      contexts.push(ctx)
+      await mountAgentLoopTestDependencies(ctx)
+      await ctx.plugin(JsonlSessionPersistence, { root: join(root, 'sessions'), compression: 'none' })
+      await ctx.plugin(Storage)
+      await ctx.plugin(StorageJson, { root: join(root, 'storage') })
+      await ctx.plugin(StorageDomain, { backend: 'json' })
+      const domain = await ctx.storageDomain.open(contextEditorDomain)
+      const service = new ContextEditorService(ctx, domain)
+      await service.ready
+      const stored = await service.getOverrides({ sessionId: SessionId('persist-s') })
+      expect(stored.record).toEqual(overrides)
+      // And the agent-loop registry knows the session again.
+      expect(lookupContextEditOverrides('persist-s')).toBeDefined()
+    }
+  })
+
+
   it('previews a live session through its snapshot', async () => {
     const { ctx, service } = await mounted()
     const session = ctx.sessions.create(SessionId('svc-live'))

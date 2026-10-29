@@ -835,6 +835,8 @@ export class AgentLoop extends Service implements AgentFactory {
   }
 }
 
+// fork(context-editor): the per-session override registry the Context Editor
+// service feeds and the agent-loop seams read.
 export { lookupContextEditOverrides, registerContextEditOverrides } from './context-edit-registry.ts'
 export type { ContextEditOverrides } from './context-edit-registry.ts'
 

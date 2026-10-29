@@ -34,7 +34,7 @@ export interface OverridesRecord {
   /** Replacement schema fragments by exact tool name (renames are refused upstream of storage). */
   toolEdits: { [key: string]: JsonValue }
   /** Whitelisted parameter overrides merged into every agent-loop request. */
-  params: { temperature?: number; maxTokens?: number; stop?: string[]; presencePenalty?: number; frequencyPenalty?: number }
+  params: { temperature?: number; maxTokens?: number; stop?: string[] }
 }
 
 // Storage schemas stay deliberately loose: the durable payload is the
@@ -91,7 +91,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
     'context-editor/session-not-found': { sessionId: string }
     'context-editor/request-not-found': { sessionId: string; seq: number }
-    'context-editor/bad-range': { sessionId: string; startSeq: number; endSeq: number }
+    'context-editor/bad-range': { sessionId?: string; startSeq?: number; endSeq?: number; blockIndex?: number }
     'context-editor/busy': { sessionId: string }
     'context-editor/requires-branch': { sessionId: string; boundarySeq: number }
     'context-editor/rename': { name: string }

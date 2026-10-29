@@ -28,9 +28,9 @@ Every diff hunk in upstream files carries a `fork(context-editor):` marker.
 | `packages/core/agent-loop/src/context-edit-registry.ts` | NEW additive file | The session-scoped override lookup consumed at the request-finalization seam; keeps agent-loop from importing the Context Editor package |
 | `packages/core/agent-loop/src/index.ts` | export the registry (additive lines) | Import path for the Context Editor package |
 | `packages/core/agent-loop/src/agent.ts` | 2 marked seams: params merge into the PROPOSED config before `prepareCall` (the loop rejects post-prepare config drift); tools shaped before `canonicalHeader`, so header/request/meter/capture agree | Override application point |
-| `packages/client/ui-conversation/src/client/conversation/context-edit.ts` | NEW additive file | Shadow-set + marker helpers |
-| `packages/client/ui-conversation/src/client/conversation/assembler.ts` | intake skips appends shadowed by a context-edit replacement | The timeline folds effective content |
-| `packages/client/ui-conversation/src/client/index.ts` | re-export the helpers (additive lines) | Import path for ui-chat |
+| `packages/core/session/src/surface.ts` (additive block at end) | `contextEditMarkerOf` / `isContextEditReplacement` / `contextEditShadowedSeqs` helper exports | Shared by the host and the browser fold; lives here because the client bundle purity gate forbids cross-plugin value imports |
+| `packages/client/ui-conversation/src/client/conversation/assembler.ts` | two intake loops skip appends shadowed by a context-edit replacement (marked) | The timeline folds effective content |
+| `packages/bundle/web-app/package.json` | adds `@deepseek-ai/dsh-context-editor` + `@deepseek-ai/dsh-client-ui-context-editor` dependencies | The loader resolves bundle rows through the declarer's package context |
 | `packages/client/ui-chat/src/client/conversation-nodes/message.ts` | user replacements with the marker render their effective content; excluded ones fold away | Timeline truthfulness |
 | `packages/client/ui-chat/src/client/conversation-nodes/assistant.ts` | same for assistant replacements (fold into their step) | Timeline truthfulness |
 | `packages/bundle/web-app/cordis.patch.yml` | host row `context-editor`, browser roster row `ui-context-editor`, and the `fork(local-test)` config blocks (dark theme default; preview notice pre-acknowledged; first-run credential onboarding off) | Bundle wiring + carried-over local-test defaults (formerly applied post-build in the shipped bundles) |

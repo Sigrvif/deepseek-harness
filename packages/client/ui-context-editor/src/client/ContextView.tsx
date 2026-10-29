@@ -54,7 +54,18 @@ function ContextPane({ sessionId, api, labels, preview, reload }: {
 
   const saveEdit = (row: ContextRow): void => {
     setEditingSeq(undefined)
-    run(() => api.editMessage({ sessionId: sessionId as never, targetSeq: row.seq, text: draft }))
+    // Whole-row edits of assistant messages target their first text block:
+    // reasoning (and its replay signature) then stays untouched instead of
+    // being flattened into the replacement.
+    const blockIndex = row.role === 'assistant'
+      ? row.blocks.findIndex(block => (block as { type?: string }).type === 'text')
+      : -1
+    run(() => api.editMessage({
+      sessionId: sessionId as never,
+      targetSeq: row.seq,
+      text: draft,
+      ...(blockIndex > 0 ? { blockIndex } : {}),
+    }))
   }
 
   const exclude = (startSeq: number, endSeq: number): void => {
@@ -70,7 +81,8 @@ function ContextPane({ sessionId, api, labels, preview, reload }: {
       try {
         await api.restoreRange({ sessionId: sessionId as never, startSeq, endSeq })
       } catch (error) {
-        if (error instanceof Error && /requires-branch|recovery branch/u.test(error.message) && window.confirm(labels('confirm.branch'))) {
+        const code = (error as { code?: string }).code
+        if (code === 'context-editor/requires-branch' && window.confirm(labels('confirm.branch'))) {
           const { sessionId: childId } = await api.createRecoveryBranch({ sessionId: sessionId as never, boundarySeq: startSeq - 1 })
           window.alert((labels('confirm.branchCreated') ?? 'Created branch {id}').replace('{id}', String(childId)))
           return
@@ -85,11 +97,35 @@ function ContextPane({ sessionId, api, labels, preview, reload }: {
   }
 
   const batchExclude = (): void => {
+    if (!window.confirm(labels('confirm.exclude'))) return
+    setBusy(true)
+    // Group the selection into contiguous runs; a single min..max range would
+    // silently exclude unselected rows in between.
+    const runs: Array<[number, number]> = []
+    for (const seq of batch) {
+      const current = runs.at(-1)
+      if (current !== undefined && seq === current[1] + 1) current[1] = seq
+      else runs.push([seq, seq])
+    }
+    const exclusions = runs.reduce(
+      (chain, [start, end]) => chain.then(() => api.excludeRange({ sessionId: sessionId as never, startSeq: start, endSeq: end })),
+      Promise.resolve() as Promise<unknown>,
+    )
+    void exclusions.then(
+      () => { setBusy(false); setBatch([]); reload() },
+      (failure: unknown) => { setBusy(false); setNotice(String(failure)) },
+    )
+  }
+
+  const condense = (): void => {
     const first = batch[0]
     const last = batch.at(-1)
     if (first === undefined || last === undefined) return
-    exclude(first, last)
-    setBatch([])
+    if (!window.confirm(labels('confirm.condense'))) return
+    run(async () => {
+      await api.condenseRange({ sessionId: sessionId as never, startSeq: first, endSeq: last })
+      setBatch([])
+    })
   }
 
   const batchEdit = (text: string): void => {
@@ -131,6 +167,7 @@ function ContextPane({ sessionId, api, labels, preview, reload }: {
           >
             {labels('action.edit')}
           </button>
+          <button type="button" disabled={busy} onClick={condense}>{labels('action.condense')}</button>
           <button type="button" onClick={() => { setBatch([]) }}>{labels('action.cancel')}</button>
         </div>
       ) : null}
@@ -267,6 +304,19 @@ function ToolsPane({ sessionId, api, labels, preview, reload }: {
     commit({ ...current, removedTools: [...current.removedTools, name] })
   }
 
+  const setStop = (raw: string): void => {
+    const current = record ?? { removedTools: [], toolEdits: {}, params: {} }
+    const list = raw.split(',').map(entry => entry.trim()).filter(entry => entry !== '')
+    const params: OverridesRecord['params'] = { ...current.params }
+    if (list.length === 0) delete params['stop']
+    else params['stop'] = list
+    setBusy(true)
+    api.setParams({ sessionId: sessionId as never, params }).then(
+      (saved) => { setBusy(false); setRecord(saved); reload() },
+      (failure: unknown) => { setBusy(false); window.alert(String(failure)) },
+    )
+  }
+
   const setParam = (field: string, raw: string): void => {
     const current = record ?? { removedTools: [], toolEdits: {}, params: {} }
     const value = raw === '' ? undefined : Number(raw)
@@ -312,7 +362,7 @@ function ToolsPane({ sessionId, api, labels, preview, reload }: {
         })}
       </ul>
       <div className={styles.toolbar} data-testid="params-form">
-        {(['temperature', 'maxTokens', 'presencePenalty', 'frequencyPenalty'] as const).map(field => (
+        {(['temperature', 'maxTokens'] as const).map(field => (
           <label key={field} className={styles.paramRow}>
             <span>{field}</span>
             <input
@@ -324,6 +374,16 @@ function ToolsPane({ sessionId, api, labels, preview, reload }: {
             />
           </label>
         ))}
+        <label className={styles.paramRow}>
+          <span>stop</span>
+          <input
+            type="text"
+            placeholder="a, b, c"
+            defaultValue={(params['stop'] as string[] | undefined)?.join(', ') ?? ''}
+            data-testid="param-stop"
+            onBlur={(event) => { setStop(event.target.value) }}
+          />
+        </label>
       </div>
     </div>
   )

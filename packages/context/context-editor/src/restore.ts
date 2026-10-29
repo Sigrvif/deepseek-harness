@@ -95,6 +95,18 @@ function planRestore(events: readonly SessionEvent[], sessionId: SessionId, star
   if (originals.length === 0) {
     throw new RemoteError('context-editor/bad-range', `the ${what} at ${String(covering.seq)} shadows no surface nodes`, { sessionId, startSeq, endSeq })
   }
+  // Restoring a restore would re-apply the intermediate replacement and then
+  // duplicate the original behind it: the redundant-undo case. Reject when any
+  // shadowed replacement itself cites another shadowed original — there is
+  // nothing left to undo for that set.
+  const seqs = new Set(originals.map(original => Number(original.seq)))
+  for (const original of originals) {
+    if (typeof original.surfaceOp !== 'object' || original.surfaceOp === null) continue
+    const cited = original.sourceEventSeqs ?? []
+    if (cited.some(seq => seqs.has(Number(seq)))) {
+      throw new RemoteError('context-editor/bad-range', `the ${what} at ${String(covering.seq)} already restores earlier edits; nothing left to undo`, { sessionId, startSeq: covering.seq, endSeq: covering.seq })
+    }
+  }
   return { originals, covering }
 }
 

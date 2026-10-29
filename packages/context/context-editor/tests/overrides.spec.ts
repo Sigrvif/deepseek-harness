@@ -7,6 +7,7 @@ import { Context } from '@deepseek-ai/cordis'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import { lookupContextEditOverrides, registerContextEditOverrides } from '@deepseek-ai/dsh-agent-loop'
 import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
+import { defineContentToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import { LlmAdapter, createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions, LlmResolvedModelInfo, StreamChunk, ToolSchema } from '@deepseek-ai/dsh-llm'
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
@@ -77,9 +78,21 @@ describe('override agent-loop seam', () => {
     await ctx.plugin(TokenMeter)
     const adapter = new RecordingAdapter()
     ctx.llm.registerAdapter([MODEL], adapter)
+    ctx.tools.register(defineContentToolFixture({
+      name: 'read-file',
+      description: 'reads a file',
+      parameters: {},
+      execute: async () => [{ type: 'text', text: 'file body' }],
+    }))
+    ctx.tools.register(defineContentToolFixture({
+      name: 'list-dir',
+      description: 'lists a directory',
+      parameters: {},
+      execute: async () => [{ type: 'text', text: 'a, b' }],
+    }))
     const agent = await ctx.agentLoop.create(SessionId('seam'), { provider: MODEL, model: MODEL })
     const record: OverridesRecord = {
-      removedTools: ['definitely-not-a-tool'],
+      removedTools: ['read-file'],
       toolEdits: {},
       params: { temperature: 0.2 },
     }
@@ -92,7 +105,8 @@ describe('override agent-loop seam', () => {
     expect(adapter.requests.length).toBeGreaterThan(0)
     for (const request of adapter.requests) {
       expect(request.temperature).toBe(0.2)
-      expect(request.tools?.some(tool => tool.name === 'definitely-not-a-tool') ?? false).toBe(false)
+      expect(request.tools?.some(tool => tool.name === 'read-file') ?? false).toBe(false)
+      expect(request.tools?.some(tool => tool.name === 'list-dir') ?? false).toBe(true)
     }
     // The logged request/header agrees with the dispatched request.
     const header = agent.session.requestHeader()
@@ -100,8 +114,25 @@ describe('override agent-loop seam', () => {
     registerContextEditOverrides('seam', undefined)
   })
 
-  it('does not inherit overrides across forks', () => {
+  it('does not inherit overrides across forks', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-context-editor-fork-'))
+    roots.push(root)
+    const ctx = new Context()
+    contexts.push(ctx)
+    await mountAgentLoopTestDependencies(ctx)
+    const parent = ctx.sessions.create(SessionId('fork-parent'))
+    parent.append('turn/start', { turn: 1 })
+    parent.append('user/message', createUserMessage({
+      content: [{ type: 'text', text: 'parent prompt' }],
+      source: { kind: 'user' },
+    }), { surfaceOp: 'append' })
+    parent.append('step/start', { turn: 1, step: 1 })
+    parent.append('step/end', { turn: 1, step: 1 })
+    parent.append('turn/end', { turn: 1, reason: { kind: 'stop' } as never })
     registerContextEditOverrides('fork-parent', buildOverrides({ removedTools: ['x'], toolEdits: {}, params: { temperature: 0.1 } }))
+    const child = ctx.sessions.fork(SessionId('fork-parent'), undefined, SessionId('fork-child'))
+    expect(child.id).toBe(SessionId('fork-child'))
+    expect(lookupContextEditOverrides('fork-parent')).toBeDefined()
     expect(lookupContextEditOverrides('fork-child')).toBeUndefined()
     registerContextEditOverrides('fork-parent', undefined)
   })

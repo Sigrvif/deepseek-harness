@@ -42,7 +42,7 @@ function editContent(message: Message, text: string, blockIndex: number | undefi
   if (blockIndex !== undefined) {
     const block = content[blockIndex]
     if (block === undefined || !TEXTUAL.has(block.type)) {
-      throw new RemoteError('context-editor/bad-range', `block ${String(blockIndex)} is not text-editable`, { sessionId: '', startSeq: blockIndex, endSeq: -1 })
+      throw new RemoteError('context-editor/bad-range', `block ${String(blockIndex)} is not text-editable`, { blockIndex })
     }
     return content.map((candidate, index) => index === blockIndex ? { ...candidate, text } : candidate)
   }
@@ -186,11 +186,11 @@ export async function applyOperations(
     r.type,
     r.data as never,
     (r.surfaceOp === undefined && r.sourceEventSeqs === undefined
-      ? []
-      : [{
+      ? undefined
+      : {
         ...(r.surfaceOp === undefined ? {} : { surfaceOp: r.surfaceOp }),
         ...(r.sourceEventSeqs === undefined ? {} : { sourceEventSeqs: r.sourceEventSeqs }),
-      } as never]) as never,
+      } as never) as never,
   ))
   const fresh = detached.snapshotEvents(SessionLogOffset(stored.length))
   const handle = await ctx.sessionPersistence.open(sessionId, 'write')

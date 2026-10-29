@@ -67,6 +67,10 @@ export function installRequestCapture(ctx: Context, table: KvTable<string, Captu
       ...options.purpose === undefined ? {} : { purpose: options.purpose },
       provider: options.provider,
       model: options.model,
+      // Snapshot the overridable config fields explicitly: this list must grow
+      // with the override whitelist in overrides.ts (temperature/maxTokens/stop
+      // plus the routing facts), or an overridable field would silently vanish
+      // from the Requests pane.
       config: jsonSafe({
         ...options.reasoningEffort === undefined ? {} : { reasoningEffort: options.reasoningEffort },
         ...options.temperature === undefined ? {} : { temperature: options.temperature },

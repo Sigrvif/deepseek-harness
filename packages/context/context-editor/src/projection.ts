@@ -71,18 +71,23 @@ export function previewFromEvents(sessionId: string, events: readonly SessionEve
     if (event === undefined || message === undefined) continue
     const replaced = isReplacement(event)
     const excluded = isExcluded(event)
-    // Range-fallback provenance lists the shadowed SURFACE nodes only.
+    // Range-fallback provenance lists the shadowed SURFACE nodes only. Rows
+    // whose cited sources chain into another replacement are restores: their
+    // "originals" were already re-materialized, so no undo is offered.
     const sources = replaced
       ? provenanceOf(event).filter(candidate => messageOf(events[candidate] ?? { type: 'turn/start', data: {} } as never) !== undefined)
       : undefined
+    const chainsIntoRestore = sources !== undefined
+      && sources.some(candidate => isReplacement(events[candidate] ?? { type: 'turn/start', data: {} } as never))
+    const rowProvenance = sources !== undefined && sources.length > 0 && !chainsIntoRestore ? sources : undefined
     rows.push({
       seq,
       role: ROLES[event.type] ?? 'user',
       text: textOf(message.content),
       blocks: message.content as unknown as JsonValue[],
       excluded,
-      ...(replaced && sources !== undefined && sources.length > 0
-        ? excluded ? { excludes: sources } : { editedFrom: sources }
+      ...(replaced && rowProvenance !== undefined
+        ? excluded ? { excludes: rowProvenance } : { editedFrom: rowProvenance }
         : {}),
       estimateTokens: estimateMessage(message),
     })
