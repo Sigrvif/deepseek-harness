@@ -7257,6 +7257,9 @@ importers:
       '@deepseek-ai/dsh-compaction':
         specifier: workspace:*
         version: link:../../compaction/compaction
+      '@deepseek-ai/dsh-compaction-basic':
+        specifier: workspace:*
+        version: link:../../compaction/compaction-basic
       '@deepseek-ai/dsh-llm':
         specifier: workspace:*
         version: link:../../llm/llm

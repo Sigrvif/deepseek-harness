@@ -6,6 +6,7 @@ import type { Domain, KvTable } from '@deepseek-ai/dsh-storage-domain'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { keyFor, installRequestCapture } from './capture.ts'
 import type { RequestCapture } from './capture.ts'
+import { condenseRange } from './condense.ts'
 import { contextEditorDomain } from './domain.ts'
 import { previewFromEvents } from './projection.ts'
 import type { CapturedRequest, ContextPreview, OverridesRecord } from './types.ts'
@@ -111,6 +112,16 @@ export class ContextEditorService extends TypertRemoteService {
   async expandCheckpoint(request: { sessionId: SessionId; checkpointSeq: number }): Promise<ContextPreview> {
     await expandCheckpoint(this.ctx, request.sessionId, request.checkpointSeq)
     return this.preview({ sessionId: request.sessionId })
+  }
+
+  @Remote('condense-range')
+  async condenseRange(request: {
+    sessionId: SessionId
+    startSeq: number
+    endSeq: number
+    instruction?: string
+  }): Promise<{ compactionId: string }> {
+    return await condenseRange(this.ctx, request.sessionId, request.startSeq, request.endSeq, request.instruction)
   }
 
   @Remote('create-recovery-branch')

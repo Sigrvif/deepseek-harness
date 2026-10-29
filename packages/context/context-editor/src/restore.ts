@@ -109,13 +109,16 @@ export async function restoreRange(
   startSeq: number,
   endSeq: number,
 ): Promise<void> {
-  await applyOperations(ctx, sessionId, (events) => {
+  await applyOperations(ctx, sessionId, (events, append) => {
     const { originals, covering } = planRestore(events, sessionId, startSeq, endSeq, 'replacement')
-    if (originals.length === 1) return [reMaterialized(originals, covering, 'in-place')]
+    if (originals.length === 1) {
+      append(reMaterialized(originals, covering, 'in-place'))
+      return
+    }
     if (!isSurfaceTail(events, covering)) {
       throw new RemoteError('context-editor/requires-branch', `restoring ${String(startSeq)}..${String(endSeq)} mid-history requires a recovery branch`, { sessionId, boundarySeq: startSeq - 1 })
     }
-    return expansion(originals, covering)
+    for (const replacement of expansion(originals, covering)) append(replacement)
   })
 }
 
@@ -125,7 +128,7 @@ export async function expandCheckpoint(
   sessionId: SessionId,
   checkpointSeq: number,
 ): Promise<void> {
-  await applyOperations(ctx, sessionId, (events) => {
+  await applyOperations(ctx, sessionId, (events, append) => {
     const checkpoint = events[checkpointSeq]
     const source = checkpoint === undefined ? undefined
       : (messageOf(checkpoint)?.source as { kind?: string } | undefined)
@@ -139,7 +142,7 @@ export async function expandCheckpoint(
     if (!isSurfaceTail(events, checkpoint)) {
       throw new RemoteError('context-editor/requires-branch', `expanding checkpoint ${String(checkpointSeq)} mid-history requires a recovery branch`, { sessionId, boundarySeq: checkpointSeq - 1 })
     }
-    return expansion(originals, checkpoint)
+    for (const replacement of expansion(originals, checkpoint)) append(replacement)
   })
 }
 

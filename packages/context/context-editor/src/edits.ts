@@ -125,10 +125,16 @@ export interface Replacement {
   sourceEventSeqs?: number[]
 }
 
+/** One append routed through Session.append (live) or a detached replay Session (cold). */
+export interface AppendTarget {
+  events(): readonly SessionEvent[]
+  append(replacement: Replacement): SessionEvent
+}
+
 export async function applyOperations(
   ctx: Context,
   sessionId: SessionId,
-  build: (events: readonly SessionEvent[]) => Replacement[],
+  build: (events: readonly SessionEvent[], append: (replacement: Replacement) => SessionEvent) => void,
 ): Promise<void> {
   const live = ctx.sessions.get(sessionId)
   if (live !== undefined) {
@@ -137,12 +143,11 @@ export async function applyOperations(
     if (turnOpen(events)) {
       throw new RemoteError('context-editor/busy', `session '${sessionId}' has an open turn`, { sessionId })
     }
-    for (const replacement of build(events)) {
-      live.append(replacement.type, replacement.data as never, {
-        surfaceOp: replacement.surfaceOp,
-        ...(replacement.sourceEventSeqs !== undefined ? { sourceEventSeqs: replacement.sourceEventSeqs } : {}),
-      } as never)
-    }
+    const append = (r: Replacement): SessionEvent => live.append(r.type, r.data as never, {
+      surfaceOp: r.surfaceOp,
+      ...(r.sourceEventSeqs !== undefined ? { sourceEventSeqs: r.sourceEventSeqs } : {}),
+    } as never)
+    build(events, append)
     if (!(await ctx.sessions.flush(live))) {
       throw new Error(`context-editor: no durability listener for live session '${sessionId}'`)
     }
@@ -170,12 +175,10 @@ export async function applyOperations(
       ...(event.sourceEventSeqs !== undefined ? { sourceEventSeqs: event.sourceEventSeqs } : {}),
     })
   }
-  for (const replacement of build(stored)) {
-    detached.append(replacement.type, replacement.data as never, {
-      surfaceOp: replacement.surfaceOp,
-      ...(replacement.sourceEventSeqs !== undefined ? { sourceEventSeqs: replacement.sourceEventSeqs } : {}),
-    } as never)
-  }
+  build(stored, r => detached.append(r.type, r.data as never, {
+    surfaceOp: r.surfaceOp,
+    ...(r.sourceEventSeqs !== undefined ? { sourceEventSeqs: r.sourceEventSeqs } : {}),
+  } as never))
   const fresh = detached.snapshotEvents(stored.length)
   const handle = await ctx.sessionPersistence.open(sessionId, 'write')
   try {
@@ -197,12 +200,12 @@ export async function editMessage(
   targetSeq: number,
   edit: { text: string; blockIndex?: number },
 ): Promise<void> {
-  await applyOperations(ctx, sessionId, (events) => {
+  await applyOperations(ctx, sessionId, (events, append) => {
     const target = events[targetSeq]
     if (target === undefined) {
       throw new RemoteError('context-editor/bad-range', `no event at seq ${String(targetSeq)}`, { sessionId, startSeq: targetSeq, endSeq: targetSeq })
     }
-    return [replacementFor(target, sessionId, targetSeq, edit)]
+    append(replacementFor(target, sessionId, targetSeq, edit))
   })
 }
 
@@ -213,7 +216,7 @@ export async function excludeRange(
   startSeq: number,
   endSeq: number,
 ): Promise<void> {
-  await applyOperations(ctx, sessionId, (events) => {
+  await applyOperations(ctx, sessionId, (events, append) => {
     let surfaceNodes = 0
     for (let seq = startSeq; seq <= endSeq; seq += 1) {
       const event = events[seq]
@@ -224,6 +227,6 @@ export async function excludeRange(
     if (surfaceNodes === 0) {
       throw new RemoteError('context-editor/bad-range', `range ${String(startSeq)}..${String(endSeq)} covers no message events`, { sessionId, startSeq, endSeq })
     }
-    return [rangeReplacement(startSeq, endSeq)]
+    append(rangeReplacement(startSeq, endSeq))
   })
 }
