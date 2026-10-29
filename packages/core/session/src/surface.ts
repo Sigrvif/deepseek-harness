@@ -332,9 +332,10 @@ function assertSourceEventReferences(
   shadowedSeqs: readonly SessionSeq[],
 ): void {
   const raw: unknown = event.sourceEventSeqs
-  if (event.type === 'assistant/message' && raw !== undefined) {
-    throw new Error('assistant/message embeds its source stream and cannot carry sourceEventSeqs')
-  }
+  // fork(context-editor): assistant/message replacements cite the surface nodes
+  // they shadow, like every other surface type. Upstream refused citations here
+  // because a replacement embeds its own stream, which made assistant answers
+  // unrepresentable as 1:1 replacements; the coverage check below still applies.
   const sources = new Set<SessionSeq>()
   if (raw !== undefined) {
     if (!Array.isArray(raw)) {

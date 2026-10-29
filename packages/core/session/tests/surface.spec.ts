@@ -162,7 +162,42 @@ describe('foldSurface source-event references', () => {
       surfaceOp: 'append',
       sourceEventSeqs: [],
     } as unknown as SessionEvent
-    expect(() => foldSurface([event])).toThrow(/embeds its source stream/)
+    // fork(context-editor): citations are no longer refused on assistant events.
+    // Empty arrays still fail the general validation.
+    expect(() => foldSurface([event])).toThrow(/must not be empty/)
+  })
+
+  it('fork(context-editor): accepts cited assistant replacements', () => {
+    const original = {
+      type: 'user/message',
+      seq: SessionSeq(0),
+      time: 0,
+      data: createMessage({
+        role: 'user',
+        content: [{ type: 'text', text: 'before edit' }],
+        source: { kind: 'user' },
+      }),
+      surfaceOp: 'append',
+    } as unknown as SessionEvent
+    const replacement = {
+      type: 'assistant/message',
+      seq: SessionSeq(1),
+      time: 1,
+      data: {
+        turn: 1,
+        step: 1,
+        message: createMessage({
+          role: 'assistant',
+          content: [{ type: 'text', text: 'edited' }],
+          source: { kind: 'model', provider: 'mock', model: 'mock' },
+        }),
+        stream: [],
+      },
+      surfaceOp: { op: 'replace', startSeq: SessionSeq(0), endSeq: SessionSeq(0) },
+      sourceEventSeqs: [SessionSeq(0)],
+    } as unknown as SessionEvent
+    const fold = foldSurface([original, replacement])
+    expect(fold.nodes).toEqual([SessionSeq(1)])
   })
 
   it.each([

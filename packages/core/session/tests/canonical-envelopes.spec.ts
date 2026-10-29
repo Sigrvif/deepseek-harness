@@ -280,7 +280,9 @@ describe('canonical event-local surface metadata', () => {
           role: 'assistant', content: [], source: { kind: 'model', provider: 'mock', model: 'mock' },
         }) },
       } as unknown as SessionEvent
-      expect(() => accept(assistant)).toThrow(/cannot carry sourceEventSeqs/)
+      // fork(context-editor): assistant/message replacements may cite the surface
+      // nodes they shadow; only the general rules (earlier, dense, covered) apply.
+      expect(() => accept(assistant)).toThrow(/sourceEventSeqs must reference earlier events/)
     })
   }
 
