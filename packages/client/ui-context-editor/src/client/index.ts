@@ -27,8 +27,8 @@ export { ContextView } from './ContextView.tsx'
 /** Dictionary namespace owned by this plugin. */
 const NS = 'contextEditor'
 
-/** Required services: slots, locale, and the workspace (opening recovery branches). */
-export const inject = ['slots', 'locale', 'uiWorkspace']
+/** Required services: the remote mount, slots, locale, and the workspace (opening recovery branches). */
+export const inject = ['remote', 'slots', 'locale', 'uiWorkspace']
 
 /**
  * Client plugin body: mount the remote, register the copy, and dock the
