@@ -1,6 +1,6 @@
 /** previewFromEvents: model-visible rows with provenance, straight over session events. */
 import { describe, expect, it } from 'vitest'
-import { canonicalHeader, Session, SessionId } from '@deepseek-ai/dsh-session'
+import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import { createAssistantMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import { previewFromEvents } from '../src/projection.ts'
 
@@ -18,13 +18,13 @@ function conversation(): Session {
       { type: 'text', text: 'the answer' },
     ],
     source: { kind: 'model', provider: 'llm-pi-ai', model: 'm.gguf' },
-  })
-  session.append('assistant/message', { turn: 1, step: 1, message: assistant }, { surfaceOp: 'append' })
+  } as never)
+  session.append('assistant/message', { turn: 1, step: 1, stream: [], message: assistant }, { surfaceOp: 'append' })
   session.append('request/header', {
-    header: canonicalHeader({
+    header: {
       config: { provider: 'llm-pi-ai', model: 'm.gguf', temperature: 0.4 },
-      tools: [{ name: 'read' }],
-    }),
+      tools: [{ name: 'read', description: 'read', parameters: {} }] as never,
+    },
     reason: 'initial',
   })
   return session
@@ -50,11 +50,12 @@ describe('previewFromEvents', () => {
     session.append('assistant/message', {
       turn: 1,
       step: 1,
+      stream: [],
       message: createAssistantMessage({
         content: [{ type: 'text', text: 'edited answer' }],
         source: { kind: 'model', provider: 'llm-pi-ai', model: 'm.gguf' },
-      }),
-    }, { surfaceOp: { op: 'replace', startSeq: assistantSeq, endSeq: assistantSeq }, sourceEventSeqs: [assistantSeq] })
+      } as never),
+    }, { surfaceOp: { op: 'replace', startSeq: assistantSeq, endSeq: assistantSeq }, sourceEventSeqs: [assistantSeq] } as never)
     const preview = previewFromEvents('preview', session.snapshotEvents())
     expect(preview.rows).toHaveLength(2)
     expect(preview.rows[1]?.text).toBe('edited answer')

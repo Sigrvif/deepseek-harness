@@ -20,7 +20,7 @@ import type { CapturedRequest, ContextPreview, OverridesRecord } from './types.t
 const PAGE_SIZE = 30
 
 export class ContextEditorService extends TypertRemoteService {
-  static inject = ['sessions', 'sessionPersistence', 'llm', 'storageDomain', 'compaction']
+  static inject = ['sessions', 'sessionPersistence', 'llm', 'storageDomain']
 
   private requestsTable: KvTable<string, CapturedRequest> | undefined
   private overridesTable: KvTable<string, OverridesRecord> | undefined

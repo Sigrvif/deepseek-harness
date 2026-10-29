@@ -39,7 +39,7 @@ class ScriptedAdapter extends LlmAdapter {
 }
 
 /** Failing-put table: `put`/`update` reject, everything else works — capture must survive it. */
-function brokenTable<K, V>(working: KvTable<K, V>): KvTable<K, V> {
+function brokenTable<K extends string, V>(working: KvTable<K, V>): KvTable<K, V> {
   return new Proxy(working, {
     get(target, property: string) {
       if (property === 'put' || property === 'update') {
@@ -72,7 +72,7 @@ function options(model: string, over: Partial<GenerateOptions> = {}): GenerateOp
   return {
     provider: 'actual',
     model,
-    messages: [{ role: 'user', content: 'hi' }],
+    messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] } as never],
     sessionId: SESSION,
     temperature: 0.7,
     ...over,
@@ -92,7 +92,8 @@ describe('request capture', () => {
     expect(chunks).toBeGreaterThan(0)
     await vi.waitFor(() => { expect(Array.from(table.entries())).toHaveLength(1) })
     const records = Array.from(table.entries()).map(([, record]) => record)
-    expect(records[0]).toMatchObject({
+    const first = records[0]!
+    expect(first).toMatchObject({
       seq: 1,
       purpose: 'session-title',
       provider: 'actual',
@@ -100,14 +101,15 @@ describe('request capture', () => {
       status: 'dispatched',
       config: { temperature: 0.7 },
     })
-    expect(records[0].messages).toHaveLength(1)
-    expect(typeof records[0].time).toBe('string')
+    const captured = records[0]!
+    expect(captured.messages).toHaveLength(1)
+    expect(typeof captured.time).toBe('string')
   })
 
   it('keeps only the newest 30 requests per session', async () => {
     const { ctx, table } = await mounted()
     for (let index = 0; index < 35; index += 1) {
-      await drained(ctx.llm.stream(options(MODEL, { messages: [{ role: 'user', content: `m${index}` }] })))
+      await drained(ctx.llm.stream(options(MODEL, { messages: [{ role: 'user', content: [{ type: 'text', text: `m${index}` }] } as never] })))
     }
     await vi.waitFor(() => {
       const entries = Array.from(table.entries())
@@ -127,8 +129,9 @@ describe('request capture', () => {
     expect(finish !== undefined && finish.type === 'finish' && finish.reason.kind).toBe('error')
     await vi.waitFor(() => { expect(Array.from(table.entries())).toHaveLength(1) })
     const records = Array.from(table.entries()).map(([, record]) => record)
-    expect(records[0].status).toBe('error')
-    expect(records[0].error).toBe('provider exploded')
+    const failed = records[0]!
+    expect(failed.status).toBe('error')
+    expect(failed.error).toBe('provider exploded')
   })
 
   it('survives a failing storage table and flags degradation', async () => {

@@ -3005,6 +3005,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-commands':
         specifier: workspace:*
         version: link:../../client/ui-commands
+      '@deepseek-ai/dsh-client-ui-context-editor':
+        specifier: workspace:*
+        version: link:../../client/ui-context-editor
       '@deepseek-ai/dsh-client-ui-conversation':
         specifier: workspace:*
         version: link:../../client/ui-conversation
@@ -3164,6 +3167,9 @@ importers:
       '@deepseek-ai/dsh-compaction-tool-result-pruner':
         specifier: workspace:*
         version: link:../../compaction/compaction-tool-result-pruner
+      '@deepseek-ai/dsh-context-editor':
+        specifier: workspace:*
+        version: link:../../context/context-editor
       '@deepseek-ai/dsh-cordis-client-runner':
         specifier: workspace:*
         version: link:../../extensions/cordis-client-runner
@@ -4021,6 +4027,57 @@ importers:
       react:
         specifier: ^18.2.0
         version: 18.3.1
+
+  packages/client/ui-context-editor:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:~
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-api-remotes':
+        specifier: workspace:*
+        version: link:../../api/remotes
+      '@deepseek-ai/dsh-client-locale':
+        specifier: workspace:*
+        version: link:../locale
+      '@deepseek-ai/dsh-client-test-runtime':
+        specifier: workspace:*
+        version: link:../../test-support/client-runtime
+      '@deepseek-ai/dsh-client-ui-conversation':
+        specifier: workspace:*
+        version: link:../ui-conversation
+      '@deepseek-ai/dsh-client-ui-primitives':
+        specifier: workspace:*
+        version: link:../ui-primitives
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: workspace:*
+        version: link:../ui-renderer
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: workspace:*
+        version: link:../ui-slots
+      '@deepseek-ai/dsh-client-ui-workspace':
+        specifier: workspace:*
+        version: link:../ui-workspace
+      '@deepseek-ai/dsh-context-editor':
+        specifier: workspace:*
+        version: link:../../context/context-editor
+      '@deepseek-ai/dsh-remote-mock':
+        specifier: workspace:*
+        version: link:../../test-support/remote-mock
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:*
+        version: link:../../core/session
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: workspace:*
+        version: link:../../typert/protocol
+      '@testing-library/react':
+        specifier: ^16.3.3
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.3.1(react@18.3.1)
 
   packages/client/ui-conversation:
     dependencies:
@@ -7254,6 +7311,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-agent-loop':
+        specifier: workspace:*
+        version: link:../../core/agent-loop
       '@deepseek-ai/dsh-compaction':
         specifier: workspace:*
         version: link:../../compaction/compaction

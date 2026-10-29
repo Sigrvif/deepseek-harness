@@ -109,7 +109,7 @@ describe('editMessage', () => {
     toolConversation(session)
     const toolSeq = session.surface.nodes[2]!
     await editMessage(ctx, SessionId('edit-tool'), toolSeq, { text: 'edited output' })
-    const event = session.eventAt(SessionSeq(session.log.length - 1))
+    const event = session.eventAt(SessionSeq(Number(session.surface.nodes.at(-1))))
     expect(event?.type).toBe('tool/result')
     const message = (event?.data as { message: { toolCallId: string; source: { callId: string } } }).message
     expect(message.toolCallId).toBe('call-1')
@@ -166,7 +166,7 @@ describe('editMessage', () => {
     })
     const assistantSeq = session.surface.nodes[1]!
     await editMessage(ctx, SessionId('edit-signed'), assistantSeq, { text: 'edited thought', blockIndex: 0 })
-    const replacement = session.eventAt(session.seq - 1)
+    const replacement = session.eventAt(SessionSeq(Number(session.surface.nodes.at(-1))))
     const data = replacement?.data as { message: { source: { replayState?: { blocks: { type: string; signature?: string }[] } } } }
     const blocks = data.message.source.replayState?.blocks ?? []
     expect(blocks).toHaveLength(3)
