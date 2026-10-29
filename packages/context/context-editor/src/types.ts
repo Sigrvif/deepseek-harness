@@ -54,3 +54,44 @@ export const overridesRecordSchema: z.ZodType<OverridesRecord> = z.object({
   toolEdits: z.record(z.string(), z.unknown()),
   params: z.record(z.string(), z.union([z.number(), z.array(z.string())])),
 })
+
+/** One model-visible row of the effective context projection. */
+export interface ContextRow {
+  /** Log sequence of the event whose message this row shows (replacement events show their own seq). */
+  seq: number
+  role: 'system' | 'developer' | 'user' | 'assistant' | 'tool'
+  /** Concatenated text of text/reasoning blocks. */
+  text: string
+  /** Full content blocks as stored. */
+  blocks: unknown[]
+  /** True when this replacement is excluded from model input. */
+  excluded: boolean
+  /** Source sequences of an edited replacement's original event(s). */
+  editedFrom?: number[]
+  /** Source sequences an excluded replacement shadows. */
+  excludes?: number[]
+  estimateTokens: number
+}
+
+/** The effective next-request view for one session. */
+export interface ContextPreview {
+  sessionId: string
+  rows: ContextRow[]
+  totalTokens: number
+  /** Latest request/header config as stored. */
+  config: Record<string, unknown>
+  /** Latest request/header tool schemas, when any were sent. */
+  tools?: unknown[]
+}
+
+declare module '@deepseek-ai/dsh-typert-protocol' {
+  interface RemoteErrorDetailsMap {
+    'context-editor/session-not-found': { sessionId: string }
+    'context-editor/request-not-found': { sessionId: string; seq: number }
+    'context-editor/bad-range': { sessionId: string; startSeq: number; endSeq: number }
+    'context-editor/busy': { sessionId: string }
+    'context-editor/requires-branch': { sessionId: string; boundarySeq: number }
+    'context-editor/rename': { name: string }
+    'context-editor/bad-param': { field: string }
+  }
+}

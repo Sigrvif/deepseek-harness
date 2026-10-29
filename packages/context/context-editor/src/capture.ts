@@ -26,7 +26,8 @@ function jsonSafe(value: unknown): unknown {
   }
 }
 
-function requestKey(sessionId: string, seq: number): string {
+/** The storage key of one captured request (shared with the remote read side). */
+export function keyFor(sessionId: string, seq: number): string {
   return `${sessionId}#${String(seq).padStart(6, '0')}`
 }
 
@@ -49,7 +50,7 @@ export function installRequestCapture(ctx: Context, table: KvTable<string, Captu
   const prune = (sessionId: string): void => {
     const seqs = sessionSeqs(table, sessionId)
     for (const seq of seqs.slice(0, Math.max(0, seqs.length - REQUEST_LOG_LIMIT))) {
-      void table.delete(requestKey(sessionId, seq)).catch(fail)
+      void table.delete(keyFor(sessionId, seq)).catch(fail)
     }
   }
 
@@ -58,7 +59,7 @@ export function installRequestCapture(ctx: Context, table: KvTable<string, Captu
     if (sessionId === undefined) return next()
     const seq = (counters.get(sessionId) ?? Math.max(0, ...sessionSeqs(table, sessionId))) + 1
     counters.set(sessionId, seq)
-    const key = requestKey(sessionId, seq)
+    const key = keyFor(sessionId, seq)
     const record: CapturedRequest = {
       seq,
       time: new Date().toISOString(),
