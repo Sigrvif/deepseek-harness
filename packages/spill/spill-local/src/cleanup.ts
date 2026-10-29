@@ -376,20 +376,23 @@ export async function sweepSpillRoots(options: SweepOptions): Promise<void> {
  * @param base The directory to scan; defaults to the OS tmpdir (a test seam).
  * @returns Absolute paths of the discovered default roots (possibly empty).
  */
-async function discoverDefaultRootRecords(warn: WarnFn, base: string): Promise<ResolvedRoot[]> {
-  let entries: string[]
-  try {
-    entries = await readdir(base)
-  } catch (error: unknown) {
-    warnSafely(warn, `spill-local: failed to scan ${base} for default roots: ${String(error)}`)
-    return []
-  }
+async function discoverDefaultRootRecords(warn: WarnFn, base: string | readonly string[]): Promise<ResolvedRoot[]> {
+  const bases = typeof base === 'string' ? [base] : [...base]
   const roots: ResolvedRoot[] = []
-  for (const name of entries) {
-    if (!DEFAULT_ROOT_RE.test(name)) continue
-    const path = join(base, name)
-    const resolved = await resolveRoot(path, false, warn)
-    if (resolved !== undefined) roots.push(resolved)
+  for (const one of bases) {
+    let entries: string[]
+    try {
+      entries = await readdir(one)
+    } catch (error: unknown) {
+      warnSafely(warn, `spill-local: failed to scan ${one} for default roots: ${String(error)}`)
+      continue
+    }
+    for (const name of entries) {
+      if (!DEFAULT_ROOT_RE.test(name)) continue
+      const path = join(one, name)
+      const resolved = await resolveRoot(path, false, warn)
+      if (resolved !== undefined) roots.push(resolved)
+    }
   }
   return roots
 }
@@ -401,7 +404,7 @@ async function discoverDefaultRootRecords(warn: WarnFn, base: string): Promise<R
  * @param base Directory to scan; defaults to the OS temporary directory.
  * @returns Canonical paths of trusted default roots.
  */
-export async function discoverDefaultRoots(warn: WarnFn, base: string = tmpdir()): Promise<string[]> {
+export async function discoverDefaultRoots(warn: WarnFn, base: string | readonly string[] = tmpdir()): Promise<string[]> {
   return (await discoverDefaultRootRecords(warn, base)).map(root => root.path)
 }
 
@@ -418,7 +421,7 @@ export async function discoverDefaultRoots(warn: WarnFn, base: string = tmpdir()
 export async function gatherSweepRoots(
   activeRoot: string,
   warn: WarnFn,
-  defaultRootsBase: string = tmpdir(),
+  defaultRootsBase: string | readonly string[] = tmpdir(),
 ): Promise<SweepRoot[]> {
   const [discovered, active] = await Promise.all([
     discoverDefaultRootRecords(warn, defaultRootsBase),

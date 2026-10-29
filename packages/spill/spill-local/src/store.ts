@@ -29,12 +29,51 @@ export function isErrno(error: unknown, code: string): boolean {
 let defaultRoot: string | undefined
 
 /**
+ * The directories a default private root may be created under, in preference
+ * order: the OS temporary directory first (upstream semantics, and the base
+ * the startup sweep historically scanned), then the app-owned home and the
+ * working directory. Some Windows hosts deny %TEMP% writes to unsigned
+ * processes (security-software policies), which turned root creation into a
+ * hard startup failure; the app-owned locations are writable wherever the
+ * rest of dsh keeps its data.
+ *
+ * @returns The base directories, most preferred first.
+ */
+export function privateRootBases(): string[] {
+  const bases = [tmpdir()]
+  const home = process.env['DSH_HOME']
+  if (home !== undefined && home !== '') bases.push(join(home, 'spill'))
+  bases.push(process.cwd())
+  return bases
+}
+
+/**
+ * Create the private root in the first base that allows it. Every attempt is
+ * kept so a host that blocks all of them reports its first, most
+ * representative failure rather than a last-resort artifact.
+ *
+ * @param bases - Base directories to try, most preferred first.
+ * @returns The created private root path.
+ */
+export function createPrivateRoot(bases: readonly string[] = privateRootBases()): string {
+  let firstError: unknown
+  for (const base of bases) {
+    try {
+      return mkdtempSync(join(base, DEFAULT_ROOT_PREFIX))
+    } catch (error: unknown) {
+      firstError ??= error
+    }
+  }
+  throw firstError
+}
+
+/**
  * Return the lazily-created private per-process spill root.
  *
  * @returns The private root path.
  */
 export function privateRoot(): string {
-  defaultRoot ??= mkdtempSync(join(tmpdir(), DEFAULT_ROOT_PREFIX))
+  defaultRoot ??= createPrivateRoot()
   return defaultRoot
 }
 

@@ -20,10 +20,12 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import type { SaveTextSpill } from '@deepseek-ai/dsh-spill'
 import LocalSpillStore, {
   DEFAULT_ROOT_PREFIX,
+  createPrivateRoot,
   discoverDefaultRoots,
   encodeSegment,
   isErrno,
   privateRoot,
+  privateRootBases,
   saveTextFile,
   sessionDir,
   sweepSpillRoots,
@@ -134,7 +136,56 @@ describe('privateRoot', () => {
     expect(isAbsolute(first)).toBe(true)
     expect(privateRoot()).toBe(first)
   })
+
+  it('falls back to later bases when the preferred base denies creation', () => {
+    // Windows security software can deny %TEMP% writes to unsigned processes;
+    // root creation must move to the next app-owned base instead of failing
+    // the whole backend.
+    const blocked = mkdtempSync(join(tmpdir(), 'dsh-spill-blocked-'))
+    chmodSync(blocked, 0o500)
+    const writable = mkdtempSync(join(tmpdir(), 'dsh-spill-fallback-'))
+    let created: string | undefined
+    try {
+      created = createPrivateRoot([blocked, writable])
+      expect(isAbsolute(created)).toBe(true)
+      expect(created.startsWith(writable)).toBe(true)
+    } finally {
+      chmodSync(blocked, 0o700)
+      rmSync(blocked, { recursive: true, force: true })
+      if (created !== undefined) rmSync(created, { recursive: true, force: true })
+      rmSync(writable, { recursive: true, force: true })
+    }
+  })
+
+  it('reports the first base failure when every base denies creation', () => {
+    const blockedA = mkdtempSync(join(tmpdir(), 'dsh-spill-blocked-'))
+    const blockedB = mkdtempSync(join(tmpdir(), 'dsh-spill-blocked-'))
+    chmodSync(blockedA, 0o500)
+    chmodSync(blockedB, 0o500)
+    try {
+      expect(() => createPrivateRoot([blockedA, blockedB])).toThrowError()
+    } finally {
+      chmodSync(blockedA, 0o700)
+      chmodSync(blockedB, 0o700)
+      rmSync(blockedA, { recursive: true, force: true })
+      rmSync(blockedB, { recursive: true, force: true })
+    }
+  })
+
+  it('includes the DSH_HOME fallback base between tmpdir and cwd', () => {
+    vi.stubEnv('DSH_HOME', join(tmpdir(), 'dsh-spill-home'))
+    try {
+      expect(privateRootBases()).toEqual([
+        tmpdir(),
+        join(tmpdir(), 'dsh-spill-home', 'spill'),
+        process.cwd(),
+      ])
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
 })
+
 
 describe('LocalSpillStore service', () => {
   // These tests exercise save/root resolution, not cleanup; disabling the sweep
@@ -194,18 +245,22 @@ describe('LocalSpillStore service', () => {
     }
   })
 
-  it('the default discovery base is the OS tmpdir', async () => {
+  it('the default discovery bases start at the OS tmpdir, plus the DSH_HOME fallback', async () => {
     // Every hermetic sweep test overrides defaultRootsBase(); pin its production
-    // default here (scan the OS tmpdir) without letting the sweep touch tmpdir.
+    // default here (scan the OS tmpdir first, then the app-home fallback base)
+    // without letting the sweep touch any of them.
+    vi.stubEnv('DSH_HOME', join(root, 'home'))
     class Exposed extends LocalSpillStore {
-      base(): string { return this.defaultRootsBase() }
+      base(): string[] { return this.defaultRootsBase() }
       protected override async gatherRoots(): Promise<SweepRoot[]> { return [] }
     }
     const ctx = new Context()
     const fiber = await ctx.plugin(Exposed, { root, cleanupPeriodDays: 30 })
     const store = ctx.spillStore as Exposed
+    const bases = store.base()
     await fiber.dispose()
-    expect(store.base()).toBe(tmpdir())
+    vi.unstubAllEnvs()
+    expect(bases).toEqual([tmpdir(), join(root, 'home', 'spill'), process.cwd()])
   })
 
   it('routes a sweep filesystem failure to ctx.logger.warn (service warn wiring)', async () => {

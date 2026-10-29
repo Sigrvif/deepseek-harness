@@ -11,17 +11,16 @@
 
 import { Context } from '@deepseek-ai/cordis'
 import { resolve } from 'node:path'
-import { tmpdir } from 'node:os'
 import z from '@deepseek-ai/schemastery'
 import { SpillLocator, SpillStore } from '@deepseek-ai/dsh-spill'
 import type { SaveTextSpill, SpillRef } from '@deepseek-ai/dsh-spill'
 import { gatherSweepRoots, sweepSpillRoots } from './cleanup.ts'
 import type { SweepRoot, WarnFn } from './cleanup.ts'
-import { privateRoot, saveTextFile } from './store.ts'
+import { privateRoot, privateRootBases, saveTextFile } from './store.ts'
 
 export { discoverDefaultRoots, sweepSpillRoots } from './cleanup.ts'
 export type { SweepOptions, SweepRoot, WarnFn } from './cleanup.ts'
-export { DEFAULT_ROOT_PREFIX, encodeSegment, isErrno, privateRoot, saveTextFile, sessionDir } from './store.ts'
+export { DEFAULT_ROOT_PREFIX, createPrivateRoot, encodeSegment, isErrno, privateRoot, privateRootBases, saveTextFile, sessionDir } from './store.ts'
 export type { SavedText, SaveTextOptions } from './store.ts'
 
 /** Milliseconds in one day — converts the `cleanupPeriodDays` config to the sweep cutoff. */
@@ -135,15 +134,16 @@ export class LocalSpillStore extends SpillStore {
   }
 
   /**
-   * The directory scanned for prior default `dsh-spill-*` roots — the OS tmpdir,
-   * where {@link privateRoot} creates them (accumulation only happens there). A
-   * test overrides this to point discovery at an isolated fixture instead of the
-   * real tmpdir; it is a test seam, not a deployment knob.
+   * The directories scanned for prior default `dsh-spill-*` roots — every base
+   * {@link privateRoot} may create them under (the OS tmpdir plus the fallback
+   * bases for hosts where %TEMP% is not writable). A test overrides this to
+   * point discovery at an isolated fixture instead of the real bases; it is a
+   * test seam, not a deployment knob.
    *
-   * @returns The base directory to scan for default spill roots.
+   * @returns The base directories to scan for default spill roots.
    */
-  protected defaultRootsBase(): string {
-    return tmpdir()
+  protected defaultRootsBase(): string[] {
+    return privateRootBases()
   }
 
   async saveText(input: SaveTextSpill): Promise<SpillRef> {
