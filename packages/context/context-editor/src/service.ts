@@ -85,6 +85,39 @@ export class ContextEditorService extends TypertRemoteService {
     return record
   }
 
+  @Remote('edit-message')
+  async editMessage(request: { sessionId: SessionId; targetSeq: number; text: string; blockIndex?: number }): Promise<ContextPreview> {
+    const blockIndex = request.blockIndex
+    await editMessageOp(this.ctx, request.sessionId, request.targetSeq, {
+      text: request.text,
+      ...(blockIndex === undefined ? {} : { blockIndex }),
+    })
+    return this.preview({ sessionId: request.sessionId })
+  }
+
+  @Remote('exclude-range')
+  async excludeRange(request: { sessionId: SessionId; startSeq: number; endSeq: number }): Promise<ContextPreview> {
+    await excludeRangeOp(this.ctx, request.sessionId, request.startSeq, request.endSeq)
+    return this.preview({ sessionId: request.sessionId })
+  }
+
+  @Remote('restore-range')
+  async restoreRange(request: { sessionId: SessionId; startSeq: number; endSeq: number }): Promise<ContextPreview> {
+    await restoreRange(this.ctx, request.sessionId, request.startSeq, request.endSeq)
+    return this.preview({ sessionId: request.sessionId })
+  }
+
+  @Remote('expand-checkpoint')
+  async expandCheckpoint(request: { sessionId: SessionId; checkpointSeq: number }): Promise<ContextPreview> {
+    await expandCheckpoint(this.ctx, request.sessionId, request.checkpointSeq)
+    return this.preview({ sessionId: request.sessionId })
+  }
+
+  @Remote('create-recovery-branch')
+  async createRecoveryBranch(request: { sessionId: SessionId; boundarySeq: number }): Promise<{ sessionId: SessionId }> {
+    return { sessionId: await createRecoveryBranch(this.ctx, request.sessionId, request.boundarySeq) }
+  }
+
   private async requests(): Promise<KvTable<string, CapturedRequest>> {
     await this.ready
     if (this.requestsTable === undefined) throw new Error('context-editor: requests table unavailable')

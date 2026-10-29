@@ -189,9 +189,9 @@ describe('excludeRange', () => {
     expect(preview.rows[0]?.excluded).toBe(false)
     expect(preview.rows[1]?.excluded).toBe(true)
     expect(preview.rows[1]?.excludes).toEqual([start, end])
-    // Until the derivation rule (next task) lands, the empty replacement still
-    // derives as a message; afterwards only the untouched prefix remains.
+    // The derivation rule drops the excluded replacement from model input:
+    // only the untouched prefix (the user message) remains.
     const derived = session.deriveMessages()
-    expect(derived.length).toBe(2)
+    expect(derived.length).toBe(1)
   })
 })
