@@ -233,7 +233,7 @@ describe('LocalSpillStore service', () => {
     // touch the real tmpdir; assert only that the default landed on config.
     const emptyBase = mkdtempSync(join(tmpdir(), 'dsh-empty-'))
     class Isolated extends LocalSpillStore {
-      protected override defaultRootsBase(): string { return emptyBase }
+      protected override defaultRootsBase(): string[] { return [emptyBase] }
     }
     try {
       const fiber = await ctx.plugin(Isolated, { root })
@@ -472,7 +472,7 @@ describe('startup cleanup sweep', () => {
     mkdirSync(cfgDir, { recursive: true })
     const cfgOld = join(cfgDir, 'old.txt'); writeAged(cfgOld, 'x', 40)
     class Discovering extends LocalSpillStore {
-      protected override defaultRootsBase(): string { return fakeTmp }
+      protected override defaultRootsBase(): string[] { return [fakeTmp] }
     }
     try {
       const ctx = new Context()
@@ -499,7 +499,7 @@ describe('startup cleanup sweep', () => {
     mkdirSync(dir, { recursive: true })
     const old = join(dir, 'old.txt'); writeAged(old, 'x', 40)
     class Discovering extends LocalSpillStore {
-      protected override defaultRootsBase(): string { return fakeTmp }
+      protected override defaultRootsBase(): string[] { return [fakeTmp] }
     }
     try {
       const ctx = new Context()
