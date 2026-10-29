@@ -12,7 +12,7 @@ import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
 import { MessageId } from '@deepseek-ai/dsh-llm'
 import { randomUUID } from 'node:crypto'
-import { foldSurface } from '@deepseek-ai/dsh-session'
+import { foldSurface, SessionSeq } from '@deepseek-ai/dsh-session'
 import { applyOperations } from './edits.ts'
 import type { Replacement } from './edits.ts'
 import { messageOf } from './projection.ts'
@@ -152,6 +152,6 @@ export async function createRecoveryBranch(
   sessionId: SessionId,
   boundarySeq: number,
 ): Promise<SessionId> {
-  const child = ctx.sessions.fork(sessionId, boundarySeq)
+  const child = ctx.sessions.fork(sessionId, SessionSeq(boundarySeq))
   return child.id
 }

@@ -8,7 +8,7 @@ export const contextEditorDomain = defineDomain({
   name: 'context_editor',
   version: 1,
   tables: {
-    requests: domainTable<string, CapturedRequest>(capturedRequestSchema),
-    overrides: domainTable<string, OverridesRecord>(overridesRecordSchema),
+    requests: domainTable<string, CapturedRequest>(capturedRequestSchema as never),
+    overrides: domainTable<string, OverridesRecord>(overridesRecordSchema as never),
   },
 })

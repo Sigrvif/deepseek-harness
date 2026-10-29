@@ -428,6 +428,10 @@
     - id: ui-message-feedback
       name: '@deepseek-ai/dsh-client-ui-message-feedback'
 
+    # fork(context-editor): the Context tab (browser half of the native editor).
+    - id: ui-context-editor
+      name: '@deepseek-ai/dsh-client-ui-context-editor'
+
     # Model selection: the /model popupSelect + composer seat over session.models.
     - id: ui-model-selection
       name: '@deepseek-ai/dsh-client-ui-model-selection'

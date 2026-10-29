@@ -1,6 +1,7 @@
 /** Durable records of the Context Editor's two storage tables. */
 
 import { z } from 'zod'
+import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
 /** One outbound model request as dispatched, captured for the Requests pane. */
 export interface CapturedRequest {
@@ -15,11 +16,11 @@ export interface CapturedRequest {
   /** Requested model identity. */
   model: string
   /** Call configuration as dispatched (after Context Editor overrides). */
-  config: Record<string, unknown>
-  /** Tool schemas as dispatched. */
-  tools?: unknown[]
-  /** Final message list as dispatched. */
-  messages: unknown[]
+  config: { [key: string]: JsonValue }
+  /** Tool schemas as dispatched (JSON snapshot of the schemas). */
+  tools?: JsonValue[]
+  /** Final message list as dispatched (JSON snapshot). */
+  messages: JsonValue[]
   /** Stream outcome. */
   status: 'dispatched' | 'error' | 'aborted'
   /** Error message when `status` is `'error'`. */
@@ -30,28 +31,30 @@ export interface CapturedRequest {
 export interface OverridesRecord {
   /** Tool names removed from the request's tool list. */
   removedTools: string[]
-  /** Replacement schemas by exact tool name (renames are refused upstream of storage). */
-  toolEdits: Record<string, unknown>
+  /** Replacement schema fragments by exact tool name (renames are refused upstream of storage). */
+  toolEdits: { [key: string]: JsonValue }
   /** Whitelisted parameter overrides merged into every agent-loop request. */
-  params: Record<string, number | string[]>
+  params: { temperature?: number; maxTokens?: number; stop?: string[]; presencePenalty?: number; frequencyPenalty?: number }
 }
 
-export const capturedRequestSchema: z.ZodType<CapturedRequest> = z.object({
+// Storage schemas stay deliberately loose: the durable payload is the
+// JSON-lossless request snapshot, and the wire boundary re-types it.
+export const capturedRequestSchema = z.object({
   seq: z.number(),
   time: z.string(),
   purpose: z.enum(['compaction', 'session-title']).optional(),
   provider: z.string(),
   model: z.string(),
   config: z.record(z.string(), z.unknown()),
-  tools: z.array(z.unknown()).optional(),
-  messages: z.array(z.unknown()),
+  tools: z.array(z.custom<JsonValue>()).optional(),
+  messages: z.array(z.custom<JsonValue>()),
   status: z.enum(['dispatched', 'error', 'aborted']),
   error: z.string().optional(),
 })
 
-export const overridesRecordSchema: z.ZodType<OverridesRecord> = z.object({
+export const overridesRecordSchema = z.object({
   removedTools: z.array(z.string()),
-  toolEdits: z.record(z.string(), z.unknown()),
+  toolEdits: z.record(z.string(), z.custom<JsonValue>()),
   params: z.record(z.string(), z.union([z.number(), z.array(z.string())])),
 })
 
@@ -62,8 +65,8 @@ export interface ContextRow {
   role: 'system' | 'developer' | 'user' | 'assistant' | 'tool'
   /** Concatenated text of text/reasoning blocks. */
   text: string
-  /** Full content blocks as stored. */
-  blocks: unknown[]
+  /** Full content blocks as stored (JSON snapshot). */
+  blocks: JsonValue[]
   /** True when this replacement is excluded from model input. */
   excluded: boolean
   /** Source sequences of an edited replacement's original event(s). */
@@ -79,9 +82,9 @@ export interface ContextPreview {
   rows: ContextRow[]
   totalTokens: number
   /** Latest request/header config as stored. */
-  config: Record<string, unknown>
+  config: { [key: string]: JsonValue }
   /** Latest request/header tool schemas, when any were sent. */
-  tools?: unknown[]
+  tools?: JsonValue[]
 }
 
 declare module '@deepseek-ai/dsh-typert-protocol' {

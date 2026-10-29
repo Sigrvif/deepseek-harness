@@ -7,6 +7,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import type { KvTable } from '@deepseek-ai/dsh-storage-domain'
+import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import type { CapturedRequest } from './types.ts'
 
 /** Requests kept per session; older records are deleted as new ones arrive (spec §4.1a). */
@@ -71,9 +72,9 @@ export function installRequestCapture(ctx: Context, table: KvTable<string, Captu
         ...options.temperature === undefined ? {} : { temperature: options.temperature },
         ...options.maxTokens === undefined ? {} : { maxTokens: options.maxTokens },
         ...options.stop === undefined ? {} : { stop: options.stop },
-      }) as Record<string, unknown>,
-      ...options.tools === undefined ? {} : { tools: jsonSafe(options.tools) as unknown[] },
-      messages: jsonSafe(options.messages) as unknown[],
+      }) as { [key: string]: JsonValue },
+      ...options.tools === undefined ? {} : { tools: jsonSafe(options.tools) as JsonValue[] },
+      messages: jsonSafe(options.messages) as JsonValue[],
       status: 'dispatched',
     }
     void table.put(key, record).then(() => { prune(sessionId) }).catch(fail)

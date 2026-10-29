@@ -7,6 +7,7 @@ import { estimateMessage } from '@deepseek-ai/dsh-token-meter/estimate'
 import { foldSurface } from '@deepseek-ai/dsh-session'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { ContentBlock, Message } from '@deepseek-ai/dsh-llm'
+import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import type { ContextPreview, ContextRow } from './types.ts'
 
 const ROLES: Record<string, ContextRow['role']> = {
@@ -78,7 +79,7 @@ export function previewFromEvents(sessionId: string, events: readonly SessionEve
       seq,
       role: ROLES[event.type] ?? 'user',
       text: textOf(message.content),
-      blocks: message.content as unknown[],
+      blocks: message.content as unknown as JsonValue[],
       excluded,
       ...(replaced && sources !== undefined && sources.length > 0
         ? excluded ? { excludes: sources } : { editedFrom: sources }
@@ -86,13 +87,13 @@ export function previewFromEvents(sessionId: string, events: readonly SessionEve
       estimateTokens: estimateMessage(message),
     })
   }
-  let config: Record<string, unknown> = {}
-  let tools: unknown[] | undefined
+  let config: { [key: string]: JsonValue } = {}
+  let tools: JsonValue[] | undefined
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index]
     if (event?.type !== 'request/header') continue
-    config = { ...event.data.header.config }
-    tools = event.data.header.tools === undefined ? undefined : [...event.data.header.tools]
+    config = { ...event.data.header.config } as { [key: string]: JsonValue }
+    tools = event.data.header.tools === undefined ? undefined : ([...event.data.header.tools] as unknown as JsonValue[])
     break
   }
   return {

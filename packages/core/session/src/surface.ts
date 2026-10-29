@@ -118,7 +118,7 @@ export function isReplacementSurfaceEvent(
  * @returns the derived message, or null when the event produces none.
  */
 /** fork(context-editor): structural block shape for the exclusion marker check. */
-type ContentBlockLike = { type?: string; text?: string }
+type ContentBlockLike = { readonly type?: string; readonly text?: string }
 
 export function deriveEventMessage(
   event: SessionEvent,
@@ -133,8 +133,8 @@ export function deriveEventMessage(
   const contextEditMarker = (event.data as { contextEdit?: { mode?: string } }).contextEdit
   if (contextEditMarker?.mode === 'excluded') {
     const candidate = event.type === 'user/message'
-      ? event.data as { content?: ContentBlockLike[] }
-      : (event.data as { message?: { content?: ContentBlockLike[] } }).message
+      ? event.data as { content?: readonly ContentBlockLike[] }
+      : (event.data as { message?: { content?: readonly ContentBlockLike[] } }).message
     const content = candidate?.content
     const empty = content === undefined || content.length === 0
       || content.every(block => typeof block === 'object' && block !== null

@@ -1,6 +1,8 @@
 /** The `contextEditor` remote: read-side surface projection and request-log access. */
 
 import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-session-persistence'
+import type {} from '@deepseek-ai/dsh-storage-domain'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { registerContextEditOverrides } from '@deepseek-ai/dsh-agent-loop'
 import type { Domain, KvTable } from '@deepseek-ai/dsh-storage-domain'
@@ -8,6 +10,8 @@ import type { SessionId } from '@deepseek-ai/dsh-session'
 import { keyFor, installRequestCapture } from './capture.ts'
 import type { RequestCapture } from './capture.ts'
 import { condenseRange } from './condense.ts'
+import { editMessage as editMessageOp, excludeRange as excludeRangeOp } from './edits.ts'
+import { createRecoveryBranch, expandCheckpoint, restoreRange } from './restore.ts'
 import { buildOverrides, validateParams } from './overrides.ts'
 import { contextEditorDomain } from './domain.ts'
 import { previewFromEvents } from './projection.ts'
@@ -54,7 +58,7 @@ export class ContextEditorService extends TypertRemoteService {
   }
 
   @Remote('set-tools')
-  async setTools(request: { sessionId: SessionId; removedTools: string[]; toolEdits: Record<string, unknown> }): Promise<OverridesRecord> {
+  async setTools(request: { sessionId: SessionId; removedTools: string[]; toolEdits: OverridesRecord['toolEdits'] }): Promise<OverridesRecord> {
     const table = await this.overrides()
     const known = await this.knownToolNames(request.sessionId)
     for (const name of Object.keys(request.toolEdits)) {
@@ -74,7 +78,7 @@ export class ContextEditorService extends TypertRemoteService {
   }
 
   @Remote('set-params')
-  async setParams(request: { sessionId: SessionId; params: Record<string, number | string[]> }): Promise<OverridesRecord> {
+  async setParams(request: { sessionId: SessionId; params: OverridesRecord['params'] }): Promise<OverridesRecord> {
     validateParams(request.params)
     const table = await this.overrides()
     const previous = await table.get(String(request.sessionId))
@@ -89,9 +93,9 @@ export class ContextEditorService extends TypertRemoteService {
   }
 
   @Remote('get-overrides')
-  async getOverrides(request: { sessionId: SessionId }): Promise<{ record: OverridesRecord | undefined; inheritedByForks: false }> {
+  async getOverrides(request: { sessionId: SessionId }): Promise<{ record: OverridesRecord | null; inheritedByForks: false }> {
     const table = await this.overrides()
-    return { record: await table.get(String(request.sessionId)), inheritedByForks: false }
+    return { record: (await table.get(String(request.sessionId))) ?? null, inheritedByForks: false }
   }
 
   /** Tool names from the session's latest request/header (empty set when none recorded). */

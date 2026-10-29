@@ -5,7 +5,8 @@
  * The model-side skip for excluded replacements lives in core derivation (Task 5). */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { Session } from '@deepseek-ai/dsh-session'
+import type {} from '@deepseek-ai/dsh-session-persistence'
+import { Session, SessionLogOffset } from '@deepseek-ai/dsh-session'
 import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock, Message } from '@deepseek-ai/dsh-llm'
@@ -77,11 +78,11 @@ function replacementFor(
     throw new RemoteError('context-editor/bad-range', `event ${String(targetSeq)} is not a message`, { sessionId, startSeq: targetSeq, endSeq: targetSeq })
   }
   const data = dataRecord(target)
-  const edited: Message = {
-    ...message,
-    content: editContent(message, edit.text, edit.blockIndex),
-  }
-  if (edit.blockIndex !== undefined) edited.source = stripEditedSignature(edited.source, edit.blockIndex, edited.content)
+  const content = editContent(message, edit.text, edit.blockIndex)
+  const source = edit.blockIndex === undefined
+    ? message.source
+    : stripEditedSignature(message.source, edit.blockIndex, content)
+  const edited = { ...message, content, source } as Message
   const surfaceOp = { op: 'replace' as const, startSeq: targetSeq, endSeq: targetSeq }
   if (target.type === 'user/message') {
     return { type: target.type, data: { ...edited, ...marker('edited') }, surfaceOp, sourceEventSeqs: [targetSeq] }
@@ -121,7 +122,8 @@ function rangeReplacement(startSeq: number, endSeq: number): { type: SessionEven
 export interface Replacement {
   type: SessionEvent['type']
   data: Record<string, unknown>
-  surfaceOp: { op: 'replace'; startSeq: number; endSeq: number } | 'append'
+  /** Absent for log-only protocol events (compaction start/summary/end). */
+  surfaceOp?: { op: 'replace'; startSeq: number; endSeq: number } | 'append'
   sourceEventSeqs?: number[]
 }
 
@@ -143,10 +145,16 @@ export async function applyOperations(
     if (turnOpen(events)) {
       throw new RemoteError('context-editor/busy', `session '${sessionId}' has an open turn`, { sessionId })
     }
-    const append = (r: Replacement): SessionEvent => live.append(r.type, r.data as never, {
-      surfaceOp: r.surfaceOp,
-      ...(r.sourceEventSeqs !== undefined ? { sourceEventSeqs: r.sourceEventSeqs } : {}),
-    } as never)
+    const append = (r: Replacement): SessionEvent => live.append(
+      r.type,
+      r.data as never,
+      (r.surfaceOp === undefined && r.sourceEventSeqs === undefined
+        ? []
+        : [{
+          ...(r.surfaceOp === undefined ? {} : { surfaceOp: r.surfaceOp }),
+          ...(r.sourceEventSeqs === undefined ? {} : { sourceEventSeqs: r.sourceEventSeqs }),
+        } as never]) as never,
+    )
     build(events, append)
     if (!(await ctx.sessions.flush(live))) {
       throw new Error(`context-editor: no durability listener for live session '${sessionId}'`)
@@ -171,15 +179,21 @@ export async function applyOperations(
   const detached = Session.create(sessionId)
   for (const event of stored) {
     detached.append(event.type, event.data as never, {
-      surfaceOp: event.surfaceOp,
+      surfaceOp: event.surfaceOp as never,
       ...(event.sourceEventSeqs !== undefined ? { sourceEventSeqs: event.sourceEventSeqs } : {}),
-    })
+    } as never)
   }
-  build(stored, r => detached.append(r.type, r.data as never, {
-    surfaceOp: r.surfaceOp,
-    ...(r.sourceEventSeqs !== undefined ? { sourceEventSeqs: r.sourceEventSeqs } : {}),
-  } as never))
-  const fresh = detached.snapshotEvents(stored.length)
+  build(stored, r => detached.append(
+    r.type,
+    r.data as never,
+    (r.surfaceOp === undefined && r.sourceEventSeqs === undefined
+      ? []
+      : [{
+        ...(r.surfaceOp === undefined ? {} : { surfaceOp: r.surfaceOp }),
+        ...(r.sourceEventSeqs === undefined ? {} : { sourceEventSeqs: r.sourceEventSeqs }),
+      } as never]) as never,
+  ))
+  const fresh = detached.snapshotEvents(SessionLogOffset(stored.length))
   const handle = await ctx.sessionPersistence.open(sessionId, 'write')
   try {
     const { events: reread } = await handle.read()
