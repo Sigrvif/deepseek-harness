@@ -40,11 +40,14 @@ class ScriptedAdapter extends LlmAdapter {
 
 /** Failing-put table: `put`/`update` reject, everything else works — capture must survive it. */
 function brokenTable<K, V>(working: KvTable<K, V>): KvTable<K, V> {
-  return {
-    ...working,
-    put: async () => { throw new Error('storage unavailable') },
-    update: async () => { throw new Error('storage unavailable') },
-  }
+  return new Proxy(working, {
+    get(target, property, receiver) {
+      if (property === 'put' || property === 'update') {
+        return async () => { throw new Error('storage unavailable') }
+      }
+      return Reflect.get(target, property, receiver)
+    },
+  })
 }
 
 async function mounted(broken = false) {
