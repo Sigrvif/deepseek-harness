@@ -28,3 +28,6 @@ export const DECOMPRESS_DESCRIPTION =
 
 export const SEARCH_CONTEXT_DESCRIPTION =
   'Keyword-search the conversation: fold summaries, the original messages inside folds, and the visible messages. Use it to recover details you remember but no longer see - file paths, ids, decisions, codewords. Results name folds ([fold id]) or visible messages ([message seq N]) with snippets; to read a whole fold back, call decompress with its id.'
+
+export const ACP_STATUS_DESCRIPTION =
+  'Show context usage: current pressure against the window, the fold ledger (what was folded, how much it saved), and what to do next. Call this before compressing to see the state, and whenever context feels tight.'

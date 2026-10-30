@@ -20,12 +20,15 @@ import { appendFold, deriveFoldRecords, FoldError, messageOf, planFold } from '.
 import type { FoldPlan, FoldRecord } from './fold.ts'
 import { searchContext } from './search.ts'
 import type { SearchHit } from './search.ts'
+import { foldUsage, renderStatus, usageLine } from './status.ts'
+import type { FoldUsage } from './status.ts'
 import {
   COMPRESS_DESCRIPTION,
   COMPRESS_KEEP_LAST_PARAMETER_DESCRIPTION,
   COMPRESS_SUMMARY_PARAMETER_DESCRIPTION,
   DECOMPRESS_DESCRIPTION,
   SEARCH_CONTEXT_DESCRIPTION,
+  ACP_STATUS_DESCRIPTION,
 } from './prompts.ts'
 
 /** Every fold knob, resolved from plugin config (Task 8) or constructed directly in tests. */
@@ -47,6 +50,7 @@ export interface CompressValue {
   savedTokens?: number
   checkpointSeq?: number
   foldId?: string
+  usage?: string
   reason?: string
   hint?: string
 }
@@ -210,7 +214,40 @@ function searchContextTool(config: ResolvedFoldConfig): ToolDefinition {
   })
 }
 
-function compressTool(config: ResolvedFoldConfig): ToolDefinition {
+/** The acp_status tool's canonical value. */
+export interface AcpStatusValue {
+  ok: boolean
+  text: string
+}
+
+function acpStatusTool(ctx: Context, config: ResolvedFoldConfig): ToolDefinition {
+  return defineTool({
+    name: 'acp_status',
+    description: ACP_STATUS_DESCRIPTION,
+    parameters: {},
+    output: {
+      schema: {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' },
+          text: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+      render: (_args: Record<string, never>, value: AcpStatusValue): ContentBlock[] => [{ type: 'text', text: value.text }],
+    },
+    async execute(_args: Record<string, never>, exec): Promise<AcpStatusValue> {
+      const session = exec.agent?.session
+      if (session === undefined) {
+        throw new Error('context-fold acp_status: no agent session on the execution context; status runs only inside an agent turn')
+      }
+      const usage: FoldUsage = await foldUsage(ctx, session)
+      return { ok: true, text: renderStatus(usage, config.pressureNudgeRatio) }
+    },
+  })
+}
+
+function compressTool(ctx: Context, config: ResolvedFoldConfig): ToolDefinition {
   return defineTool({
     name: 'compress',
     description: COMPRESS_DESCRIPTION,
@@ -227,6 +264,7 @@ function compressTool(config: ResolvedFoldConfig): ToolDefinition {
           savedTokens: { type: 'number' },
           checkpointSeq: { type: 'number' },
           foldId: { type: 'string' },
+          usage: { type: 'string' },
           reason: { type: 'string' },
           hint: { type: 'string' },
         },
@@ -238,7 +276,7 @@ function compressTool(config: ResolvedFoldConfig): ToolDefinition {
         }
         return [{
           type: 'text',
-          text: `Folded ${String(value.folded ?? 0)} messages into fold ${value.foldId ?? '?'} (saved ~${String(value.savedTokens ?? 0)} tokens). The originals stay recoverable with decompress; acp_status shows current usage.`,
+          text: `Folded ${String(value.folded ?? 0)} messages into fold ${value.foldId ?? '?'} (saved ~${String(value.savedTokens ?? 0)} tokens). ${value.usage ?? ''} The originals stay recoverable with decompress.`,
         }]
       },
     },
@@ -276,12 +314,14 @@ function compressTool(config: ResolvedFoldConfig): ToolDefinition {
         provider: route?.provider ?? 'unknown',
         model: route?.model ?? 'unknown',
       })
+      const usage = usageLine(await foldUsage(ctx, session))
       return {
         ok: true,
         folded: plan.shadowedSeqs.length,
         savedTokens: Math.max(0, plan.foldedTokens - summaryTokens),
         checkpointSeq: Number(checkpointSeq),
         foldId: plan.foldId.slice(0, 8),
+        usage,
       }
     },
   })
@@ -295,9 +335,10 @@ function compressTool(config: ResolvedFoldConfig): ToolDefinition {
  */
 export function registerFoldTools(ctx: Context, config: ResolvedFoldConfig): () => void {
   const disposers: Array<() => void> = [
-    ctx.tools.register(compressTool(config)),
+    ctx.tools.register(compressTool(ctx, config)),
     ctx.tools.register(decompressTool(config)),
     ctx.tools.register(searchContextTool(config)),
+    ctx.tools.register(acpStatusTool(ctx, config)),
   ]
   return () => {
     for (const dispose of disposers) dispose()
