@@ -11,7 +11,7 @@ import type {
 } from '@deepseek-ai/dsh-api-remotes/client'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import {
-  ModelsSection, needsSetup, providerCopy, providerTargetLabel, removeProviderProfile,
+  ModelsSection, internals, needsSetup, providerCopy, providerTargetLabel, removeProviderProfile,
 } from '../src/client/ModelsSection.tsx'
 import type { ModelsSectionInjected, ModelsSectionProps } from '../src/client/ModelsSection.tsx'
 import { ProviderEditor, pathOps } from '../src/client/ProviderEditor.tsx'
@@ -341,6 +341,9 @@ async function mountSection(overrides: Parameters<typeof scriptedFace>[0] = {}) 
  * anywhere, so the whole-section DeepSeek route owns the first-run setup card.
  */
 async function mountFirstRun(overrides: Parameters<typeof scriptedFace>[0] = {}) {
+  // These cases exercise the upstream first-run setup card, which the fork
+  // disables by default; re-arm it for the duration of each one.
+  internals.setupCardEnabled = true
   const scripted = scriptedFace(overrides)
   scripted.face.credentials.describe.mockImplementation((refs: string[]) =>
     Promise.resolve(remoteOk(
@@ -361,6 +364,8 @@ async function mountDeepSeekCard(overrides: Parameters<typeof scriptedFace>[0] =
 }
 
 describe('ModelsSection', () => {
+  afterEach(() => { internals.setupCardEnabled = false })
+
   it('keeps the credential state unconfirmed when its redacted read fails', async () => {
     const scripted = scriptedFace()
     scripted.face.credentials.describe.mockResolvedValue(remoteFail('credentials unavailable', 'gateway/internal'))
@@ -642,7 +647,9 @@ describe('ModelsSection', () => {
     expect(document.body.textContent).toBe('')
   })
 
-  it('shows a configuration diagnostic inside the first-run setup card', async () => {
+  // fork(local-test): the setup card never opens, so the diagnostic renders
+  // inside the provider's row and the editor opens through Edit.
+  it('shows a configuration diagnostic inside the provider row', async () => {
     const scripted = scriptedFace()
     const failure = 'The provider configuration needs repair'
     scripted.face.llm.listProviders.mockResolvedValue(remoteOk([
@@ -658,8 +665,9 @@ describe('ModelsSection', () => {
 
     const card = screen.getByRole('listitem')
     expect(within(card).getByRole('alert').textContent).toBe(failure)
-    expect(within(card).getByLabelText(en.keyInput)).toBeTruthy()
-    expect(within(card).queryByRole('button', { name: deepSeekCopy(en.editProvider) })).toBeNull()
+    expect(within(card).queryByLabelText(en.keyInput)).toBeNull()
+    fireEvent.click(within(card).getByRole('button', { name: deepSeekCopy(en.editProvider) }))
+    expect(screen.getByLabelText(en.keyInput)).toBeTruthy()
   })
 
   it('dispatches the provider-card seat per rendered row, keyed by the owning namespace', async () => {
@@ -759,10 +767,14 @@ describe('ModelsSection', () => {
       renderSlot={() => null}
     />)
 
-    const missing = screen.getByRole('img', { name: en.credentialMissing })
-    expect(missing.getAttribute('title')).toBe(en.credentialMissing)
-    expect(missing.className).toContain('credentialDotMissing')
-    expect(missing.closest('li')?.textContent).toContain('openai')
+    // fork(local-test): DeepSeek's unkeyed row carries the same missing dot,
+    // so pick the openai dot out of the set.
+    const missingDots = screen.getAllByRole('img', { name: en.credentialMissing })
+    expect(missingDots.length).toBeGreaterThan(1)
+    const missing = missingDots.find(dot => dot.closest('li')?.textContent?.includes('openai'))
+    expect(missing).toBeDefined()
+    expect(missing!.getAttribute('title')).toBe(en.credentialMissing)
+    expect(missing!.className).toContain('credentialDotMissing')
     expect(screen.queryByRole('img', { name: en.credentialConfigured })).toBeNull()
     expect(screen.getByText('zombie').closest('li')?.querySelector('[role="img"]')).toBeNull()
   })
@@ -797,6 +809,14 @@ describe('ModelsSection', () => {
       apiKeyEnv: 'X',
       credential,
     })
+    // fork(local-test): the setup card never opens itself — an unconfigured
+    // provider renders as an ordinary row with the missing-key dot, since the
+    // deployment's primary flow (a local runtime) is not key-gated.
+    expect(internals.setupCardEnabled).toBe(false)
+    expect(needsSetup(row(undefined), false)).toBe(false)
+    expect(needsSetup(row({ configured: true, writable: true }), false)).toBe(false)
+    // The re-armed upstream posture keeps its own semantics.
+    internals.setupCardEnabled = true
     expect(needsSetup(row(undefined), false)).toBe(true)
     expect(needsSetup(row({ configured: true, writable: true }), false)).toBe(false)
     const nested = { ...row(undefined), entry: { ...entry, settingsPath: ['providers', 'x'] } }
@@ -1578,6 +1598,9 @@ describe('ModelsSection', () => {
   })
 
   it('renders the card without the stored-key hint when the credential probe is refused', async () => {
+    // Upstream's first-run setup card is the vehicle for the fallback
+    // placeholder; the fork disables the seat by default, so re-arm it here.
+    internals.setupCardEnabled = true
     const { face } = scriptedFace()
     face.credentials.describe = vi.fn(() => Promise.resolve(remoteFail('no credential provider')))
     const controller = new ModelsSettingsStore(ctxWith(face), settingsSchema, new SettingsDescribeMirror(ctxWith(face)))
@@ -1755,17 +1778,24 @@ describe('ModelsSection', () => {
     expect(mutate).not.toHaveBeenCalled()
   })
 
-  it('opens the add card on the catalog mode with both modes offered', async () => {
-    await mountSection()
+  // fork(local-test): the add card opens on the custom mode — the local
+  // runtime is the primary flow — with the catalog one tab away.
+  it('opens the add card on the custom mode with both modes offered', async () => {
+    const scripted = scriptedFace()
+    scripted.face.llm.listConfigurableProviders.mockResolvedValue(remoteOk([
+      { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
+      { provider: 'openai', displayName: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'] },
+    ]))
+    await mountFace(scripted)
     fireEvent.click(screen.getByRole('button', { name: en.add }))
     const modes = screen.getByRole('tablist', { name: en.addMode })
-    expect(within(modes).getByRole('tab', { name: en.addCatalog }).getAttribute('aria-selected')).toBe('true')
-    expect(within(modes).getByRole('tab', { name: en.addCustom }).getAttribute('aria-selected')).toBe('false')
-    expect(screen.getByText(en.addCatalogHint)).toBeTruthy()
-    expect(screen.queryByText(en.addCustomHint)).toBeNull()
-    expect(screen.getByRole('combobox', { name: en.provider })).toBeTruthy()
-    // The custom panel is mounted but hidden, so its fields are not reachable.
-    expect(screen.queryByRole('textbox', { name: en.customRoute })).toBeNull()
+    expect(within(modes).getByRole('tab', { name: en.addCustom }).getAttribute('aria-selected')).toBe('true')
+    expect(within(modes).getByRole('tab', { name: en.addCatalog }).getAttribute('aria-selected')).toBe('false')
+    expect(screen.getByText(en.addCustomHint)).toBeTruthy()
+    expect(screen.queryByText(en.addCatalogHint)).toBeNull()
+    expect(screen.getByRole('textbox', { name: en.customRoute })).toBeTruthy()
+    // The catalog panel is mounted but hidden, so its fields are not reachable.
+    expect(screen.queryByRole('combobox', { name: en.provider })).toBeNull()
   })
 
   it('switches between the modes without losing either draft', async () => {

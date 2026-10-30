@@ -70,9 +70,13 @@ export function joinProviderDirectory(
       active: true,
     })
   }
+  // fork(local-test): third-party providers first — the offline posture's
+  // primary flow is a user-added local runtime, so the built-in DeepSeek
+  // routes render below everything the user adds. (Upstream pinned the
+  // DeepSeek routes first.)
   return rows.toSorted((left, right) =>
-    (left.provider === 'deepseek-account' ? 0 : left.provider === 'deepseek-official' ? 1 : 2)
-      - (right.provider === 'deepseek-account' ? 0 : right.provider === 'deepseek-official' ? 1 : 2))
+    (left.provider === 'deepseek-account' || left.provider === 'deepseek-official' ? 1 : 0)
+      - (right.provider === 'deepseek-account' || right.provider === 'deepseek-official' ? 1 : 0))
 }
 
 /** One provider row the page renders. */

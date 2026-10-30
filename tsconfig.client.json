@@ -140,6 +140,8 @@
     { "path": "./packages/client/ui-goal" },
     { "path": "./packages/client/ui-message-feedback" },
     { "path": "./packages/client/ui-context-editor" },
+    // fork(local-test): the Fork additions plugins tab.
+    { "path": "./packages/client/ui-fork-info" },
     { "path": "./packages/client/ui-model-selection" },
     { "path": "./packages/client/ui-agent-preset" },
     { "path": "./packages/client/ui-permission-presets" },

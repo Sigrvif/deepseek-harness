@@ -1,0 +1,39 @@
+.tab {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 720px;
+}
+
+.intro {
+  margin: 0;
+  opacity: 0.85;
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--dsh-border, #333);
+  border-radius: 10px;
+}
+
+.name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.summary {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.attribution {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.6;
+}

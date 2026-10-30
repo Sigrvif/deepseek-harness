@@ -42,7 +42,8 @@ export const en = {
   keyPlaceholder: 'Enter your API key',
   keyPlaceholderFallback: 'Leave blank to use env as auth ({hint})',
   keyPlaceholderSaved: 'Leave blank to use saved credentials',
-  keyFallbackMissing: 'Env var not detected. Enter an API key, or configure {hint} in your env.',
+  // fork(local-test): neutral guidance — a missing env fallback is normal here.
+  keyFallbackMissing: 'No key yet. Enter an API key above, or set {hint} in your environment and leave this blank to use it.',
   keyFallbackDetected: 'Env var detected. ({hint})',
   keyFallbackDetectedHidden: 'Env var detected.',
   keyFallbackUnchecked: 'Environment credential status has not been confirmed.',
@@ -186,7 +187,8 @@ export const zh: { [Key in keyof typeof en]: string } = {
   keyPlaceholder: '输入 API 密钥',
   keyPlaceholderFallback: '留空使用环境认证（{hint}）',
   keyPlaceholderSaved: '留空使用已保存凭据',
-  keyFallbackMissing: '未检测到环境变量。请填写 API 密钥，或设置环境变量 {hint}。',
+  // fork(local-test): neutral guidance — a missing env fallback is normal here.
+  keyFallbackMissing: '尚未填写密钥。可在上方输入 API 密钥，或设置环境变量 {hint} 并留空以自动使用。',
   keyFallbackDetected: '已检测到环境变量（{hint}）',
   keyFallbackDetectedHidden: '已检测到环境变量',
   keyFallbackUnchecked: '环境凭据状态尚未确认',
@@ -327,7 +329,8 @@ export const ja = {
   'keyPlaceholder': 'APIキーを入力',
   'keyPlaceholderFallback': '空欄のままにすると環境変数を認証に使用します ({hint})',
   'keyPlaceholderSaved': '空欄のままにすると保存済みの認証情報を使用します',
-  'keyFallbackMissing': '環境変数が検出されません。APIキーを入力するか、環境変数に{hint}を設定してください。',
+  // fork(local-test): neutral guidance — a missing env fallback is normal here.
+  'keyFallbackMissing': 'キーが未設定です。上に入力するか、環境変数 {hint} を設定して空欄のままにすると自動的に使われます。',
   'keyFallbackDetected': '環境変数を検出しました。({hint})',
   'keyFallbackDetectedHidden': '環境変数を検出しました。',
   'keyFallbackUnchecked': '環境変数の認証情報の状態は確認されていません。',
@@ -468,7 +471,8 @@ export const es = {
   keyPlaceholder: 'Ingrese su clave API',
   keyPlaceholderFallback: 'Déjelo en blanco para usar env como autenticación ({hint})',
   keyPlaceholderSaved: 'Déjelo en blanco para usar las credenciales guardadas',
-  keyFallbackMissing: 'No se detectó la variable de entorno. Ingrese una clave API o configure {hint} en su entorno.',
+  // fork(local-test): neutral guidance — a missing env fallback is normal here.
+  keyFallbackMissing: 'Aún sin clave. Introduzca una clave API arriba, o configure {hint} en su entorno y deje esto vacío para usarla.',
   keyFallbackDetected: 'Se detectó var env. ({hint})',
   keyFallbackDetectedHidden: 'Se detectó var env.',
   keyFallbackUnchecked: 'El estado de la credencial ambiental no ha sido confirmado.',
@@ -609,7 +613,8 @@ export const fr = {
   keyPlaceholder: 'Entrez votre clé API',
   keyPlaceholderFallback: 'Laissez vide pour utiliser env comme authentification ({hint})',
   keyPlaceholderSaved: "Laissez vide pour utiliser les informations d'identification enregistrées",
-  keyFallbackMissing: "Var d'environnement non détectée. Entrez une clé API ou configurez {hint} dans votre environnement.",
+  // fork(local-test): neutral guidance — a missing env fallback is normal here.
+  keyFallbackMissing: 'Pas encore de clé. Saisissez une clé API ci-dessus, ou définissez {hint} dans votre environnement et laissez vide pour l’utiliser.',
   keyFallbackDetected: "Var d'environnement détectée. ({hint})",
   keyFallbackDetectedHidden: "Var d'environnement détectée.",
   keyFallbackUnchecked: 'Le statut des qualifications en environnement n’a pas été confirmé.',
@@ -750,7 +755,8 @@ export const de = {
   keyPlaceholder: 'Geben Sie Ihren API-Schlüssel ein',
   keyPlaceholderFallback: 'Lassen Sie das Feld leer, um env als Authentifizierung zu verwenden ({hint})',
   keyPlaceholderSaved: 'Lassen Sie das Feld leer, um gespeicherte Anmeldeinformationen zu verwenden',
-  keyFallbackMissing: 'Umgebungsvariable nicht erkannt. Geben Sie einen API-Schlüssel ein oder konfigurieren Sie {hint} in Ihrer Umgebung.',
+  // fork(local-test): neutral guidance — a missing env fallback is normal here.
+  keyFallbackMissing: 'Noch kein Schlüssel. Oben einen API-Schlüssel eingeben oder {hint} in der Umgebung setzen und leer lassen, um ihn zu verwenden.',
   keyFallbackDetected: 'Umgebungsvariable erkannt. ({hint})',
   keyFallbackDetectedHidden: 'Umgebungsvariable erkannt.',
   keyFallbackUnchecked: 'Der Status der Umweltberechtigung wurde nicht bestätigt.',
@@ -891,7 +897,8 @@ export const ru = {
   keyPlaceholder: 'Введите свой ключ API',
   keyPlaceholderFallback: 'Оставьте пустым, чтобы использовать env в качестве аутентификации ({hint})',
   keyPlaceholderSaved: 'Оставьте поле пустым, чтобы использовать сохраненные учетные данные.',
-  keyFallbackMissing: 'Переменная Env не обнаружена. Введите ключ API или настройте {hint} в своей среде.',
+  // fork(local-test): neutral guidance — a missing env fallback is normal here.
+  keyFallbackMissing: 'Ключа пока нет. Введите API-ключ выше или задьте {hint} в окружении и оставьте поле пустым.',
   keyFallbackDetected: 'Обнаружена переменная Env. ({hint})',
   keyFallbackDetectedHidden: 'Обнаружена переменная Env.',
   keyFallbackUnchecked: 'Статус экологической сертификации не подтвержден.',
@@ -1032,7 +1039,8 @@ export const pt = {
   keyPlaceholder: 'Insira sua chave API',
   keyPlaceholderFallback: 'Deixe em branco para usar env como autenticação ({hint})',
   keyPlaceholderSaved: 'Deixe em branco para usar credenciais salvas',
-  keyFallbackMissing: 'Env var não detectado. Insira uma chave API ou configure {hint} em seu ambiente.',
+  // fork(local-test): neutral guidance — a missing env fallback is normal here.
+  keyFallbackMissing: 'Ainda sem chave. Insira uma chave API acima, ou defina {hint} no seu ambiente e deixe em branco para usá-la.',
   keyFallbackDetected: 'Variável de ambiente detectada. ({hint})',
   keyFallbackDetectedHidden: 'Variável de ambiente detectada.',
   keyFallbackUnchecked: 'O status da credencial ambiental não foi confirmado.',

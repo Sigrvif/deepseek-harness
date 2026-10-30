@@ -440,6 +440,10 @@
     - id: ui-context-editor
       name: '@deepseek-ai/dsh-client-ui-context-editor'
 
+    # fork(local-test): the Fork additions tab in the Plugins settings page.
+    - id: ui-fork-info
+      name: '@deepseek-ai/dsh-client-ui-fork-info'
+
     # Model selection: the /model popupSelect + composer seat over session.models.
     - id: ui-model-selection
       name: '@deepseek-ai/dsh-client-ui-model-selection'

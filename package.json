@@ -306,5 +306,10 @@
     "@deepseek-ai/dsh-experimental-forge-github": "workspace:*",
     "@deepseek-ai/dsh-experimental-forge-session": "workspace:*",
     "@deepseek-ai/dsh-action-cards": "workspace:*"
+  },
+  "dshFork": {
+    "version": "2.1.0",
+    "base": "0.2.2-alpha.2",
+    "upstreamCommit": "e9b2168"
   }
 }

@@ -193,6 +193,23 @@ describe('client build environment', () => {
       DSH_CLIENT_EXTRA: 'preserved',
       DSH_CLIENT_VERSION: '1.2.3-rc.4',
     })
+    // fork(local-test): a manifest carrying dshFork.version adds the fork env.
+    const manifestPath = join(fixtureRoot, 'package.json')
+    const manifestBytes = readFileSync(manifestPath, 'utf8')
+    const manifest = JSON.parse(manifestBytes)
+    write(manifestPath, `${JSON.stringify({ ...manifest, dshFork: { version: '2.1.0' } }, null, 2)}\n`)
+    expect(repositoryClientBuildEnvironment(fixtureRoot, {
+      DSH_CLIENT_COMMIT_HASH: COMMIT_HASH,
+    })).toEqual({
+      DSH_CLIENT_COMMIT_HASH: COMMIT_HASH.slice(0, 7),
+      DSH_CLIENT_FORK_VERSION: '2.1.0',
+      // The uncommitted manifest edit dirties the fixture worktree.
+      DSH_CLIENT_GIT_DIRTY: 'true',
+      DSH_CLIENT_VERSION: '1.2.3-rc.4',
+    })
+    // Restore the committed bytes so the dirty-state steps below start clean.
+    write(manifestPath, manifestBytes)
+
     expect(officialClientBuildEnvironment(fixtureRoot)).toEqual({
       DSH_CLIENT_BUILD_PROFILE: 'official',
       DSH_CLIENT_COMMIT_HASH: commit,

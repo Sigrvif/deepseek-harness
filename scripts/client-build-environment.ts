@@ -85,6 +85,25 @@ export function repositoryVersion(root: string): string {
 }
 
 /**
+ * fork(local-test): resolve the local fork package version from the optional
+ * `dshFork.version` field of the repository manifest. Stock checkouts carry
+ * no such field and build exactly as upstream.
+ * @param root - repository root containing the authoritative package.json.
+ * @returns the fork package version, or undefined on a stock manifest.
+ */
+export function repositoryForkVersion(root: string): string | undefined {
+  let manifest: unknown
+  try {
+    manifest = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'))
+  } catch {
+    return undefined
+  }
+  if (!isObject(manifest) || !isObject(manifest.dshFork)) return undefined
+  const version = manifest.dshFork.version
+  return typeof version === 'string' && version.trim() !== '' ? version.trim() : undefined
+}
+
+/**
  * Read whether Git reports any staged, unstaged, untracked, or submodule change.
  * @param root - repository root whose worktree is inspected.
  * @returns true or false inside a Git worktree; undefined without Git metadata.
@@ -130,6 +149,12 @@ export function repositoryClientBuildEnvironment(
     DSH_CLIENT_COMMIT_HASH: repositoryCommitHash(root, environment),
     ...(dirty === true ? { DSH_CLIENT_GIT_DIRTY: 'true' } : {}),
     DSH_CLIENT_VERSION: repositoryVersion(root),
+    // fork(local-test): surface the fork package version to the client when
+    // the manifest names one (see CurrentVersionRow).
+    ...(() => {
+      const forkVersion = repositoryForkVersion(root)
+      return forkVersion === undefined ? {} : { DSH_CLIENT_FORK_VERSION: forkVersion }
+    })(),
   }
 }
 

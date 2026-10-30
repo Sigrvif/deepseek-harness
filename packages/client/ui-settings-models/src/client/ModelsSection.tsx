@@ -170,6 +170,14 @@ export async function removeProviderProfile(
 }
 
 /**
+ * fork(local-test): test hook — re-arms upstream's first-run setup card, which
+ * this deployment disables (the primary flow is a local runtime reached
+ * through a user-added provider, so an unconfigured route renders as an
+ * ordinary row with the missing-key dot and opens only through Edit).
+ */
+export const internals = { setupCardEnabled: false }
+
+/**
  * Whether a whole-section provider still needs its first key: an unconfigured
  * credential opens the setup card instead of showing a row. This is the
  * first-run posture alone — a user who can already reach some provider gets an
@@ -179,6 +187,7 @@ export async function removeProviderProfile(
  * @returns whether to render the setup card.
  */
 export function needsSetup(row: ProviderRow, anyUsable: boolean): boolean {
+  if (!internals.setupCardEnabled) return false
   if (anyUsable || row.entry.provider === 'deepseek-account') return false
   if (row.entry.settingsPath.length > 0) return false
   return row.credential?.configured !== true
@@ -255,7 +264,10 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
   if (state.status === 'error' && hasReadySnapshot) setHasReadySnapshot(false)
   const [editing, setEditing] = useState<EditorTarget | undefined>(undefined)
   const [addOpen, setAddOpen] = useState(false)
-  const [addMode, setAddMode] = useState<AddMode>('catalog')
+  // fork(local-test): the add card opens on the custom mode — declaring a
+  // local model API is this deployment's primary flow; the catalog stays one
+  // tab away. (Upstream opens on the catalog.)
+  const [addMode, setAddMode] = useState<AddMode>('custom')
   /** The modes shown since the add card opened; each keeps its panel mounted. */
   const [visited, setVisited] = useState<ReadonlySet<AddMode>>(() => new Set())
   /** Whether each add panel has a write or an interrogation in flight. */

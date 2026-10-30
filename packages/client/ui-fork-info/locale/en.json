@@ -1,0 +1,9 @@
+{
+  "tab.label": "Fork additions",
+  "tab.intro": "This package carries additions beyond upstream DeepSeek Harness, built into the harness itself. They are always active; this page is here so they stay easy to find.",
+  "editor.name": "Native Context Editor",
+  "editor.summary": "Every session gains a Context tab next to Chat: the exact model-bound context with in-place edits, exclusions, restores, the captured request log, and this session's tools & generation-parameter overrides. Edits are durable session events and survive restarts.",
+  "fold.name": "Native Context Fold",
+  "fold.summary": "The model can compress consumed conversation into summaries it writes itself, through four tools (compress, decompress, search_context, acp_status), with gentle growth nudges. Folds are reversible checkpoints on the session log: they change the next request, survive restarts, and never destroy the originals.",
+  "tab.attribution": "Context Fold's behavior is adapted from the open-source billion-context project (MIT + attribution term). See the fork documentation for the full inventory."
+}

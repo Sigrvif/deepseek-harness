@@ -242,6 +242,21 @@ describe('current version', () => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 
+  // fork(local-test): the row names the local fork package beside the dsh base version.
+  it('appends the local fork package when the build carries fork metadata', () => {
+    vi.stubEnv('DSH_CLIENT_VERSION', '1.2.3-rc.4')
+    vi.stubEnv('DSH_CLIENT_FORK_VERSION', '2.1.0')
+    const translate: TriggerContentProps['t'] = (key, params) => {
+      let text = (en as Record<string, string>)[key] ?? key
+      for (const [name, value] of Object.entries(params ?? {})) text = text.replace(`{${name}}`, String(value))
+      return text
+    }
+    render(<CurrentVersionRow {...kit} t={translate} />)
+    expect(screen.getByText('Current version: 1.2.3-rc.4')).toBeTruthy()
+    // The fork segment renders as its own span beside the base version.
+    expect(screen.getByText(/Local fork package: 2\.1\.0/u)).toBeTruthy()
+  })
+
   it('omits the row when a partial build has no version metadata', () => {
     vi.stubEnv('DSH_CLIENT_VERSION', undefined)
     const view = render(<CurrentVersionRow {...kit} t={t} />)

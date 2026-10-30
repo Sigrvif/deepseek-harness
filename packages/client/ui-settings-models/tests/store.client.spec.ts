@@ -37,13 +37,15 @@ it.each([false, true])('retains configuration diagnostics when the route is acti
   }])
 })
 
-it('places account and official before third-party providers', () => {
+// fork(local-test): the offline posture leads with the providers the user
+// actually adds; the built-in DeepSeek routes sink below them.
+it('places third-party providers before the built-in DeepSeek routes', () => {
   const providers = ['custom', 'deepseek-official', 'deepseek-account', 'openai']
   const directory = providers.map(provider => ({
     provider, displayName: provider, settingsNs: 'fixture', settingsPath: [],
   }))
   expect(joinProviderDirectory([], directory).map(row => row.provider))
-    .toEqual(['deepseek-account', 'deepseek-official', 'custom', 'openai'])
+    .toEqual(['custom', 'openai', 'deepseek-official', 'deepseek-account'])
   expect(directory.map(row => row.provider)).toEqual(providers)
 })
 
@@ -184,9 +186,10 @@ describe('ModelsSettingsStore', () => {
     expect(state.status).toBe('ready')
     expect(state.writable).toBe(true)
     expect(state.credentialError).toBeNull()
-    // Named references first (rows order), then the derived <ROUTE>_API_KEY
-    // of every row whose profile names none — one batched describe.
-    expect(seenRefs).toEqual([['DEEPSEEK_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GHOST_API_KEY']])
+    // Named references first (rows order — fork(local-test) sorts the
+    // DeepSeek routes last), then the derived <ROUTE>_API_KEY of every row
+    // whose profile names none — one batched describe.
+    expect(seenRefs).toEqual([['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GHOST_API_KEY', 'DEEPSEEK_API_KEY']])
     const byProvider = new Map(state.rows.map(row => [row.entry.provider, row]))
     expect(byProvider.get('deepseek-official')).toMatchObject({
       configured: true,
@@ -562,12 +565,16 @@ it('removes the account row after sign-out and restores it after sign-in', async
   const { ctx, mirror } = api(overrides)
   const store = new ModelsSettingsStore(ctx, settingsSchema, mirror)
   await store.load()
-  expect(store.store.getSnapshot().rows[0]?.entry.provider).toBe('deepseek-account')
+  // fork(local-test): the account route renders below user-addable providers.
+  const accountAt = (): number => store.store.getSnapshot().rows.map(row => row.entry.provider).indexOf('deepseek-account')
+  expect(accountAt()).toBeGreaterThan(0)
+  const firstNonDeepSeek = store.store.getSnapshot().rows[0]?.entry.provider
+  expect(firstNonDeepSeek).not.toBe('deepseek-account')
   overrides.accountAvailable = false
   await store.load()
   expect(store.store.getSnapshot().rows.map(row => row.entry.provider)).not.toContain('deepseek-account')
   expect(store.store.getSnapshot().rows).toHaveLength(DIRECTORY.length)
   overrides.accountAvailable = true
   await store.load()
-  expect(store.store.getSnapshot().rows[0]?.entry.provider).toBe('deepseek-account')
+  expect(accountAt()).toBeGreaterThan(0)
 })

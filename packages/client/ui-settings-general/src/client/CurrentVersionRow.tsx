@@ -10,5 +10,15 @@ import css from './CurrentVersionRow.module.css'
 export function CurrentVersionRow({ t }: PropsRuntime<'settings.general.item'> & PropsLocale<'settings'>) {
   const version = process.env.DSH_CLIENT_VERSION
   if (version === undefined) return null
-  return <div className={css.row}>{t('general.currentVersion', { version })}</div>
+  // fork(local-test): name the local fork package beside the dsh base
+  // version, so the row answers both "which dsh is this" and "which fork
+  // build". Stock builds carry no DSH_CLIENT_FORK_VERSION and render exactly
+  // as upstream.
+  const fork = process.env.DSH_CLIENT_FORK_VERSION
+  return (
+    <div className={css.row}>
+      {t('general.currentVersion', { version })}
+      {fork === undefined ? null : <span>{` · ${t('general.forkPackage', { fork })}`}</span>}
+    </div>
+  )
 }
