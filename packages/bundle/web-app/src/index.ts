@@ -175,7 +175,40 @@ async function openBrowser(url: string): Promise<void> {
 export const internals: {
   resolveDistIndex: () => string
   openBrowser: (url: string) => Promise<void>
-} = { resolveDistIndex, openBrowser }
+  probeServing: (url: string, attempts?: number, pauseMs?: number) => Promise<void>
+} = { resolveDistIndex, openBrowser, probeServing }
+
+/** How many serving probes the handoff waits through, and how long each probe request itself may take. */
+const PROBE_ATTEMPTS = 150
+const PROBE_PAUSE_MS = 200
+const PROBE_TIMEOUT_MS = 2000
+
+/**
+ * Wait until the advertised root answers an HTTP request. The listener
+ * accepts connections before every serving dependency has finished mounting,
+ * and a browser pointed into that first window loads an empty shell. Any
+ * HTTP response — including the 303/401 of the unauthenticated root — proves
+ * the serving pipeline is live. Bounded: past the budget the handoff
+ * proceeds anyway (the previous behavior), with a warning.
+ *
+ * @param url - The advertised root to probe.
+ * @param attempts - Probe count (tests override the budget).
+ * @param pauseMs - Pause between probes (tests override the budget).
+ */
+async function probeServing(url: string, attempts: number = PROBE_ATTEMPTS, pauseMs: number = PROBE_PAUSE_MS): Promise<void> {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) })
+      return
+    } catch {
+      if (attempt === attempts) break
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, pauseMs)
+      })
+    }
+  }
+  console.warn(`web-app: ${url} did not answer within the ${String(attempts)}-probe budget; handing off anyway`)
+}
 
 /**
  * Mount the Web runtime: dist serving, the bash runtime variable, the URL
@@ -222,11 +255,16 @@ export function apply(ctx: Context, config: Config): void {
       // soon as it opens. Neither may run while sibling rows such as the /api
       // route owner are still mounting. Await Loader settlement first; a
       // hand-built tree without a Loader is already the complete tree.
-      const announceReady = (): void => {
+      const announceReady = async (): Promise<void> => {
         if (ANNOUNCED_ROOTS.has(connectionCtx.root)) return
         const webUrl = appRootUrl()
         const authenticatedUrl = connectionCtx.connection.authenticatedUrl(webUrl)
         ANNOUNCED_ROOTS.add(connectionCtx.root)
+        // fork(web-app): the listener accepts connections before every serving
+        // dependency is live, and a browser pointed into that first window
+        // loads an empty shell. Print and hand off only once the root
+        // demonstrably answers a request.
+        await internals.probeServing(webUrl)
         if (config.printUrl) {
           console.log(`dsh web: ${authenticatedUrl}`)
         }
@@ -242,7 +280,7 @@ export function apply(ctx: Context, config: Config): void {
       // readiness by waiting for its Loader tree, or announces at once in a
       // hand-built tree without Loader.
       const settled = connectionCtx.get('loader')?.await()
-      if (settled === undefined) announceReady()
+      if (settled === undefined) void announceReady()
       else {
         void settled.then(async () => {
           await auditStartupEntries(connectionCtx.root, 'dsh web', () => {})
@@ -251,7 +289,7 @@ export function apply(ctx: Context, config: Config): void {
           // mislead, and reading torn-down services would turn a clean shutdown
           // into a crash.
           if (connectionCtx.get('webServer') !== undefined
-            && connectionCtx.get('connection') !== undefined) announceReady()
+            && connectionCtx.get('connection') !== undefined) await announceReady()
         }).catch(() => {
           // Boot owns the failure diagnostic; readiness remains unpublished.
         })

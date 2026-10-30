@@ -1,5 +1,6 @@
 /** Default-browser startup over a real Loader tree and listening Web server. */
 
+import { createServer } from 'node:http'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -121,5 +122,37 @@ describe('web app browser startup', () => {
 
     expect(openedUrl).toBe(`http://127.0.0.1:${String(ctx.webServer.port)}/?token=fixture-token`)
     expect(openedStatus).toBe(200)
+  })
+})
+
+describe('the serving probe', () => {
+  it('waits for the first HTTP answer before resolving', async () => {
+    let answered = 0
+    const server = createServer((request, response) => {
+      answered += 1
+      setTimeout(() => { response.end('up') }, 300)
+    })
+    await new Promise<void>((resolve) => { server.listen(0, '127.0.0.1', resolve) })
+    const url = `http://127.0.0.1:${String((server.address() as { port: number }).port)}/`
+    const began = Date.now()
+    try {
+      await internals.probeServing(url, 40, 50)
+      expect(answered).toBeGreaterThan(0)
+      expect(Date.now() - began).toBeGreaterThanOrEqual(250)
+    } finally {
+      server.close()
+    }
+  })
+
+  it('resolves with a warning once the budget expires without an answer', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      // Port 1 on loopback refuses connections immediately; the probe burns
+      // its tiny budget and still resolves.
+      await internals.probeServing('http://127.0.0.1:1/', 3, 10)
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('did not answer within the 3-probe budget'))
+    } finally {
+      warn.mockRestore()
+    }
   })
 })

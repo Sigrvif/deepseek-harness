@@ -24,6 +24,9 @@ let dist: string | undefined
 beforeEach(() => {
   vi.stubEnv('SSH_CONNECTION', '')
   vi.stubEnv('SSH_TTY', '')
+  // The tests advertise URLs that nothing serves; the serving probe would
+  // burn its whole budget inside every expectation. Each test opens instantly.
+  internals.probeServing = async () => {}
 })
 
 afterEach(() => {
@@ -32,12 +35,17 @@ afterEach(() => {
   vi.unstubAllEnvs()
   internals.resolveDistIndex = originalResolve
   internals.openBrowser = originalOpenBrowser
+  internals.probeServing = originalProbeServing
   if (dist !== undefined) rmSync(dist, { recursive: true, force: true })
   dist = undefined
 })
 
 const originalResolve = internals.resolveDistIndex
 const originalOpenBrowser = internals.openBrowser
+// These tests advertise URLs that nothing serves; the serving probe would
+// burn its whole budget inside every expectation. Each test opens instantly.
+const originalProbeServing = internals.probeServing
+internals.probeServing = async () => {}
 
 type BrowserLauncher = ChildProcess & { stderr: PassThrough }
 
