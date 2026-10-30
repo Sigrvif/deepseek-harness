@@ -20,6 +20,7 @@ Every diff hunk in upstream files carries a `fork(context-editor):` marker.
 | `packages/context/context-editor` | host | Request capture (`llm/stream` listener), context projection, surface edits/exclusions/restores, selective condensation, tools/params overrides, the `contextEditor` Typert remote, and the `context_editor` storage domain (request log + overrides) |
 | `packages/context/context-fold` | host | Native Context Fold: model-driven, reversible compression — `compress`/`decompress`/`search_context`/`acp_status` tools, a system-prompt section, and growth nudges; folds land as `origin: 'model-fold'` compaction checkpoints and all fold state derives from the session log. Behavior adapted from billion-context (MIT + attribution; see its `src/prompts.ts`) |
 | `packages/client/ui-context-editor` | web client | The Context tab: effective context (search/edit/exclude/restore/batch), captured request log, tools & params forms; self-mounts the remote |
+| `packages/client/ui-fork-info` | web client | The "Fork additions" tab in the Plugins settings page: names the two additions (Context Editor, Context Fold) with summaries and the billion-context attribution |
 
 ## 2. Marked upstream edits (small, each hunk commented `fork(context-editor):`)
 
@@ -40,7 +41,12 @@ Every diff hunk in upstream files carries a `fork(context-editor):` marker.
 | `tsconfig.host.json` | one reference line each (new packages in the build graphs) | Build enumeration |
 | `packages/compaction/compaction/src/types.ts` | `compaction/summary` event gains optional `origin: 'model-fold'`, `foldedTokens`, `summaryTokens` fields | Marks model-driven folds so fold records derive from the log; engine backends are unaffected |
 | `packages/core/system-prompt/src/index.ts` | new `CONTEXT_FOLD: 2350` section-order slot | Centrally allocated position for the fold system section (context-tool family) |
-| `packages/bundle/web-app/cordis.patch.yml` | host row `context-fold` beside `context-editor` | Bundle wiring |
+| `packages/bundle/web-app/cordis.patch.yml` | host rows `context-fold` + `ui-fork-info` beside `context-editor`; browser roster rows | Bundle wiring |
+| `packages/client/ui-settings-models/src/client/store.ts` | provider directory sorts the built-in DeepSeek routes LAST (upstream pins them first) | Offline local-test posture: user-added providers (the local runtime) lead the page |
+| `packages/client/ui-settings-models/src/client/ModelsSection.tsx` | the first-run setup card is disabled (`internals.setupCardEnabled`, default off) and the add card opens on the Custom model API tab (upstream: catalog) | No keyless-provider greeting card; the local-runtime flow is the primary add path |
+| `packages/client/ui-settings-models/src/client/locales.ts` | `keyFallbackMissing` reworded to neutral guidance in all 8 languages | A missing env fallback is normal here, not an alarm |
+| `packages/client/ui-settings-general/src/client/CurrentVersionRow.tsx` + `locales.ts` | optional fork segment: `DSH_CLIENT_FORK_VERSION` renders "Local fork package: …" beside the dsh base version | The About row names both the base and the fork build |
+| `scripts/client-build-environment.ts` | `repositoryClientBuildEnvironment` emits `DSH_CLIENT_FORK_VERSION` from the manifest's optional `dshFork.version` field | Single source for the fork version (root package.json) |
 
 Upstream TEST files updated to the new contracts (marked in-file):
 `packages/core/session/tests/canonical-envelopes.spec.ts` (assistant citations
