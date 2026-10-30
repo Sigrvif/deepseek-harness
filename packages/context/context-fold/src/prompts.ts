@@ -22,3 +22,6 @@ export const COMPRESS_SUMMARY_PARAMETER_DESCRIPTION =
 
 export const COMPRESS_KEEP_LAST_PARAMETER_DESCRIPTION =
   'Protect this many of the most recent messages from the fold; defaults to the configured tail.'
+
+export const DECOMPRESS_DESCRIPTION =
+  'Restore the original messages behind a fold and read them again. Pass the fold id shown by acp_status or a compress receipt (or omit it for the newest fold). The originals return as this tool result - the conversation surface stays folded, so reading a fold costs only the returned text. Long folds are truncated; use search_context for targeted retrieval instead of restoring everything.'

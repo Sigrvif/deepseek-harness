@@ -12,16 +12,17 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import type { Session } from '@deepseek-ai/dsh-session'
+import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import { estimateMessage } from '@deepseek-ai/dsh-token-meter/estimate'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { appendFold, FoldError, planFold } from './fold.ts'
-import type { FoldPlan } from './fold.ts'
+import { appendFold, deriveFoldRecords, FoldError, messageOf, planFold } from './fold.ts'
+import type { FoldPlan, FoldRecord } from './fold.ts'
 import {
   COMPRESS_DESCRIPTION,
   COMPRESS_KEEP_LAST_PARAMETER_DESCRIPTION,
   COMPRESS_SUMMARY_PARAMETER_DESCRIPTION,
+  DECOMPRESS_DESCRIPTION,
 } from './prompts.ts'
 
 /** Every fold knob, resolved from plugin config (Task 8) or constructed directly in tests. */
@@ -60,6 +61,102 @@ function gateValue(error: FoldError): CompressValue {
     reason: error.message,
     hint: 'Nothing older than the protected tail is foldable yet; call acp_status to see usage and what can be folded.',
   }
+}
+
+/** The decompress tool's canonical value. */
+export interface DecompressValue {
+  ok: boolean
+  foldId?: string
+  messageCount?: number
+  content?: string
+  reason?: string
+  hint?: string
+}
+
+/** Markdown rendering of one fold's original messages, in fold order. */
+function renderFoldOriginals(
+  events: readonly SessionEvent[],
+  record: FoldRecord,
+  cap: number,
+): { content: string; truncated: boolean } {
+  const lines: string[] = []
+  for (const seq of record.shadowedSeqs) {
+    const message = messageOf(events[Number(seq)])
+    if (message === undefined) continue
+    const text = message.content
+      .map(block => (typeof (block as { text?: unknown }).text === 'string' ? (block as { text: string }).text : ''))
+      .join('')
+    lines.push(`[${message.role}] ${text}`)
+  }
+  const full = lines.join('\n')
+  if (full.length <= cap) return { content: full, truncated: false }
+  return {
+    content: `${full.slice(0, cap)}\n\n[fold ${record.foldId.slice(0, 8)} truncated at ${String(cap)} chars - use search_context to find specific content within the fold]`,
+    truncated: true,
+  }
+}
+
+function decompressTool(config: ResolvedFoldConfig): ToolDefinition {
+  return defineTool({
+    name: 'decompress',
+    description: DECOMPRESS_DESCRIPTION,
+    parameters: {
+      foldId: { type: 'string', description: 'Fold id from acp_status or a compress receipt (short form works); omit for the newest fold.' },
+    },
+    output: {
+      schema: {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' },
+          foldId: { type: 'string' },
+          messageCount: { type: 'number' },
+          content: { type: 'string' },
+          reason: { type: 'string' },
+          hint: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+      render: (_args: { foldId?: string }, value: DecompressValue): ContentBlock[] => {
+        if (!value.ok) return [{ type: 'text', text: `${value.reason ?? 'decompress was refused'}\n\n${value.hint ?? ''}` }]
+        return [{ type: 'text', text: value.content ?? '' }]
+      },
+    },
+    async execute(args: { foldId?: string }, exec): Promise<DecompressValue> {
+      const session = exec.agent?.session
+      if (session === undefined) {
+        throw new Error('context-fold decompress: no agent session on the execution context; decompress runs only inside an agent turn')
+      }
+      const events = session.snapshotEvents()
+      const records = deriveFoldRecords(events)
+      if (records.length === 0) {
+        return { ok: false, reason: 'no folds recorded for this session yet - nothing to decompress', hint: 'Call acp_status to see usage; compress creates folds.' }
+      }
+      let target: FoldRecord
+      if (args.foldId === undefined) {
+        target = records[records.length - 1] as FoldRecord
+      } else {
+        const given = args.foldId.trim().toLowerCase()
+        const candidates = given.length >= 8
+          ? records.filter(record => record.foldId.toLowerCase().startsWith(given))
+          : []
+        if (candidates.length !== 1) {
+          return {
+            ok: false,
+            reason: `fold id '${args.foldId}' matches ${String(candidates.length)} folds`,
+            hint: `Available folds: ${records.map(record => record.foldId.slice(0, 8)).join(', ')}. Call acp_status for the full ledger.`,
+          }
+        }
+        target = candidates[0] as FoldRecord
+      }
+      const { content } = renderFoldOriginals(events, target, config.decompressCapChars)
+      return {
+        ok: true,
+        foldId: target.foldId.slice(0, 8),
+        messageCount: target.shadowedSeqs.length,
+        content,
+      }
+    },
+  })
 }
 
 function compressTool(config: ResolvedFoldConfig): ToolDefinition {
@@ -148,6 +245,7 @@ function compressTool(config: ResolvedFoldConfig): ToolDefinition {
 export function registerFoldTools(ctx: Context, config: ResolvedFoldConfig): () => void {
   const disposers: Array<() => void> = [
     ctx.tools.register(compressTool(config)),
+    ctx.tools.register(decompressTool(config)),
   ]
   return () => {
     for (const dispose of disposers) dispose()

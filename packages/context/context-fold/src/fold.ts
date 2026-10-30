@@ -41,7 +41,7 @@ function eventAt(events: readonly SessionEvent[], seq: SessionSeq | undefined): 
 }
 
 /** The message a surface event carries, if any (mirrors the editor's projection helper). */
-function messageOf(event: SessionEvent | undefined): Message | undefined {
+export function messageOf(event: SessionEvent | undefined): Message | undefined {
   if (event === undefined) return undefined
   if (event.type === 'user/message') return event.data as unknown as Message
   if (event.type === 'assistant/message' || event.type === 'tool/result'
