@@ -117,6 +117,35 @@ describe('installNudge', () => {
     expect(nudges(await step(session))).toBe(1)
   })
 
+  it('does not re-nudge on the ratio path without new growth after a fold', async () => {
+    const { step } = await mounted()
+    const session = plainSession('nudge-ratio-rearm')
+    pressure = 92000
+    await step(session)
+    // A fold lands, but the window stays above the ratio threshold.
+    const plan = planFold(session.snapshotEvents(), { keepLast: 2, minFoldChars: 1 })
+    appendFold(session, plan, [{ type: 'text', text: 'Open objectives: cadence re-arm verification' }], { summaryTokens: 8, provider: MODEL, model: MODEL })
+    pressure = 91000
+    expect(nudges(await step(session))).toBe(0)
+    expect(nudges(await step(session))).toBe(0)
+    pressure = 145000
+    expect(nudges(await step(session))).toBe(1)
+  })
+
+  it('re-arms after the context shrinks without a model fold (engine compaction)', async () => {
+    const { step } = await mounted()
+    const session = plainSession('nudge-shrink')
+    await step(session)
+    pressure = 60000
+    await step(session)
+    // The engine's own compaction shrinks the context; no model fold exists,
+    // so the fold-count signal cannot see it.
+    pressure = 30000
+    await step(session)
+    pressure = 85000
+    expect(nudges(await step(session))).toBe(1)
+  })
+
   it('never nudges when the meter has no measurement', async () => {
     const ctx = new Context()
     contexts.push(ctx)

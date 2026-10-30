@@ -1,13 +1,16 @@
 /**
- * Growth and pressure nudges: transient per-step notices telling the model
- * when to consider folding.
+ * Growth and pressure nudges: per-step notices telling the model when to
+ * consider folding.
  *
- * The notice rides `agent/pre-step` exactly like dsh's own model-switch
- * notice — appended to the step's messages for this request only, never
- * persisted to the session log. Cadence follows acp-kernel's nudge
- * discipline (https://github.com/ranxianglei/billion-context, MIT +
- * attribution term): one nudge per threshold crossing, re-armed by a fold
- * landing or another full threshold of growth.
+ * The notice rides `agent/pre-step` like dsh's own model-switch notice; those
+ * messages persist as durable user-role snapshots, so every nudge leaves one
+ * short notice row in the log (bounded below by the cadence, swept up by later
+ * folds). Cadence follows acp-kernel's nudge discipline
+ * (https://github.com/ranxianglei/billion-context, MIT + attribution term):
+ * at most one nudge per full threshold of NEW growth - a fold landing re-arms
+ * the baseline but not the growth gate (the model just acted), while a
+ * context shrink WITHOUT a model fold (the engine's own compaction, editor
+ * exclusions) re-arms everything: the world changed under us.
  * @module
  */
 
@@ -26,8 +29,9 @@ declare module '@deepseek-ai/dsh-llm' {
 
 interface NudgeState {
   baseline: number
+  lastPressure: number
+  /** Pressure at the last fired nudge; absent until the first nudge or after an external-shrink reset. */
   lastNudgePressure: number | undefined
-  nudged: boolean
   foldCount: number
 }
 
@@ -52,17 +56,25 @@ function decide(
 ): UserMessage | undefined {
   const foldCount = deriveFoldRecords(session.snapshotEvents()).length
   const id = String(session.id)
-  const previous = states.get(id)
-  const state: NudgeState = previous === undefined
-    ? { baseline: pressureTokens, lastNudgePressure: undefined, nudged: false, foldCount }
-    : previous
-  if (foldCount !== state.foldCount) {
-    // A fold landed since the last look: growth restarts from here.
-    state.baseline = pressureTokens
-    state.nudged = false
-    state.lastNudgePressure = undefined
-    state.foldCount = foldCount
+  const state: NudgeState = states.get(id) ?? {
+    baseline: pressureTokens,
+    lastPressure: pressureTokens,
+    lastNudgePressure: undefined,
+    foldCount,
   }
+  if (foldCount !== state.foldCount) {
+    // A model fold landed: growth restarts from the folded-down pressure, but
+    // the growth gate stays armed - a window still above the ratio after the
+    // fold must not nudge every step.
+    state.baseline = pressureTokens
+    state.foldCount = foldCount
+  } else if (pressureTokens < state.lastPressure) {
+    // The context shrank with no model fold - engine compaction or an editor
+    // exclusion. Everything re-arms: one fresh nudge is allowed if still tight.
+    state.baseline = pressureTokens
+    state.lastNudgePressure = undefined
+  }
+  state.lastPressure = pressureTokens
   states.set(id, state)
 
   const growth = pressureTokens - state.baseline
@@ -70,10 +82,10 @@ function decide(
   const triggered = growth >= config.nudgeGrowthTokens
     || (ratio !== undefined && ratio >= config.pressureNudgeRatio)
   if (!triggered) return undefined
-  if (state.nudged && pressureTokens - (state.lastNudgePressure ?? pressureTokens) < config.nudgeGrowthTokens) {
+  if (state.lastNudgePressure !== undefined
+    && pressureTokens - state.lastNudgePressure < config.nudgeGrowthTokens) {
     return undefined
   }
-  state.nudged = true
   state.lastNudgePressure = pressureTokens
 
   const usage = contextWindow === undefined
