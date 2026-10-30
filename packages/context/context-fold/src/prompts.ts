@@ -25,3 +25,6 @@ export const COMPRESS_KEEP_LAST_PARAMETER_DESCRIPTION =
 
 export const DECOMPRESS_DESCRIPTION =
   'Restore the original messages behind a fold and read them again. Pass the fold id shown by acp_status or a compress receipt (or omit it for the newest fold). The originals return as this tool result - the conversation surface stays folded, so reading a fold costs only the returned text. Long folds are truncated; use search_context for targeted retrieval instead of restoring everything.'
+
+export const SEARCH_CONTEXT_DESCRIPTION =
+  'Keyword-search the conversation: fold summaries, the original messages inside folds, and the visible messages. Use it to recover details you remember but no longer see - file paths, ids, decisions, codewords. Results name folds ([fold id]) or visible messages ([message seq N]) with snippets; to read a whole fold back, call decompress with its id.'

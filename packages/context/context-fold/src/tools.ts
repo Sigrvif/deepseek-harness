@@ -18,11 +18,14 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { appendFold, deriveFoldRecords, FoldError, messageOf, planFold } from './fold.ts'
 import type { FoldPlan, FoldRecord } from './fold.ts'
+import { searchContext } from './search.ts'
+import type { SearchHit } from './search.ts'
 import {
   COMPRESS_DESCRIPTION,
   COMPRESS_KEEP_LAST_PARAMETER_DESCRIPTION,
   COMPRESS_SUMMARY_PARAMETER_DESCRIPTION,
   DECOMPRESS_DESCRIPTION,
+  SEARCH_CONTEXT_DESCRIPTION,
 } from './prompts.ts'
 
 /** Every fold knob, resolved from plugin config (Task 8) or constructed directly in tests. */
@@ -159,6 +162,54 @@ function decompressTool(config: ResolvedFoldConfig): ToolDefinition {
   })
 }
 
+/** The search_context tool's canonical value. */
+export interface SearchContextValue {
+  ok: boolean
+  query: string
+  hits: SearchHit[]
+  text: string
+}
+
+function searchContextTool(config: ResolvedFoldConfig): ToolDefinition {
+  return defineTool({
+    name: 'search_context',
+    description: SEARCH_CONTEXT_DESCRIPTION,
+    parameters: {
+      query: { type: 'string', required: true, description: 'Keywords to find. Multiple terms are AND-weighted; longer terms count more.' },
+      limit: { type: 'integer', description: 'Maximum hits to return; defaults to the configured search limit.' },
+    },
+    output: {
+      schema: {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' },
+          query: { type: 'string' },
+          hits: { type: 'array', items: { type: 'json' } },
+          text: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+      render: (_args, value): ContentBlock[] => [{ type: 'text', text: String(value.text ?? '') }],
+    },
+    async execute(args: { query: string; limit?: number }, exec) {
+      const session = exec.agent?.session
+      if (session === undefined) {
+        throw new Error('context-fold search_context: no agent session on the execution context; search runs only inside an agent turn')
+      }
+      const events = session.snapshotEvents()
+      const hits = searchContext(args.query, deriveFoldRecords(events), events, args.limit ?? config.searchLimit)
+      const text = hits.length === 0
+        ? `No matches for '${args.query}'. Try different keywords; folds are searchable by their summaries and their original content.`
+        : hits.map(hit => hit.kind === 'fold'
+          ? `[fold ${hit.foldId ?? '?'}] ${hit.snippet}`
+          : `[message seq ${String(hit.seq)}] ${hit.snippet}`)
+          .join('\n')
+      const value: SearchContextValue = { ok: true, query: args.query, hits, text }
+      return { ...value, hits: hits as never[] }
+    },
+  })
+}
+
 function compressTool(config: ResolvedFoldConfig): ToolDefinition {
   return defineTool({
     name: 'compress',
@@ -246,6 +297,7 @@ export function registerFoldTools(ctx: Context, config: ResolvedFoldConfig): () 
   const disposers: Array<() => void> = [
     ctx.tools.register(compressTool(config)),
     ctx.tools.register(decompressTool(config)),
+    ctx.tools.register(searchContextTool(config)),
   ]
   return () => {
     for (const dispose of disposers) dispose()
