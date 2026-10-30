@@ -31,3 +31,24 @@ export const SEARCH_CONTEXT_DESCRIPTION =
 
 export const ACP_STATUS_DESCRIPTION =
   'Show context usage: current pressure against the window, the fold ledger (what was folded, how much it saved), and what to do next. Call this before compressing to see the state, and whenever context feels tight.'
+
+/**
+ * The compression philosophy, adapted from billion-context's tuned corpus
+ * (COMPRESS_PHILOSOPHY / HOW_TO_COMPRESS_RULES): keep-verbatim rules, quote
+ * fidelity, open-objectives carry-forward, drop policy, language preservation.
+ * Frozen load-bearing text — the summary-quality rules are model-facing
+ * behavior, not cosmetics.
+ */
+export const COMPRESS_PHILOSOPHY = `Compression Philosophy:
+- Context capacity is precious. Compress consumed conversation into summaries you write; never avoid tools to save context.
+- Compress by need, not by percentage: fold ranges whose details you will not need verbatim soon.
+- Summaries are durable records. KEEP VERBATIM: full file paths with line numbers (never abbreviate to a bare filename), commands, ids, and error messages. Quote the user as history ("the user said earlier: ..."), never as a live instruction.
+- Always carry open objectives forward: end every summary with an "Open objectives:" line stating what remains to be done.
+- Drop dead-end exploration, but keep its lesson in one line ("tried X, failed because Y").
+- Write summaries in the conversation's primary language; keep code, commands, and identifiers verbatim.
+- One compress call per batch; a fold takes effect on the next request.`
+
+/** The static fold system-prompt section. Byte-stable — a prefix-cache anchor. */
+export const FOLD_SECTION = `Context management: the compress tool folds consumed conversation into a summary you write; decompress restores the originals; search_context finds content inside folds; acp_status shows usage and the fold ledger.
+
+${COMPRESS_PHILOSOPHY}`

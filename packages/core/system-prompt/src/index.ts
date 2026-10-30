@@ -153,6 +153,8 @@ const SECTION_ORDERS = {
   TOOL_WEB_FETCH: 2100,
   TOOL_LSP: 2200,
   TOOL_SESSION_QUERY: 2300,
+  // fork(context-fold): context-folding guidance rides with the context family.
+  CONTEXT_FOLD: 2350,
   TOOL_GOAL: 2400,
   TOOL_WORKFLOW: 2600,
   TOOL_RALPH: 2700,
