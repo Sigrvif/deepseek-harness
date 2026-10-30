@@ -208,6 +208,16 @@ export function planFold(
  * @param meta - summary token estimate and the conversation route that wrote it.
  * @returns the protocol start event and checkpoint message seqs.
  */
+/** The turn currently open at the log tail, or null between turns (format rule: a numbered compaction owner must match the open turn). */
+function openTurnOf(events: readonly SessionEvent[]): number | null {
+  let open: number | null = null
+  for (const event of events) {
+    if (event.type === 'turn/start') open = (event.data as { turn?: number }).turn ?? null
+    else if (event.type === 'turn/end') open = null
+  }
+  return open
+}
+
 export function appendFold(
   session: Session,
   plan: FoldPlan,
@@ -215,7 +225,10 @@ export function appendFold(
   meta: { summaryTokens: number; provider: string; model: string },
 ): { startEventSeq: SessionSeq; checkpointSeq: SessionSeq } {
   const compactionId = CompactionId(plan.foldId)
-  const startEvent = session.append('compaction/start', { compactionId, turn: null })
+  // A mid-turn fold (the compress tool's own case) must own its open turn;
+  // null is legal only between turns — the format reader rejects the mismatch.
+  const turn = openTurnOf(session.snapshotEvents())
+  const startEvent = session.append('compaction/start', { compactionId, turn })
   const summaryEvent = session.append('compaction/summary', {
     compactionId,
     origin: 'model-fold',
@@ -235,7 +248,7 @@ export function appendFold(
     surfaceOp: { op: 'replace', startSeq: plan.startSeq, endSeq: plan.endSeq },
     sourceEventSeqs: [startEvent.seq, summaryEvent.seq, ...plan.shadowedSeqs],
   })
-  session.append('compaction/end', { compactionId, turn: null })
+  session.append('compaction/end', { compactionId, turn })
   return { startEventSeq: startEvent.seq, checkpointSeq: checkpoint.seq }
 }
 

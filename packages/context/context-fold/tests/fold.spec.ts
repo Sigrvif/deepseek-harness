@@ -1,12 +1,25 @@
 /** Fold planning and checkpoint-protocol appends over detached sessions. */
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { Context } from '@deepseek-ai/cordis'
+import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
+import * as JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { CompactionId } from '@deepseek-ai/dsh-compaction'
-import { createSystemMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
+import { ToolCallId, createSystemMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId, SessionSeq } from '@deepseek-ai/dsh-session'
 import { Session } from '@deepseek-ai/dsh-session'
 import { appendFold, deriveFoldRecords, FoldError, planFold } from '../src/fold.ts'
-import { MODEL, addTurn, assistantWithCall, plainSession, surfaceSeqs } from './fixtures.ts'
+import { MODEL, addTurn, assistantCall, assistantWithCall, plainSession, surfaceSeqs, toolResult, user as userMessage } from './fixtures.ts'
+
+const roots: string[] = []
+const contexts: Context[] = []
+afterEach(async () => {
+  for (const ctx of contexts.splice(0)) await ctx.fiber.dispose()
+  for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true })
+})
 
 describe('planFold', () => {
   it('plans a prefix fold that leaves the last keepLast messages visible', () => {
@@ -209,6 +222,51 @@ describe('appendFold', () => {
     const nodes = surfaceSeqs(session)
     for (const seq of plan.shadowedSeqs) expect(nodes).not.toContain(seq)
     expect(nodes).toContain(checkpointSeq)
+  })
+})
+
+describe('appendFold mid-turn durability', () => {
+  it('a fold written during an open turn replays through persistence', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-context-fold-midturn-'))
+    roots.push(root)
+    const ctx = new Context()
+    contexts.push(ctx)
+    await mountAgentLoopTestDependencies(ctx)
+    await ctx.plugin(JsonlSessionPersistence, { root: join(root, 'sessions'), compression: 'none' })
+    const sessionId = SessionId('fold-midturn')
+    const session = ctx.sessions.create(sessionId)
+    // The write handle must exist before the events: pre-handle appends are never routed.
+    await ctx.sessionPersistence.create(session.header)
+    addTurn(session, 1, [
+      { kind: 'user', text: 'first user message stays visible with enough body' },
+      { kind: 'assistant', text: 'assistant answer one with plenty of body text to fold' },
+      { kind: 'user', text: 'second user message with more text' },
+      { kind: 'assistant', text: 'assistant answer two with plenty of body text to fold' },
+    ])
+    // Turn 2 in the real loop's shape: the fold lands DURING tool execution —
+    // between tool/call and tool/result of one step.
+    session.append('turn/start', { turn: 2 })
+    session.append('step/start', { turn: 2, step: 1 })
+    session.append('user/message', userMessage('current turn request with body text'), { surfaceOp: 'append' })
+    session.append('step/end', { turn: 2, step: 1 })
+    session.append('step/start', { turn: 2, step: 2 })
+    session.append('assistant/message', { stream: [], turn: 2, step: 2, message: assistantCall('c2') }, { surfaceOp: 'append' })
+    session.append('tool/call', { turn: 2, step: 2, callId: ToolCallId('c2'), name: 'read', arguments: '{}' })
+    const plan = planFold(session.snapshotEvents(), { keepLast: 1, minFoldChars: 1 })
+    appendFold(session, plan, [{ type: 'text', text: 'SUMMARY: mid-turn fold' }], { summaryTokens: 4, provider: 'p', model: 'm' })
+    session.append('tool/result', { turn: 2, step: 2, message: toolResult('c2') }, { surfaceOp: 'append' })
+    session.append('step/end', { turn: 2, step: 2 })
+    session.append('turn/end', { turn: 2, reason: { kind: 'stop' } as never })
+    expect(await ctx.sessions.flush(session)).toBe(true)
+    // Cold read must accept the log (the format validator matches compaction
+    // ownership against the open turn).
+    const read = await ctx.sessionPersistence.open(sessionId, 'read')
+    try {
+      const { events } = await read.read()
+      expect(events.length).toBeGreaterThan(0)
+    } finally {
+      await read.close()
+    }
   })
 })
 
