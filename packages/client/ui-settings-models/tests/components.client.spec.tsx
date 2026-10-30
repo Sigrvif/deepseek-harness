@@ -359,8 +359,15 @@ async function mountFirstRun(overrides: Parameters<typeof scriptedFace>[0] = {})
  */
 async function mountDeepSeekCard(overrides: Parameters<typeof scriptedFace>[0] = {}) {
   const mounted = await mountSection(overrides)
-  fireEvent.click(screen.getByRole('button', { name: deepSeekCopy(en.editProvider) }))
-  return mounted
+  // fork(local-test): unkeyed DeepSeek is dormant, so its editor opens through
+  // the add card's catalog draft rather than a row's Edit button.
+  fireEvent.click(screen.getByRole('button', { name: en.add }))
+  fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
+  const pick = await screen.findByLabelText<HTMLSelectElement>(en.provider)
+  fireEvent.change(pick, { target: { value: 'deepseek-official' } })
+  const card = within(screen.getByRole('tabpanel', { name: en.addCatalog }))
+  await card.findByLabelText(en.keyInput)
+  return { ...mounted, card }
 }
 
 describe('ModelsSection', () => {
@@ -489,24 +496,27 @@ describe('ModelsSection', () => {
 
   it('checks current readiness before opening an editor and preserves an open draft during refresh', async () => {
     const { controller } = await mountSection()
-    const edit = screen.getByRole('button', { name: deepSeekCopy(en.editProvider) })
+    // fork(local-test): dormant DeepSeek opens through the add card; the
+    // readiness gate and draft preservation behave identically there.
+    const add = screen.getByRole('button', { name: en.add })
     const ready = controller.store.getSnapshot()
     const snapshot = vi.spyOn(controller.store, 'getSnapshot').mockReturnValue({ ...ready, status: 'loading' })
     try {
-      fireEvent.click(edit)
+      fireEvent.click(add)
       expect(screen.queryByLabelText(en.keyInput)).toBeNull()
     } finally {
       snapshot.mockRestore()
     }
-    fireEvent.click(edit)
-    const key = await screen.findByLabelText(en.keyInput)
+    fireEvent.click(add)
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
+    const key = await within(screen.getByRole('tabpanel', { name: en.addCatalog })).findByLabelText(en.keyInput)
     fireEvent.change(key, { target: { value: 'sk-unsaved-draft' } })
     act(() => { controller.store.update((state) => { state.status = 'loading' }) })
     expect((key as HTMLInputElement).value).toBe('sk-unsaved-draft')
-    expect((edit as HTMLButtonElement).disabled).toBe(false)
-    fireEvent.click(edit)
-    expect(screen.queryByLabelText(en.keyInput)).toBeNull()
-    expect((edit as HTMLButtonElement).disabled).toBe(true)
+    // While loading, re-clicking the (disabled) add button must not reopen or
+    // reset the card: the open draft survives.
+    fireEvent.click(add)
+    expect(within(screen.getByRole('tabpanel', { name: en.addCatalog })).getByLabelText(en.keyInput)).toBeTruthy()
   })
 
   it('checks current readiness before adding or starting removal from rendered rows', async () => {
@@ -676,7 +686,8 @@ describe('ModelsSection', () => {
     const { renderSlot } = await mountSection()
     const cards = cardSeatCalls(renderSlot)
     expect(cards).toContainEqual(['openai', true, true, 'llm-pi-ai'])
-    expect(cards).toContainEqual(['deepseek-official', true, false, 'llm-deepseek'])
+    // fork(local-test): unkeyed DeepSeek is dormant (catalog), so no row card.
+    expect(cards).not.toContainEqual(['deepseek-official', true, false, 'llm-deepseek'])
     // The footer seat renders once below the rows and the add controls.
     expect(renderSlot.mock.calls.filter(call => call[0] === 'settings.models.footer')).toEqual([
       ['settings.models.footer', {}],
@@ -750,11 +761,13 @@ describe('ModelsSection', () => {
     expect(configured.getAttribute('title')).toBe(en.credentialConfigured)
     expect(configured.className).toContain('credentialDotConfigured')
     expect(configured.closest('li')?.textContent).toContain('openai')
-    const missing = screen.getByRole('img', { name: en.credentialMissing })
-    expect(missing.closest('li')?.textContent).toContain('DeepSeek')
-    // The card is still one click away.
-    fireEvent.click(screen.getByRole('button', { name: deepSeekCopy(en.editProvider) }))
-    expect(screen.getByLabelText(en.keyInput)).toBeTruthy()
+    // fork(local-test): the unkeyed DeepSeek route is dormant — it lists in
+    // the catalog instead of rendering a row.
+    expect(screen.queryByText('DeepSeek')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: en.add }))
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
+    const pick = await screen.findByLabelText<HTMLSelectElement>(en.provider)
+    expect([...pick.options].map(option => option.value)).toContain('deepseek-official')
   })
 
   it('marks only a confirmed missing reference and leaves native or unavailable state unmarked', async () => {
@@ -773,14 +786,12 @@ describe('ModelsSection', () => {
       renderSlot={() => null}
     />)
 
-    // fork(local-test): DeepSeek's unkeyed row carries the same missing dot,
-    // so pick the openai dot out of the set.
-    const missingDots = screen.getAllByRole('img', { name: en.credentialMissing })
-    expect(missingDots.length).toBeGreaterThan(1)
-    const missing = missingDots.find(dot => dot.closest('li')?.textContent?.includes('openai'))
-    expect(missing).toBeDefined()
-    expect(missing!.getAttribute('title')).toBe(en.credentialMissing)
-    expect(missing!.className).toContain('credentialDotMissing')
+    // fork(local-test): unkeyed DeepSeek is dormant, so the only missing dot
+    // is openai's.
+    const missing = screen.getByRole('img', { name: en.credentialMissing })
+    expect(missing.closest('li')?.textContent).toContain('openai')
+    expect(missing.getAttribute('title')).toBe(en.credentialMissing)
+    expect(missing.className).toContain('credentialDotMissing')
     expect(screen.queryByRole('img', { name: en.credentialConfigured })).toBeNull()
     expect(screen.getByText('zombie').closest('li')?.querySelector('[role="img"]')).toBeNull()
   })
@@ -830,6 +841,29 @@ describe('ModelsSection', () => {
     // A user who can already reach some provider is not in the first-run
     // posture, so nothing on the page opens itself.
     expect(needsSetup(row(undefined), true)).toBe(false)
+  })
+
+  // fork(local-test): an unkeyed built-in DeepSeek route lists in the catalog
+  // instead of owning a row; it becomes an ordinary row once a credential
+  // exists (stored key or environment).
+  it('lists unkeyed DeepSeek in the catalog instead of a row', async () => {
+    await mountSection()
+    expect(screen.queryByText('DeepSeek')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: en.add }))
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
+    const pick = await screen.findByLabelText<HTMLSelectElement>(en.provider)
+    expect([...pick.options].map(option => option.value)).toContain('deepseek-official')
+  })
+
+  it('renders DeepSeek as an ordinary row once a credential exists', async () => {
+    const scripted = scriptedFace()
+    scripted.face.credentials.describe.mockImplementation((refs: string[]) => Promise.resolve(remoteOk(
+      Object.fromEntries(refs.map(ref => [ref, { configured: true, writable: true }]))),
+    ))
+    await mountFace(scripted)
+    const row = screen.getByText('DeepSeek').closest('li')
+    expect(row?.querySelector('[role="img"]')?.getAttribute('aria-label')).toBe(en.credentialConfigured)
+    expect(within(row as HTMLElement).getByRole('button', { name: deepSeekCopy(en.editProvider) })).toBeTruthy()
   })
 
   it('derives conventional credential references from route ids', () => {
@@ -934,13 +968,14 @@ describe('ModelsSection', () => {
     const { mutate } = await mountDeepSeekCard({
       mutate: vi.fn(() => Promise.resolve(remoteOk(wireNamespaces()[0]))),
     })
-    fireEvent.click(screen.getByText(en.customized))
-    const baseURL = screen.getByLabelText<HTMLInputElement>(en.baseUrl)
+    const card = within(screen.getByRole('tabpanel', { name: en.addCatalog }))
+    fireEvent.click(card.getByText(en.customized))
+    const baseURL = card.getByLabelText<HTMLInputElement>(en.baseUrl)
     // The deepseek placeholder is pinned to the public endpoint, not the
     // effective value (which may reflect a launch-environment override).
     expect(baseURL.placeholder).toBe('https://api.deepseek.com/anthropic (Default to use DEEPSEEK_BASE_URL)')
     fireEvent.change(baseURL, { target: { value: 'https://next2' } })
-    fireEvent.click(screen.getByText(en.apply))
+    fireEvent.click(card.getByText(en.apply))
     await waitFor(() => { expect(mutate).toHaveBeenCalledTimes(1) })
     // Only the field that actually changed: reasoningEffort was already
     // 'high' in the loaded profile, so it produces no op.
@@ -955,21 +990,22 @@ describe('ModelsSection', () => {
     const { mutate } = await mountDeepSeekCard({
       mutate: vi.fn(() => Promise.resolve(remoteOk(wireNamespaces()[0]))),
     })
-    fireEvent.click(screen.getByText(en.customized))
-    expect(screen.getByText(en.modelsInherited)).toBeTruthy()
-    expect(screen.getAllByLabelText(new RegExp(en.modelId)).map(input => (input as HTMLInputElement).value))
+    const card = within(screen.getByRole('tabpanel', { name: en.addCatalog }))
+    fireEvent.click(card.getByText(en.customized))
+    expect(card.getByText(en.modelsInherited)).toBeTruthy()
+    expect(card.getAllByLabelText(new RegExp(en.modelId)).map(input => (input as HTMLInputElement).value))
       .toEqual(['deepseek-v4-flash', 'deepseek-v4-pro'])
 
-    fireEvent.click(screen.getByText(en.addModel))
-    const ids = screen.getAllByLabelText(new RegExp(en.modelId))
-    const names = screen.getAllByLabelText(new RegExp(en.modelName))
+    fireEvent.click(card.getByText(en.addModel))
+    const ids = card.getAllByLabelText(new RegExp(en.modelId))
+    const names = card.getAllByLabelText(new RegExp(en.modelName))
     expandRow(3)
     fireEvent.change(ids[2] as HTMLInputElement, { target: { value: 'private-preview' } })
     fireEvent.change(names[2] as HTMLInputElement, { target: { value: 'Private Preview' } })
     // Only row 3 is open, so its capacity is addressed by its own label.
-    fireEvent.change(screen.getByLabelText(`${en.contextWindow} 3`), { target: { value: '131072' } })
+    fireEvent.change(card.getByLabelText(`${en.contextWindow} 3`), { target: { value: '131072' } })
     fireEvent.click(within(screen.getByRole('group', { name: `${en.modelInputTypes} 3` })).getByRole('checkbox', { name: en.modelInputImage }))
-    fireEvent.click(screen.getByText(en.apply))
+    fireEvent.click(card.getByText(en.apply))
 
     await waitFor(() => { expect(mutate).toHaveBeenCalledTimes(1) })
     expect(mutate.mock.calls[0]).toEqual([
@@ -1033,13 +1069,14 @@ describe('ModelsSection', () => {
 
   it('rejects duplicate DeepSeek model ids before writing', async () => {
     const { mutate } = await mountDeepSeekCard()
-    fireEvent.click(screen.getByText(en.customized))
-    fireEvent.click(screen.getByText(en.addModel))
-    const ids = screen.getAllByLabelText(new RegExp(en.modelId))
+    const card = within(screen.getByRole('tabpanel', { name: en.addCatalog }))
+    fireEvent.click(card.getByText(en.customized))
+    fireEvent.click(card.getByText(en.addModel))
+    const ids = card.getAllByLabelText(new RegExp(en.modelId))
     fireEvent.change(ids[2] as HTMLInputElement, { target: { value: 'deepseek-v4-flash' } })
-    fireEvent.click(screen.getByText(en.apply))
+    fireEvent.click(card.getByText(en.apply))
 
-    await screen.findByText(`Model 3: ${en.modelIdDuplicate}`)
+    await card.findByText(`Model 3: ${en.modelIdDuplicate}`)
     expect(mutate).not.toHaveBeenCalled()
   })
 
@@ -1221,13 +1258,14 @@ describe('ModelsSection', () => {
 
   it('re-keys the typed text around a removed row', async () => {
     await mountDeepSeekCard()
-    fireEvent.click(screen.getByText(en.customized))
+    const card = within(screen.getByRole('tabpanel', { name: en.addCatalog }))
+    fireEvent.click(card.getByText(en.customized))
     const windows = (): HTMLInputElement[] => capacityInputs(en.contextWindow)
     const removeRow = (at: number): void => {
-      fireEvent.click(screen.getAllByLabelText(new RegExp(en.removeModel))[at] as HTMLElement)
+      fireEvent.click(card.getAllByLabelText(new RegExp(en.removeModel))[at] as HTMLElement)
     }
     // Three rows, with text parked on the outer two.
-    fireEvent.click(screen.getByText(en.addModel))
+    fireEvent.click(card.getByText(en.addModel))
     expandRow(1)
     expandRow(2)
     expandRow(3)
@@ -1351,19 +1389,20 @@ describe('ModelsSection', () => {
     const { mutate } = await mountDeepSeekCard({
       mutate: vi.fn(() => Promise.resolve(remoteOk(wireNamespaces()[0]))),
     })
-    fireEvent.click(screen.getByText(en.customized))
-    fireEvent.click(screen.getAllByLabelText(new RegExp(en.removeModel))[0] as HTMLElement)
-    fireEvent.click(screen.getByLabelText(new RegExp(en.removeModel)))
-    expect(screen.getByText(en.modelsEmpty)).toBeTruthy()
-    fireEvent.click(screen.getByText(en.resetModels))
-    expect(screen.getByText(en.modelsInherited)).toBeTruthy()
+    const card = within(screen.getByRole('tabpanel', { name: en.addCatalog }))
+    fireEvent.click(card.getByText(en.customized))
+    fireEvent.click(card.getAllByLabelText(new RegExp(en.removeModel))[0] as HTMLElement)
+    fireEvent.click(card.getByLabelText(new RegExp(en.removeModel)))
+    expect(card.getByText(en.modelsEmpty)).toBeTruthy()
+    fireEvent.click(card.getByText(en.resetModels))
+    expect(card.getByText(en.modelsInherited)).toBeTruthy()
 
-    const names = screen.getAllByLabelText(new RegExp(en.modelName))
+    const names = card.getAllByLabelText(new RegExp(en.modelName))
     expandRow(1)
     const windows = capacityInputs(en.contextWindow)
     fireEvent.change(names[0] as HTMLInputElement, { target: { value: '' } })
     fireEvent.change(windows[0] as HTMLInputElement, { target: { value: '' } })
-    fireEvent.click(screen.getByText(en.apply))
+    fireEvent.click(card.getByText(en.apply))
 
     await waitFor(() => { expect(mutate).toHaveBeenCalledTimes(1) })
     expect(mutate.mock.calls[0]).toEqual([
@@ -1383,11 +1422,12 @@ describe('ModelsSection', () => {
   it('clears an inherited override with an unset op, never a whole-section replace', async () => {
     // A whole-section replace would clobber sibling overrides to clear one field.
     const { mutate } = await mountDeepSeekCard()
-    fireEvent.click(screen.getByText(en.customized))
-    const url = screen.getByLabelText<HTMLInputElement>(en.baseUrl)
+    const card = within(screen.getByRole('tabpanel', { name: en.addCatalog }))
+    fireEvent.click(card.getByText(en.customized))
+    const url = card.getByLabelText<HTMLInputElement>(en.baseUrl)
     expect(url.value).toBe('https://base')
     fireEvent.change(url, { target: { value: '' } })
-    fireEvent.click(screen.getByText(en.apply))
+    fireEvent.click(card.getByText(en.apply))
     await waitFor(() => { expect(mutate).toHaveBeenCalledTimes(1) })
     // This editor clears one field through an unset op so it cannot clobber
     // sibling overrides with a whole-section replacement.
@@ -1431,17 +1471,19 @@ describe('ModelsSection', () => {
 
   it('saves credentials without changing the default model', async () => {
     const { ctx, set } = await mountDeepSeekCard()
+    const card = within(screen.getByRole('tabpanel', { name: en.addCatalog }))
     const initialize = vi.spyOn(ctx.remote.session, 'initializeDefaultModel')
-    fireEvent.change(await screen.findByLabelText(en.keyInput), { target: { value: 'test-key' } })
-    fireEvent.click(screen.getByText(en.apply))
-    await waitFor(() => { expect(screen.queryByText(en.apply)).toBeNull() })
+    fireEvent.change(await card.findByLabelText(en.keyInput), { target: { value: 'test-key' } })
+    fireEvent.click(card.getByText(en.apply))
+    await waitFor(() => { expect(card.queryByText(en.apply)).toBeNull() })
     expect(set).toHaveBeenCalledOnce()
     expect(initialize).not.toHaveBeenCalled()
   })
 
   it('reveals only the current key draft and masks it again on change', async () => {
     const { set } = await mountDeepSeekCard()
-    const input = await screen.findByLabelText<HTMLInputElement>(en.keyInput)
+    const card = within(screen.getByRole('tabpanel', { name: en.addCatalog }))
+    const input = await card.findByLabelText<HTMLInputElement>(en.keyInput)
     expect(input.type).toBe('password')
     expect(input.value).toBe('')
     expect(screen.queryByRole('button', { name: en.keyReveal })).toBeNull()
@@ -1465,10 +1507,11 @@ describe('ModelsSection', () => {
 
   it('rejects an invalid draft before writing', async () => {
     const { mutate } = await mountDeepSeekCard()
-    fireEvent.click(screen.getByText(en.customized))
-    fireEvent.change(screen.getByLabelText(en.baseUrl), { target: { value: 'not-a-url' } })
-    fireEvent.click(screen.getByText(en.apply))
-    await screen.findByText(/baseURL/)
+    const card = within(screen.getByRole('tabpanel', { name: en.addCatalog }))
+    fireEvent.click(card.getByText(en.customized))
+    fireEvent.change(card.getByLabelText(en.baseUrl), { target: { value: 'not-a-url' } })
+    fireEvent.click(card.getByText(en.apply))
+    await card.findByText(/baseURL/)
     expect(mutate).not.toHaveBeenCalled()
   })
 
@@ -1502,7 +1545,7 @@ describe('ModelsSection', () => {
     // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
     fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
     const pick = await screen.findByLabelText<HTMLSelectElement>(en.provider)
-    expect([...pick.options].map(option => option.value)).toEqual(['anthropic', 'broken', 'plain'])
+    expect([...pick.options].map(option => option.value)).toEqual(['anthropic', 'broken', 'plain', 'deepseek-official'])
     expect(pick.value).toBe('anthropic')
     // A dormant route shows its catalog endpoint and the first variable its
     // provider reads; a typed key still stores under the derived reference.
@@ -1639,10 +1682,11 @@ describe('ModelsSection', () => {
     const { set } = await mountDeepSeekCard({
       mutate: vi.fn(() => Promise.resolve(remoteFail('changed since it was read', 'settings/conflict'))),
     })
-    fireEvent.click(screen.getByText(en.customized))
-    fireEvent.change(screen.getByLabelText<HTMLInputElement>(en.baseUrl), { target: { value: 'https://mine' } })
-    fireEvent.click(screen.getByText(en.apply))
-    await screen.findByText(en.conflict)
+    const card = within(screen.getByRole('tabpanel', { name: en.addCatalog }))
+    fireEvent.click(card.getByText(en.customized))
+    fireEvent.change(card.getByLabelText<HTMLInputElement>(en.baseUrl), { target: { value: 'https://mine' } })
+    fireEvent.click(card.getByText(en.apply))
+    await card.findByText(en.conflict)
     expect(set).not.toHaveBeenCalled()
   })
 
@@ -1650,12 +1694,13 @@ describe('ModelsSection', () => {
     await mountDeepSeekCard({
       mutate: vi.fn(() => Promise.resolve(remoteFail('the host refused', 'settings/rejected'))),
     })
-    fireEvent.click(screen.getByText(en.customized))
-    fireEvent.change(screen.getByLabelText<HTMLInputElement>(en.baseUrl), { target: { value: 'https://next' } })
-    fireEvent.click(screen.getByText(en.apply))
-    await screen.findByText('the host refused')
+    const card = within(screen.getByRole('tabpanel', { name: en.addCatalog }))
+    fireEvent.click(card.getByText(en.customized))
+    fireEvent.change(card.getByLabelText<HTMLInputElement>(en.baseUrl), { target: { value: 'https://next' } })
+    fireEvent.click(card.getByText(en.apply))
+    await card.findByText('the host refused')
     // Not stuck in `applying…`: the finally cleared busy, so Apply is live again.
-    expect(screen.getByText(en.apply)).toBeTruthy()
+    expect(card.getByText(en.apply)).toBeTruthy()
   })
 
   it('surfaces a refused credential write on the card', async () => {
@@ -1854,7 +1899,8 @@ describe('ModelsSection', () => {
   it('opens on the custom mode when every catalog provider is already configured', async () => {
     const scripted = scriptedFace()
     scripted.face.llm.listConfigurableProviders.mockResolvedValue(remoteOk([
-      { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
+      // fork(local-test): deepseek is dormant-until-keyed, so it never counts
+      // as a configured catalog entry; exhaustion needs a keyed pi-ai route.
       { provider: 'openai', displayName: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'] },
     ]))
     await mountFace(scripted)
@@ -1909,7 +1955,8 @@ describe('ModelsSection', () => {
   it('picks a catalog target when the catalog becomes addable after the card opened', async () => {
     const scripted = scriptedFace()
     const exhausted = [
-      { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
+      // fork(local-test): deepseek is dormant-until-keyed; exhaustion needs a
+      // keyed pi-ai route.
       { provider: 'openai', displayName: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'] },
     ]
     scripted.face.llm.listConfigurableProviders.mockResolvedValue(remoteOk(exhausted))
@@ -2123,7 +2170,7 @@ describe('ModelsSection', () => {
       t={t}
       renderSlot={() => null}
     />)
-    await screen.findByText('DeepSeek')
+    await screen.findByText('openai')
   })
 
   it('removes by unsetting the profile path, never by rebuilding the section', async () => {

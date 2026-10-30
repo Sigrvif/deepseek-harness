@@ -377,11 +377,23 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
   // One fact decides both first-run postures on this page and the onboarding
   // step: whether the user already has a provider to talk to.
   const anyUsable = state.rows.some(providerUsable)
-  const configured = state.rows.filter(row => row.configured)
+  // fork(local-test): an unkeyed built-in DeepSeek route is dormant — it lists
+  // in the third-party catalog instead of owning a row, and becomes an
+  // ordinary row once a credential exists (stored key or environment). The
+  // re-armed upstream first-run posture (internals.setupCardEnabled) keeps the
+  // setup-card behavior instead, and a route carrying a directory diagnostic
+  // stays a row so its alert remains visible.
+  const dormantDeepseek = (row: ProviderRow): boolean =>
+    !internals.setupCardEnabled
+    && row.entry.provider === 'deepseek-official'
+    && row.entry.error === undefined
+    && !keyConfiguredOf(row)
+  const configured = state.rows.filter(row => row.configured && !dormantDeepseek(row))
   const configurable = state.rows.filter(row => state.namespaces.has(row.entry.settingsNs))
   const addable: AddableRow[] = state.rows.flatMap((row) => {
     const namespace = state.namespaces.get(row.entry.settingsNs)
-    return namespace === undefined || row.configured ? [] : [{ row, namespace }]
+    if (namespace === undefined) return []
+    return !row.configured || dormantDeepseek(row) ? [{ row, namespace }] : []
   })
   // Hand-declared routes live in the pi-ai namespace, which is also the only
   // one whose schema names the protocols one may speak; without it mounted
