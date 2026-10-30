@@ -9,22 +9,43 @@
   ],
   "references": [
     {
-      "path": "../../../vendor/cosmokit"
+      "path": "../../../vendor/cordis"
     },
     {
-      "path": "../../../vendor/cordis"
+      "path": "../../../vendor/cosmokit"
     },
     {
       "path": "../../compaction/compaction"
     },
     {
+      "path": "../../core/agent"
+    },
+    {
       "path": "../../core/session"
+    },
+    {
+      "path": "../../core/system-prompt"
+    },
+    {
+      "path": "../../core/tool-executor-native"
+    },
+    {
+      "path": "../../core/tools"
     },
     {
       "path": "../../llm/llm"
     },
     {
       "path": "../../llm/token-meter"
+    },
+    {
+      "path": "../../sandbox/sandbox-policy"
+    },
+    {
+      "path": "../../session/session-projection"
+    },
+    {
+      "path": "../../test-support/tool-testkit"
     }
   ]
 }
