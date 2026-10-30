@@ -110,8 +110,18 @@ export function planFold(
   )
   let endIdx = nodes.length - keepLast - 1
   if (endIdx < 0) throw nothingFoldable()
+  // Leading system/developer nodes are the pinned prompt prefix — the surface
+  // refuses to rewrite them, and folding them is never wanted (found on the
+  // wire: node 0 of a real session is the system prompt). The first user
+  // message after them (the task statement) stays visible too — billion-context
+  // pins the same message, and strict providers expect it present.
   let startIdx = 0
-  if (messageOf(eventAt(events, nodes[0]))?.role === 'user') startIdx = 1
+  while (startIdx <= endIdx) {
+    const role = messageOf(eventAt(events, nodes[startIdx]))?.role
+    if (role === 'system' || role === 'developer') startIdx += 1
+    else break
+  }
+  if (messageOf(eventAt(events, nodes[startIdx]))?.role === 'user') startIdx += 1
   if (startIdx > endIdx) throw nothingFoldable()
 
   const nodeIndex = new Map<number, number>()

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { CompactionId } from '@deepseek-ai/dsh-compaction'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { createSystemMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId, SessionSeq } from '@deepseek-ai/dsh-session'
 import { Session } from '@deepseek-ai/dsh-session'
 import { appendFold, deriveFoldRecords, FoldError, planFold } from '../src/fold.ts'
@@ -25,6 +25,32 @@ describe('planFold', () => {
     const plan = planFold(session.snapshotEvents(), { keepLast: 2, minFoldChars: 1 })
     const nodes = surfaceSeqs(session)
     expect(plan.shadowedSeqs).not.toContain(nodes[0])
+  })
+
+  it('never folds the leading system prompt and still pins the first user message', () => {
+    const session = Session.create(SessionId('fold-system-first'))
+    session.append('system/message', { turn: 0, step: 0, message: createSystemMessage('You are a harness agent.') }, { surfaceOp: 'append' })
+    addTurn(session, 1, [
+      { kind: 'user', text: 'first user message stays visible' },
+      { kind: 'assistant', text: 'assistant answer one with plenty of body text to fold away' },
+      { kind: 'user', text: 'second user message with more text' },
+      { kind: 'assistant', text: 'assistant answer two with plenty of body text to fold away' },
+      { kind: 'user', text: 'recent user message' },
+      { kind: 'assistant', text: 'recent assistant answer' },
+    ])
+    const plan = planFold(session.snapshotEvents(), { keepLast: 2, minFoldChars: 1 })
+    const nodes = surfaceSeqs(session)
+    const systemSeq = nodes[0]!
+    const firstUserSeq = nodes[1]!
+    expect(plan.shadowedSeqs).not.toContain(systemSeq)
+    expect(plan.shadowedSeqs).not.toContain(firstUserSeq)
+    expect(plan.startSeq).toBe(nodes[2])
+    // And the fold appends cleanly over the system-led surface.
+    const { checkpointSeq } = appendFold(session, plan, [{ type: 'text', text: 'SUMMARY' }], { summaryTokens: 3, provider: 'p', model: 'm' })
+    const after = surfaceSeqs(session)
+    expect(after).toContain(systemSeq)
+    expect(after).toContain(checkpointSeq)
+    for (const seq of plan.shadowedSeqs) expect(after).not.toContain(seq)
   })
 
   it('does not pin an assistant-first surface', () => {
