@@ -128,7 +128,7 @@ describe('web app browser startup', () => {
 describe('the serving probe', () => {
   it('waits for the first HTTP answer before resolving', async () => {
     let answered = 0
-    const server = createServer((request, response) => {
+    const server = createServer((_request, response) => {
       answered += 1
       setTimeout(() => { response.end('up') }, 300)
     })
