@@ -714,7 +714,10 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                   onClick={() => {
                     if (controller.store.getSnapshot().status !== 'ready') return
                     const first = addable[0]
-                    const initial: AddMode = catalogEnabled ? 'catalog' : 'custom'
+                    // fork(local-test): the add card always opens on the
+                    // custom mode — declaring a local model API is this
+                    // deployment's primary flow. (Upstream prefers catalog.)
+                    const initial: AddMode = customEnabled ? 'custom' : 'catalog'
                     setSavedTarget(undefined)
                     setEditing(first === undefined ? undefined : targetOf(first.row))
                     setAddMode(initial)

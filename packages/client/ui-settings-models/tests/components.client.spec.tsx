@@ -526,6 +526,8 @@ describe('ModelsSection', () => {
       snapshot.mockRestore()
     }
     fireEvent.click(add)
+    // fork(local-test): the card opens on the custom mode; this flow checks the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
     expect(screen.getByLabelText(en.provider)).toBeTruthy()
   })
 
@@ -690,6 +692,8 @@ describe('ModelsSection', () => {
     const { renderSlot } = await mountSection()
     renderSlot.mockClear()
     fireEvent.click(screen.getByRole('button', { name: en.add }))
+    // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
     expect(cardSeatCalls(renderSlot)).toContainEqual(['anthropic', false, false, 'llm-pi-ai'])
   })
 
@@ -704,6 +708,8 @@ describe('ModelsSection', () => {
     const { renderSlot } = await mountFace(scripted)
     renderSlot.mockClear()
     fireEvent.click(screen.getByRole('button', { name: en.add }))
+    // fork(local-test): the draft seat rides the catalog panel; open it.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
     // The dormant row names no reference yet; the seat still reports the
     // derived ANTHROPIC_API_KEY the editor itself displays as configured.
     expect(cardSeatCalls(renderSlot)).toContainEqual(['anthropic', false, true, 'llm-pi-ai'])
@@ -1493,17 +1499,19 @@ describe('ModelsSection', () => {
   it('adds a dormant provider with a derived reference and stores its key', async () => {
     const { mutate, set } = await mountSection()
     fireEvent.click(screen.getByText(en.add))
+    // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
     const pick = await screen.findByLabelText<HTMLSelectElement>(en.provider)
     expect([...pick.options].map(option => option.value)).toEqual(['anthropic', 'broken', 'plain'])
     expect(pick.value).toBe('anthropic')
     // A dormant route shows its catalog endpoint and the first variable its
     // provider reads; a typed key still stores under the derived reference.
-    fireEvent.click(screen.getByText(en.customized))
-    expect(screen.getByLabelText<HTMLInputElement>(en.baseUrl).placeholder).toBe('https://api.anthropic.com')
-    const addKey = screen.getByLabelText<HTMLInputElement>(en.keyInput)
+    fireEvent.click(within(screen.getByRole('tabpanel', { name: en.addCatalog })).getByText(en.customized))
+    expect(within(screen.getByRole('tabpanel', { name: en.addCatalog })).getByLabelText<HTMLInputElement>(en.baseUrl).placeholder).toBe('https://api.anthropic.com')
+    const addKey = within(screen.getByRole('tabpanel', { name: en.addCatalog })).getByLabelText<HTMLInputElement>(en.keyInput)
     expect(addKey.placeholder).toBe(en.keyPlaceholderFallback.replace('{hint}', 'ANTHROPIC_AUTH_TOKEN'))
     fireEvent.change(addKey, { target: { value: 'sk-ant' } })
-    fireEvent.click(screen.getByText(en.apply))
+    fireEvent.click(within(screen.getByRole('tabpanel', { name: en.addCatalog })).getByText(en.apply))
     await waitFor(() => { expect(mutate).toHaveBeenCalledTimes(1) })
     expect(mutate.mock.calls[0]).toEqual([
       'llm-pi-ai',
@@ -1516,6 +1524,8 @@ describe('ModelsSection', () => {
   it('keeps pi-ai provider-native authentication when no key is entered', async () => {
     const { mutate, set } = await mountSection()
     fireEvent.click(screen.getByText(en.add))
+    // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
     await screen.findByLabelText(en.provider)
     fireEvent.click(screen.getByText(en.apply))
     await waitFor(() => { expect(mutate).toHaveBeenCalledOnce() })
@@ -1547,8 +1557,10 @@ describe('ModelsSection', () => {
       .mockResolvedValueOnce(remoteOk(undefined))
     const { face, controller, mirror } = await mountSection({ mutate, set })
     fireEvent.click(screen.getByText(en.add))
-    await screen.findByLabelText(en.provider)
-    fireEvent.change(screen.getByLabelText<HTMLInputElement>(en.keyInput), { target: { value: 'sk-ant' } })
+    // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
+    await within(screen.getByRole('tabpanel', { name: en.addCatalog })).findByLabelText(en.provider)
+    fireEvent.change(within(screen.getByRole('tabpanel', { name: en.addCatalog })).getByLabelText<HTMLInputElement>(en.keyInput), { target: { value: 'sk-ant' } })
     fireEvent.click(screen.getByText(en.apply))
     await screen.findByText('credential store unavailable')
     expect(mutate).toHaveBeenCalledOnce()
@@ -1573,6 +1585,8 @@ describe('ModelsSection', () => {
   it('switches the add card target and degrades unknown or broken targets loudly', async () => {
     await mountSection()
     fireEvent.click(screen.getByText(en.add))
+    // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
     const pick = await screen.findByLabelText<HTMLSelectElement>(en.provider)
     fireEvent.change(pick, { target: { value: 'broken' } })
     await screen.findByText(/unresolvable settings path/)
@@ -1582,7 +1596,7 @@ describe('ModelsSection', () => {
     })
     // The hint-only card cannot apply anything, and offers no key field.
     expect(screen.getByText<HTMLButtonElement>(en.apply).disabled).toBe(true)
-    expect(screen.queryAllByLabelText(en.keyInput)).toHaveLength(0)
+    expect(within(screen.getByRole('tabpanel', { name: en.addCatalog })).queryAllByLabelText(en.keyInput)).toHaveLength(0)
   })
 
   it('surfaces a rejected settings write and never stores the key after it', async () => {
@@ -1590,8 +1604,10 @@ describe('ModelsSection', () => {
       mutate: vi.fn(() => Promise.resolve(remoteFail('llm-pi-ai: unknown pi-ai provider "bogus"', 'settings/rejected'))),
     })
     fireEvent.click(screen.getByText(en.add))
-    await screen.findByLabelText(en.provider)
-    fireEvent.change(screen.getByLabelText<HTMLInputElement>(en.keyInput), { target: { value: 'sk-x' } })
+    // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
+    await within(screen.getByRole('tabpanel', { name: en.addCatalog })).findByLabelText(en.provider)
+    fireEvent.change(within(screen.getByRole('tabpanel', { name: en.addCatalog })).getByLabelText<HTMLInputElement>(en.keyInput), { target: { value: 'sk-x' } })
     fireEvent.click(screen.getByText(en.apply))
     await screen.findByText(/unknown pi-ai provider/)
     expect(set).not.toHaveBeenCalled()
@@ -1785,6 +1801,8 @@ describe('ModelsSection', () => {
     scripted.face.llm.listConfigurableProviders.mockResolvedValue(remoteOk([
       { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
       { provider: 'openai', displayName: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'] },
+      // A dormant row keeps the catalog mode enabled alongside the custom one.
+      { provider: 'anthropic', displayName: 'anthropic', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'anthropic'] },
     ]))
     await mountFace(scripted)
     fireEvent.click(screen.getByRole('button', { name: en.add }))
@@ -1801,7 +1819,9 @@ describe('ModelsSection', () => {
   it('switches between the modes without losing either draft', async () => {
     await mountSection()
     fireEvent.click(screen.getByRole('button', { name: en.add }))
-    fireEvent.change(screen.getByLabelText(en.keyInput), { target: { value: 'sk-catalog' } })
+    // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
+    fireEvent.change(within(screen.getByRole('tabpanel', { name: en.addCatalog })).getByLabelText(en.keyInput), { target: { value: 'sk-catalog' } })
 
     fireEvent.click(screen.getByRole('tab', { name: en.addCustom }))
     expect(screen.getByText(en.addCustomHint)).toBeTruthy()
@@ -1875,6 +1895,8 @@ describe('ModelsSection', () => {
   it('shows the custom panel when a refresh drops every configurable row mid-card', async () => {
     const { face, controller } = await mountSection()
     fireEvent.click(screen.getByRole('button', { name: en.add }))
+    // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
     expect(screen.getByRole('combobox', { name: en.provider })).toBeTruthy()
     // The directory empties while the card is open: the only mode left is the
     // custom one, whose panel was never visited.
@@ -1931,6 +1953,8 @@ describe('ModelsSection', () => {
   it('forgets the catalog target when the custom form closes, so a later refresh opens no row editor', async () => {
     const { face, controller, mirror } = await mountSection()
     fireEvent.click(screen.getByRole('button', { name: en.add }))
+    // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
     expect(screen.getByRole<HTMLSelectElement>('combobox', { name: en.provider }).value).toBe('anthropic')
     fireEvent.click(screen.getByRole('tab', { name: en.addCustom }))
     fireEvent.click(within(screen.getByRole('tabpanel', { name: en.addCustom })).getByText(en.cancel))
@@ -1960,7 +1984,9 @@ describe('ModelsSection', () => {
     const mutate = vi.fn(() => pending.then(() => remoteOk(providerNamespace)))
     await mountSection({ mutate })
     fireEvent.click(screen.getByRole('button', { name: en.add }))
-    fireEvent.change(screen.getByLabelText(en.keyInput), { target: { value: 'sk-slow' } })
+    // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
+    fireEvent.change(within(screen.getByRole('tabpanel', { name: en.addCatalog })).getByLabelText(en.keyInput), { target: { value: 'sk-slow' } })
     fireEvent.click(screen.getByText(en.apply))
     await waitFor(() => { expect(screen.getByRole<HTMLButtonElement>('tab', { name: en.addCustom }).disabled).toBe(true) })
     expect(screen.getByRole<HTMLButtonElement>('tab', { name: en.addCatalog }).disabled).toBe(true)
@@ -1989,6 +2015,8 @@ describe('ModelsSection', () => {
   it('pairs each tab with its panel through ids', async () => {
     await mountSection()
     fireEvent.click(screen.getByRole('button', { name: en.add }))
+    // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
     const catalogTab = screen.getByRole('tab', { name: en.addCatalog })
     const catalogPanel = screen.getByRole('tabpanel', { name: en.addCatalog })
     expect(catalogTab.getAttribute('aria-controls')).toBe(catalogPanel.id)
@@ -2049,9 +2077,12 @@ describe('ModelsSection', () => {
   it('cancels the add card back to the add button', async () => {
     await mountSection()
     fireEvent.click(screen.getByText(en.add))
-    await screen.findByLabelText(en.provider)
-    fireEvent.click(screen.getByText(en.cancel))
+    // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
+    await within(screen.getByRole('tabpanel', { name: en.addCatalog })).findByLabelText(en.provider)
+    fireEvent.click(within(screen.getByRole('tabpanel', { name: en.addCatalog })).getByText(en.cancel))
     await screen.findByText(en.add)
+    // The whole card is gone, so the page-level query is the honest check.
     expect(screen.queryByLabelText(en.provider)).toBeNull()
   })
 
@@ -2061,15 +2092,18 @@ describe('ModelsSection', () => {
     await mountFirstRun()
     expect(screen.getAllByLabelText(en.keyInput)).toHaveLength(1)
     fireEvent.click(screen.getByText(en.add))
+    // fork(local-test): the card opens on the custom mode; these flows drive the catalog panel.
+    fireEvent.click(screen.getByRole('tab', { name: en.addCatalog }))
     await screen.findByLabelText(en.provider)
-    expect(screen.getAllByLabelText(en.keyInput)).toHaveLength(2)
+    expect(within(screen.getByRole('tabpanel', { name: en.addCatalog })).getAllByLabelText(en.keyInput)).toHaveLength(1)
+    expect(screen.getAllByLabelText(en.keyInput)).toHaveLength(3)
 
     // The setup card is the first one on the page, above the add block.
     fireEvent.click(screen.getAllByText(en.cancel)[0] as HTMLElement)
     // The add card kept its draft…
     expect(screen.getByLabelText(en.provider)).toBeTruthy()
     // …and DeepSeek collapsed to an ordinary row carrying the missing-key dot.
-    expect(screen.getAllByLabelText(en.keyInput)).toHaveLength(1)
+    expect(within(screen.getByRole('tabpanel', { name: en.addCatalog })).getAllByLabelText(en.keyInput)).toHaveLength(1)
     expect(screen.getAllByRole('img', { name: en.credentialMissing })
       .some(dot => dot.closest('li')?.textContent?.includes('DeepSeek') === true)).toBe(true)
     // Its card reopens through Edit, which closes the add card as any row does.
