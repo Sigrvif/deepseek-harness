@@ -377,6 +377,8 @@
     { "path": "./packages/session/session-format-catalog" },
     { "path": "./packages/session/session-checkpoint-policy" },
     { "path": "./packages/context/context-editor" },
+    // fork(context-fold): model-driven context folds.
+    { "path": "./packages/context/context-fold" },
     { "path": "./packages/session/session-log-deepseek" },
     { "path": "./packages/session/session-persistence-jsonl" },
     { "path": "./packages/session/session-projection" },

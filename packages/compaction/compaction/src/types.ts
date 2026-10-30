@@ -34,6 +34,9 @@ declare module '@deepseek-ai/dsh-session/types' {
     'compaction/summary': {
       compactionId: CompactionId
       sourceCommandId?: CommandId
+      // fork(context-fold): model-driven folds mark their origin so fold
+      // records stay derivable from the log; engine backends omit it.
+      origin?: 'model-fold'
       summary: ContentBlock[]
       shadowedRange: { start: SessionSeq; end: SessionSeq }
       shadowedSeqs: SessionSeq[]
@@ -51,6 +54,10 @@ declare module '@deepseek-ai/dsh-session/types' {
       maxTokens?: number
       /** Provider-reported token usage for the summarization request, when emitted. */
       usage?: TokenUsage
+      // fork(context-fold): a model fold's economics — the tokens the fold
+      // removed from the surface and the size of the summary that replaced them.
+      foldedTokens?: number
+      summaryTokens?: number
     } & (
       | {
         /** Complete provider output before the backend's safe summary projection. */
