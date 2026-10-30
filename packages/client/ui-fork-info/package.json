@@ -57,5 +57,9 @@
   },
   "peerDependencies": {
     "react": "^18.2.0"
+  },
+  "scripts": {
+    "bundle": "tsdown",
+    "watch": "tsdown --watch"
   }
 }
