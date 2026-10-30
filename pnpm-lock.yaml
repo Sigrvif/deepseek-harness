@@ -3170,6 +3170,9 @@ importers:
       '@deepseek-ai/dsh-context-editor':
         specifier: workspace:*
         version: link:../../context/context-editor
+      '@deepseek-ai/dsh-context-fold':
+        specifier: workspace:*
+        version: link:../../context/context-fold
       '@deepseek-ai/dsh-cordis-client-runner':
         specifier: workspace:*
         version: link:../../extensions/cordis-client-runner
@@ -7352,6 +7355,10 @@ importers:
         version: 4.4.3
 
   packages/context/context-fold:
+    dependencies:
+      '@deepseek-ai/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~

@@ -18,6 +18,7 @@ Every diff hunk in upstream files carries a `fork(context-editor):` marker.
 | Package | Face | Purpose |
 |---|---|---|
 | `packages/context/context-editor` | host | Request capture (`llm/stream` listener), context projection, surface edits/exclusions/restores, selective condensation, tools/params overrides, the `contextEditor` Typert remote, and the `context_editor` storage domain (request log + overrides) |
+| `packages/context/context-fold` | host | Native Context Fold: model-driven, reversible compression — `compress`/`decompress`/`search_context`/`acp_status` tools, a system-prompt section, and growth nudges; folds land as `origin: 'model-fold'` compaction checkpoints and all fold state derives from the session log. Behavior adapted from billion-context (MIT + attribution; see its `src/prompts.ts`) |
 | `packages/client/ui-context-editor` | web client | The Context tab: effective context (search/edit/exclude/restore/batch), captured request log, tools & params forms; self-mounts the remote |
 
 ## 2. Marked upstream edits (small, each hunk commented `fork(context-editor):`)
@@ -32,11 +33,14 @@ Every diff hunk in upstream files carries a `fork(context-editor):` marker.
 | `packages/client/ui-conversation/src/client/conversation/assembler.ts` | two intake loops skip appends shadowed by a context-edit replacement (marked) | The timeline folds effective content |
 | `packages/bundle/web-app/src/index.ts` | the URL line and default-browser handoff wait for a serving probe (self-fetch of the advertised root until it answers HTTP; bounded, then warns and proceeds) | the listener accepts connections before serving dependencies finish mounting, and a browser opened into that window loads an empty page (observed on Windows) |
 | `packages/spill/spill-local/src/{store,cleanup,index}.ts` | private-root creation falls back to app-owned bases (`$DSH_HOME/spill`, cwd) when %TEMP% denies writes; startup discovery scans every base (marked) | Windows security software denies %TEMP% writes to unsigned processes: the spill backend failed to activate and an uncaught retry killed the server after startup |
-| `packages/bundle/web-app/package.json` | adds `@deepseek-ai/dsh-context-editor` + `@deepseek-ai/dsh-client-ui-context-editor` dependencies | The loader resolves bundle rows through the declarer's package context |
+| `packages/bundle/web-app/package.json` | adds `@deepseek-ai/dsh-context-editor` + `@deepseek-ai/dsh-client-ui-context-editor` + `@deepseek-ai/dsh-context-fold` dependencies | The loader resolves bundle rows through the declarer's package context |
 | `packages/client/ui-chat/src/client/conversation-nodes/message.ts` | user replacements with the marker render their effective content; excluded ones fold away | Timeline truthfulness |
 | `packages/client/ui-chat/src/client/conversation-nodes/assistant.ts` | same for assistant replacements (fold into their step) | Timeline truthfulness |
 | `packages/bundle/web-app/cordis.patch.yml` | host row `context-editor`, browser roster row `ui-context-editor`, and the `fork(local-test)` config blocks (dark theme default; preview notice pre-acknowledged; first-run credential onboarding off) | Bundle wiring + carried-over local-test defaults (formerly applied post-build in the shipped bundles) |
-| `tsconfig.host.json` / `tsconfig.client.json` | one reference line each (new packages in the build graphs) | Build enumeration |
+| `tsconfig.host.json` | one reference line each (new packages in the build graphs) | Build enumeration |
+| `packages/compaction/compaction/src/types.ts` | `compaction/summary` event gains optional `origin: 'model-fold'`, `foldedTokens`, `summaryTokens` fields | Marks model-driven folds so fold records derive from the log; engine backends are unaffected |
+| `packages/core/system-prompt/src/index.ts` | new `CONTEXT_FOLD: 2350` section-order slot | Centrally allocated position for the fold system section (context-tool family) |
+| `packages/bundle/web-app/cordis.patch.yml` | host row `context-fold` beside `context-editor` | Bundle wiring |
 
 Upstream TEST files updated to the new contracts (marked in-file):
 `packages/core/session/tests/canonical-envelopes.spec.ts` (assistant citations

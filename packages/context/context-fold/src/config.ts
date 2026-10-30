@@ -1,0 +1,26 @@
+/** Plugin configuration schema and resolution. @module */
+
+import z from '@deepseek-ai/schemastery'
+import type { ResolvedFoldConfig } from './tools.ts'
+
+/** Plugin config: every knob has a documented default; see the package README. */
+export const Config: z<ResolvedFoldConfig> = z.object({
+  enabled: z.boolean().default(true),
+  keepLast: z.number().step(1).min(1).default(8),
+  minFoldChars: z.number().step(1).default(2000),
+  minSummaryChars: z.number().step(1).default(200),
+  decompressCapChars: z.number().step(1).default(24000),
+  searchLimit: z.number().step(1).default(8),
+  nudgeGrowthTokens: z.number().step(1).default(50000),
+  pressureNudgeRatio: z.number().default(0.75),
+})
+
+/**
+ * Resolve raw plugin config into the complete fold configuration.
+ * @param input - schemastery-processed config (or a partial in tests).
+ * @returns every field populated.
+ */
+export function resolveConfig(input: unknown): ResolvedFoldConfig {
+  // Loader config is schemastery-processed before apply(); tests pass partials.
+  return Config(input as never)
+}

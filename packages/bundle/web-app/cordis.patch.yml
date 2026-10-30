@@ -148,6 +148,14 @@
     - id: context-editor
       name: '@deepseek-ai/dsh-context-editor'
 
+    # fork(context-fold): native Context Fold — model-driven, reversible
+    # compression via the compress/decompress/search_context/acp_status
+    # tools, a system-prompt section, and growth nudges. Folds land as
+    # compaction checkpoints on the session log. See
+    # packages/context/context-fold and FORK.md.
+    - id: context-fold
+      name: '@deepseek-ai/dsh-context-fold'
+
     # Workspace commands and reconnect-safe projection over Typert Remote.
     - id: workspace-controller
       name: '@deepseek-ai/dsh-api-workspace-controller'
