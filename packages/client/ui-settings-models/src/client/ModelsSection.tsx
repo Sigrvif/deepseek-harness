@@ -123,6 +123,9 @@ interface ProviderEditorRenderProps extends Pick<
 
 /** Render an editor for either the setup posture or an expanded provider row. */
 function renderProviderEditor({ target, row, ...props }: ProviderEditorRenderProps): ReactNode {
+  // fork(local-test): the shipped slr-runtime preset card opens straight onto
+  // the model catalog — adjusting the model is the card's whole purpose.
+  const startCustomizedOpen = target.provider === 'slr-runtime'
   return (
     <ProviderEditor
       provider={target.provider}
@@ -134,6 +137,7 @@ function renderProviderEditor({ target, row, ...props }: ProviderEditorRenderPro
       {...target.nativeAuth === undefined ? {} : { nativeAuth: target.nativeAuth }}
       {...row.credential === undefined ? {} : { credential: row.credential }}
       {...row.credentialChecks === undefined ? {} : { credentialChecks: row.credentialChecks }}
+      {...startCustomizedOpen ? { startCustomizedOpen: true } : {}}
       {...props}
     />
   )

@@ -88,6 +88,8 @@ export interface ProviderEditorProps {
   readOnly: boolean
   /** Render only the credential field and actions, without provider settings. */
   credentialOnly?: boolean
+  /** fork(local-test): render the customized disclosure open on first mount. */
+  startCustomizedOpen?: boolean
   /** Require a newly entered credential before this editor can submit. */
   credentialRequired?: boolean
   /** Give the credential field initial focus when this editor mounts. */
@@ -437,7 +439,7 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
             {credentialHint === undefined ? null : <p id={`${props.provider}-credential-hint`} className={styles[missingRefs ? 'notice' : detectedRef === undefined ? 'advancedHint' : 'savedNotice']}>{credentialHint}</p>}
             {shownKeyFailure === undefined ? null : <p className={styles['error']}>{t(shownKeyFailure)}</p>}
           </div>}
-        {props.credentialOnly === true ? null : <details className={styles['customized']}>
+        {props.credentialOnly === true ? null : <details className={styles['customized']} {...props.startCustomizedOpen === true ? { open: true } : {}}>
           <summary className={styles['customizedSummary']}>{t('customized')}</summary>
           <div className={styles['customizedBody']}>
             {/* The name and the protocol are the create card's two remaining
