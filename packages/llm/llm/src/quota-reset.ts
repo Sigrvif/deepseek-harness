@@ -48,6 +48,19 @@ const CALENDAR_CANDIDATE =
 const EPOCH_CANDIDATE = /(?<![\w:.])(1\d{12}|1\d{9})(?![\w.])/gu
 
 /**
+ * Embedded request clocks: a `YYYYMMDDHHmmss` run at the head of a provider
+ * request id (GLM writes `20261031051940b1b4e7600d0…`). Digit runs inside
+ * longer ids match deliberately and are validated as a real date near `now`
+ * before use.
+ */
+const REQUEST_CLOCK_CANDIDATE = /(20\d{12})/g
+
+/** Provider clock offsets are quantized to zone granularity. */
+const OFFSET_QUANTIZE_MS = 15 * 60 * 1000
+/** Real-world zone offsets stay within ±14 hours. */
+const MAX_OFFSET_MS = 14 * 3600 * 1000
+
+/**
  * Whether a failed model request is the quota/rate-limit family whose reset
  * moment the parser should look for.
  * @param code - the classified harness failure code.
@@ -59,15 +72,22 @@ export function isResetEligibleCode(code: string): boolean {
 
 /**
  * Parse a quota reset moment out of a provider failure message.
- * Calendar times are interpreted in `timeZone` (IANA name; UTC when
- * undefined) — the provider's wall clock, not ours. Unix-epoch candidates
- * are timezone-free. The winning candidate is the keyword-affinity match
- * inside the acceptance window (past reset within one minute of grace
- * clamps to an immediate retry); everything else is noise (model-generated
- * dates, request ids) and yields undefined.
+ *
+ * Calendar wall clocks are the provider's local time, interpreted in this
+ * order: the configured `timeZone` (IANA name) wins; without one, the
+ * offset is INFERRED from an embedded request clock — a `YYYYMMDDHHmmss`
+ * run in a request id whose date sits within two days of `now` gives the
+ * provider's wall clock for a request whose true instant the harness knows,
+ * so the offset is simple arithmetic (quantized to 15 minutes, ±14h bound);
+ * with neither, times are read as UTC (which errs toward waiting longer, a
+ * provider ahead of UTC only makes the harness wait more, never less than
+ * the reset). Unix-epoch candidates are timezone-free. The winning
+ * candidate is the keyword-affinity match inside the acceptance window
+ * (a past reset within one minute of grace clamps to an immediate retry);
+ * everything else is noise and yields undefined.
  * @param message - the provider failure text.
  * @param timeZone - the provider's IANA timezone, when configured.
- * @param now - epoch milliseconds the delay is measured from.
+ * @param now - epoch milliseconds the delay is measured from (approximates the request instant).
  * @returns the reset moment, or undefined when no credible reset is named.
  */
 export function parseQuotaResetAt(
@@ -75,15 +95,23 @@ export function parseQuotaResetAt(
   timeZone: string | undefined,
   now: number = Date.now(),
 ): QuotaReset | undefined {
-  const zone = timeZone ?? 'UTC'
   const keywords = keywordPositions(message)
+  // The wall-clock interpretation the calendar candidates share.
+  let zone = timeZone ?? 'UTC'
+  let inferredOffsetMs: number | undefined
+  if (timeZone === undefined) {
+    inferredOffsetMs = inferOffsetMs(message, now)
+    if (inferredOffsetMs !== undefined) zone = formatInferredZone(inferredOffsetMs)
+  }
   const candidates: { index: number; resetAtMs: number }[] = []
   for (const match of message.matchAll(CALENDAR_CANDIDATE)) {
-    const parsed = wallTimeToEpochMs(
-      Number(match[1]), Number(match[2]), Number(match[3]),
-      Number(match[4]), Number(match[5] as string), match[6] === undefined ? 0 : Number(match[6]),
-      zone,
-    )
+    const parts = {
+      year: Number(match[1]), month: Number(match[2]), day: Number(match[3]),
+      hour: Number(match[4]), minute: Number(match[5] as string), second: match[6] === undefined ? 0 : Number(match[6]),
+    }
+    const parsed = inferredOffsetMs !== undefined
+      ? asUtcWithOffset(parts, inferredOffsetMs)
+      : wallTimeToEpochMs(parts.year, parts.month, parts.day, parts.hour, parts.minute, parts.second, zone)
     if (parsed !== undefined) candidates.push({ index: match.index ?? 0, resetAtMs: parsed })
   }
   for (const match of message.matchAll(EPOCH_CANDIDATE)) {
@@ -104,6 +132,60 @@ export function parseQuotaResetAt(
   if (winner === undefined) return undefined
   const delayMs = Math.max(MIN_DELAY_MS, winner.resetAtMs - now)
   return { resetAtMs: winner.resetAtMs, delayMs, timeZone: zone }
+}
+
+interface WallClock {
+  readonly year: number
+  readonly month: number
+  readonly day: number
+  readonly hour: number
+  readonly minute: number
+  readonly second: number
+}
+
+/** Interpret a wall clock as UTC shifted by a known provider offset. */
+function asUtcWithOffset(parts: WallClock, offsetMs: number): number | undefined {
+  if (parts.month < 1 || parts.month > 12 || parts.day < 1 || parts.day > 31
+    || parts.hour < 0 || parts.hour > 24 || parts.minute < 0 || parts.minute > 59
+    || parts.second < 0 || parts.second > 59) return undefined
+  return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second) - offsetMs
+}
+
+/**
+ * Infer the provider clock's UTC offset from an embedded request clock: the
+ * id's wall clock minus the request's true instant (approximated by `now`,
+ * the failure arriving seconds after the request), quantized to zone
+ * granularity. Runs that are not a real date near `now` are ignored.
+ * @param message - the provider failure text.
+ * @param now - epoch milliseconds approximating the request instant.
+ * @returns the inferred offset, or undefined when no credible clock is embedded.
+ */
+function inferOffsetMs(message: string, now: number): number | undefined {
+  for (const match of message.matchAll(REQUEST_CLOCK_CANDIDATE)) {
+    const run = match[1] as string
+    const year = Number(run.slice(0, 4))
+    const month = Number(run.slice(4, 6))
+    const day = Number(run.slice(6, 8))
+    const hour = Number(run.slice(8, 10))
+    const minute = Number(run.slice(10, 12))
+    const second = Number(run.slice(12, 14))
+    if (month < 1 || month > 12 || day < 1 || day > 31
+      || hour > 23 || minute > 59 || second > 59) continue
+    const wallAsUtc = Date.UTC(year, month - 1, day, hour, minute, second)
+    if (Math.abs(wallAsUtc - now) > 2 * 86_400_000) continue
+    const offset = Math.round((wallAsUtc - now) / OFFSET_QUANTIZE_MS) * OFFSET_QUANTIZE_MS
+    if (Math.abs(offset) > MAX_OFFSET_MS) continue
+    return offset
+  }
+  return undefined
+}
+
+/** Label an inferred offset the way zones are named ("UTC+08:00 (inferred)"). */
+function formatInferredZone(offsetMs: number): string {
+  const minutes = Math.round(offsetMs / 60_000)
+  const sign = minutes < 0 ? '-' : '+'
+  const absolute = Math.abs(minutes)
+  return `UTC${sign}${String(Math.floor(absolute / 60)).padStart(2, '0')}:${String(absolute % 60).padStart(2, '0')} (inferred)`
 }
 
 /**

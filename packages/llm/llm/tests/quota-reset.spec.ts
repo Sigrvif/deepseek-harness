@@ -80,6 +80,40 @@ describe('parseQuotaResetAt', () => {
     expect(reset!.delayMs).toBe(1000)
   })
 
+  it('infers the provider clock offset from an embedded request id (real GLM copy)', () => {
+    // The exact wording from a real usage-limit screenshot: the request id
+    // embeds the provider wall clock (2026-10-31 05:19:40 UTC+8), the true
+    // request instant is 2026-10-30T21:19:40Z, the reset wall clock is
+    // 08:00:19 → 2026-10-31T00:00:19Z, ~2h40m out.
+    const message = '[1308][Usage limit reached for 5 hour. Your limit will reset at 2026-10-31 08:00:19][20261031051940b1b4e7600d0a1b2c3]'
+    const now = Date.parse('2026-10-30T21:19:45Z')
+    const inferred = parseQuotaResetAt(message, undefined, now)
+    expect(inferred).toBeDefined()
+    expect(inferred!.resetAtMs).toBe(Date.parse('2026-10-31T00:00:19Z'))
+    expect(inferred!.timeZone).toBe('UTC+08:00 (inferred)')
+    expect(inferred!.delayMs).toBe(9634_000)
+    // The configured zone wins over inference.
+    const configured = parseQuotaResetAt(message, 'Asia/Shanghai', now)
+    expect(configured!.resetAtMs).toBe(inferred!.resetAtMs)
+    expect(configured!.timeZone).toBe('Asia/Shanghai')
+  })
+
+  it('infers a zero offset for a UTC provider and handles half-hour zones', () => {
+    const request = Date.parse('2026-10-30T21:44:50Z')
+    const utc = parseQuotaResetAt(
+      '[1308][Usage limit reached for 5 hour. Your limit will reset at 2026-10-30 21:45:00][20261030214450b1b4e7600d0a1b2c3]',
+      undefined, request + 3000,
+    )
+    expect(utc!.resetAtMs).toBe(Date.parse('2026-10-30T21:45:00Z'))
+    expect(utc!.timeZone).toBe('UTC+00:00 (inferred)')
+    const ist = parseQuotaResetAt(
+      '[1308][Usage limit reached for 5 hour. Your limit will reset at 2026-10-31 03:15:30][20261031031450b1b4e7600d0a1b2c3]',
+      undefined, request + 3000,
+    )
+    expect(ist!.resetAtMs).toBe(Date.parse('2026-10-30T21:45:30Z'))
+    expect(ist!.timeZone).toBe('UTC+05:30 (inferred)')
+  })
+
   it('reads Chinese reset copy', () => {
     const reset = parseQuotaResetAt('您的配额已用尽，将于 2026-11-01 02:00:00 重置。', 'Asia/Shanghai', NOW)
     expect(reset).toBeDefined()
