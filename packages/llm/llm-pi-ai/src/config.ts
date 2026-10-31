@@ -180,11 +180,17 @@ export interface PiAiProviderProfile {
   requestImageMaxBytes?: number
   /** Provider-owned model-request retry policy; omission uses normal mode with five retries. */
   retryPolicy?: RetryPolicyConfig
+  /**
+   * IANA timezone the provider writes wall-clock quota reset times in
+   * (e.g. `Asia/Shanghai` for GLM); enables parsing "resets at …" from
+   * rate-limit/quota failure messages. Omission interprets them as UTC.
+   */
+  quotaResetTimezone?: string
 }
 
 /** Validated profile with its route stamped and every adapter-owned default resolved. */
 export interface ResolvedPiAiProviderProfile
-  extends Omit<PiAiProviderProfile, 'apiKeyEnv' | 'retryPolicy' | 'models' | 'displayName'> {
+  extends Omit<PiAiProviderProfile, 'apiKeyEnv' | 'retryPolicy' | 'quotaResetTimezone' | 'models' | 'displayName'> {
   /** Harness route key and the `Models` collection key (the configuration dict key). */
   provider: string
   /** Resolved display name for selectors and configuration surfaces. */
@@ -201,6 +207,8 @@ export interface ResolvedPiAiProviderProfile
   requestImageMaxBytes: number
   /** Immutable retry policy captured with this provider route. */
   retryPolicy: ResolvedRetryPolicy
+  /** Validated provider quota-reset timezone, when configured. */
+  quotaResetTimezone?: string
   /**
    * The pi-ai provider containing this route's serviceable models. Absent when
    * a stored route cannot be constructed; its configuration remains editable.
@@ -346,6 +354,7 @@ const profile = z.object({
   requestImagePixelBudget: z.number().step(1).min(1).default(DEFAULT_REQUEST_IMAGE_PIXEL_BUDGET),
   requestImageMaxBytes: z.number().step(1).min(1).default(DEFAULT_REQUEST_IMAGE_MAX_BYTES),
   retryPolicy: RetryPolicySchema,
+  quotaResetTimezone: z.string(),
 })
 
 /** Runtime schema for {@link Config}. */
@@ -386,6 +395,23 @@ function rejectRemovedFields(provider: string, source: PiAiProviderProfile): voi
 }
 
 /** Reject a profile header that Fetch cannot put on a provider request. */
+/**
+ * Validate an IANA timezone name for quota reset parsing; the parse itself
+ * degrades to UTC on any runtime ICU gap, but a config typo should fail
+ * loudly here instead of silently misinterpreting provider wall clocks.
+ * @param value - the configured timezone name.
+ * @param provider - the provider whose profile declares it.
+ * @returns the validated value unchanged.
+ */
+function validateQuotaResetTimezone(value: string, provider: string): string {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value })
+  } catch {
+    throw new Error(`llm-pi-ai: provider "${provider}" quotaResetTimezone "${value}" is not a valid IANA timezone`)
+  }
+  return value
+}
+
 function assertValidHeaders(provider: string, headers: Readonly<Record<string, string>> | undefined): void {
   for (const [name, value] of Object.entries(headers ?? {})) {
     try {
@@ -487,7 +513,7 @@ export function resolveProfiles(
       if (validation === 'strict' || !(error instanceof PiAiCatalogError)) throw error
       catalogError ??= error.message
     }
-    const { apiKeyEnv, retryPolicy, models: _models, displayName: _displayName, ...rest } = source
+    const { apiKeyEnv, retryPolicy, quotaResetTimezone, models: _models, displayName: _displayName, ...rest } = source
     resolved.set(provider, {
       ...rest,
       provider,
@@ -498,6 +524,7 @@ export function resolveProfiles(
       requestImagePixelBudget,
       requestImageMaxBytes,
       retryPolicy: resolveRetryPolicy(retryPolicy, `llm-pi-ai: provider "${provider}" retryPolicy`),
+      ...quotaResetTimezone === undefined ? {} : { quotaResetTimezone: validateQuotaResetTimezone(quotaResetTimezone, provider) },
       ...rest.headers === undefined ? {} : { headers: { ...rest.headers } },
       ...rest.thinkingBudgets === undefined ? {} : { thinkingBudgets: { ...rest.thinkingBudgets } },
       configuredMaxTokens: catalog?.configuredMaxTokens ?? new Map(),

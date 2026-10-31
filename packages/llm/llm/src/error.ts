@@ -95,7 +95,11 @@ export function isContextWindowExceededError(detail: string): boolean {
  * @returns true only for terminal quota, balance, credit, budget, or usage-limit wording.
  */
 export function isQuotaExceededError(detail: string): boolean {
-  return /\binsufficient[\s_-]+(?:quota|balance|credits?)\b/i.test(detail)
+  // fork(quota-reset): usage-window plans phrase exhaustion as "used up"
+  // ("Your plan quota has been used up, please retry after ...").
+  return /\bquota\b[\s\S]{0,30}?\bused[\s_-]*up\b/i.test(detail)
+    || /\bused[\s_-]*up\b[\s\S]{0,30}?\b(?:quota|usage|allowance)\b/i.test(detail)
+    || /\binsufficient[\s_-]+(?:quota|balance|credits?)\b/i.test(detail)
     || /\b(?:quota|usage[\s_-]+limit)[\s_-]+(?:exceeded|exhausted|reached)\b/i.test(detail)
     || /\bexceed(?:ed|s)?[\s_-]+(?:(?:your|the)[\s_-]+)?(?:current[\s_-]+)?quota\b/i.test(detail)
     || /\b(?:balance|credits?)[\s_-]+(?:exhausted|depleted)\b/i.test(detail)

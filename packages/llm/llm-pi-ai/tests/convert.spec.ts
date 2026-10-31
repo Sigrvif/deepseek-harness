@@ -8,6 +8,7 @@ import { transformMessages } from '@earendil-works/pi-ai/api/transform-messages'
 import { getBuiltinModels } from '@earendil-works/pi-ai/providers/all'
 import { toPiContext } from '../src/context.ts'
 import { toPiReplayState } from '../src/replay.ts'
+import { QUOTA_EXCEEDED_CODE } from '@deepseek-ai/dsh-llm'
 import { mapStopReason, mapUsage, toStreamChunks } from '../src/stream.ts'
 
 function usage(input = 0, output = 0, cacheRead = 0, cacheWrite = 0): Usage {
@@ -890,6 +891,73 @@ describe('mapStopReason / mapUsage', () => {
   it('keeps a thinking-only stop successful (any block counts as content)', () => {
     expect(mapStopReason(assistant({ stopReason: 'stop', content: [{ type: 'thinking', thinking: 'mull' }] })))
       .toEqual({ kind: 'stop' })
+  })
+
+  it('reads the patched provider markers before any text heuristic', () => {
+    expect(mapStopReason(assistant({
+      stopReason: 'error',
+      errorMessage: '429 Too Many Requests [status=429, retry-after-ms=120000]',
+    }))).toEqual({
+      kind: 'error',
+      failure: {
+        message: '429 Too Many Requests [status=429, retry-after-ms=120000]',
+        code: 'RATE_LIMIT',
+        providerRetryAfterMs: 120_000,
+      },
+    })
+    // Marker status wins over conflicting body wording.
+    expect(mapStopReason(assistant({
+      stopReason: 'error',
+      errorMessage: 'insufficient quota [status=500]',
+    }))).toMatchObject({ kind: 'error', failure: { code: 'SERVER' } })
+    expect(mapStopReason(assistant({ stopReason: 'error', errorMessage: 'nope [status=402]' })))
+      .toMatchObject({ kind: 'error', failure: { code: QUOTA_EXCEEDED_CODE } })
+    expect(mapStopReason(assistant({ stopReason: 'error', errorMessage: 'nope [status=401]' })))
+      .toMatchObject({ kind: 'error', failure: { code: 'AUTH' } })
+    expect(mapStopReason(assistant({ stopReason: 'error', errorMessage: 'nope [status=503]' })))
+      .toMatchObject({ kind: 'error', failure: { code: 'SERVER' } })
+  })
+
+  it('ignores marker-like text that is not at end of message', () => {
+    // The marker is not parsed (no retry delay extracted); the ordinary text
+    // classifier still reads the body.
+    expect(mapStopReason(assistant({
+      stopReason: 'error',
+      errorMessage: '[status=429] something went wrong',
+    }))).toStrictEqual({
+      kind: 'error',
+      failure: { message: '[status=429] something went wrong', code: 'RATE_LIMIT' },
+    })
+  })
+
+  it('parses a provider wall-clock quota reset with the configured timezone', () => {
+    // Six hours from now, rendered in the provider's wall clock (UTC+8).
+    const resetAt = Date.now() + 6 * 60 * 60 * 1000
+    const wall = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Shanghai', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(resetAt)
+    const read = (type: string): string => wall.find(part => part.type === type)!.value
+    const message = `Your plan quota has been used up, please retry after ${read('year')}-${read('month')}-${read('day')} ${read('hour')}:${read('minute')}:${read('second')}`
+    const result = mapStopReason(assistant({ stopReason: 'error', errorMessage: message }), undefined, 'Asia/Shanghai')
+    expect(result.kind).toBe('error')
+    if (result.kind !== 'error') return
+    expect(result.failure.code).toBe(QUOTA_EXCEEDED_CODE)
+    const delay = 'providerRetryAfterMs' in result.failure ? result.failure.providerRetryAfterMs : undefined
+    expect(delay).toBeGreaterThanOrEqual(6 * 3600_000 - 90_000)
+    expect(delay).toBeLessThanOrEqual(6 * 3600_000 + 90_000)
+    expect(result.failure.message).toContain('Quota resets at')
+  })
+
+  it('keeps quota parsing off without a reset date in the message', () => {
+    const result = mapStopReason(assistant({
+      stopReason: 'error',
+      errorMessage: 'HTTP 429: slow down',
+    }), undefined, 'Asia/Shanghai')
+    expect(result.kind).toBe('error')
+    if (result.kind !== 'error') return
+    expect(result.failure.code).toBe('RATE_LIMIT')
+    expect('providerRetryAfterMs' in result.failure).toBe(false)
   })
 
   it('defaults the error message when pi-ai omits it', () => {

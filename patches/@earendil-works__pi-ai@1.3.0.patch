@@ -1,8 +1,16 @@
 diff --git a/dist/api/anthropic-messages.js b/dist/api/anthropic-messages.js
-index befb18b..7b7da85 100644
+index befb18b..5ad4a11 100644
 --- a/dist/api/anthropic-messages.js
 +++ b/dist/api/anthropic-messages.js
-@@ -588,7 +588,6 @@ export const stream = (model, context, options) => {
+@@ -3,6 +3,7 @@ import { ANTHROPIC_FEDERATION_RULE_ID_ENV, ANTHROPIC_IDENTITY_TOKEN_FILE_ENV, AN
+ import { calculateCost } from "../models.js";
+ import { appendAssistantMessageDiagnostic } from "../utils/diagnostics.js";
+ import { AssistantMessageEventStream } from "../utils/event-stream.js";
++import { formatProviderError, normalizeProviderError } from "../utils/error-body.js";
+ import { headersToRecord } from "../utils/headers.js";
+ import { parseJsonWithRepair, parseStreamingJson, parseToolCallArguments } from "../utils/json-parse.js";
+ import { getPiUserAgent } from "../utils/pi-user-agent.js";
+@@ -588,7 +589,6 @@ export const stream = (model, context, options) => {
                          const block = blocks[index];
                          if (block && block.type === "toolCall") {
                              block.partialJson += event.delta.partial_json;
@@ -10,6 +18,15 @@ index befb18b..7b7da85 100644
                              stream.push({
                                  type: "toolcall_delta",
                                  contentIndex: index,
+@@ -717,7 +717,7 @@ export const stream = (model, context, options) => {
+                 delete block.partialJson;
+             }
+             output.stopReason = options?.signal?.aborted ? "aborted" : "error";
+-            output.errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
++            output.errorMessage = formatProviderError(normalizeProviderError(error));
+             stream.push({ type: "error", reason: output.stopReason, error: output });
+             stream.end();
+         }
 diff --git a/dist/api/bedrock-converse-stream.js b/dist/api/bedrock-converse-stream.js
 index 6ec62d0..abe5eee 100644
 --- a/dist/api/bedrock-converse-stream.js
@@ -98,3 +115,92 @@ index 7da1c45..296d131 100644
                  break;
              }
              case "toolcall_end":
+diff --git a/dist/utils/error-body.js b/dist/utils/error-body.js
+index f44c3c4..9241081 100644
+--- a/dist/utils/error-body.js
++++ b/dist/utils/error-body.js
+@@ -20,14 +20,60 @@ export function normalizeProviderError(error) {
+     const sdkError = error;
+     const status = extractStatus(sdkError);
+     const body = extractBody(sdkError);
++    const retryAfterMs = extractRetryAfterMs(sdkError);
+     const messageCarriesBody = body === undefined || error.message.includes(body);
+     return {
+         status,
+         body,
++        retryAfterMs,
+         message: error.message,
+         messageCarriesBody,
+     };
+ }
++/**
++ * Extract a provider-provided retry delay in milliseconds from the error's
++ * HTTP headers, accepting both `Headers` instances and plain header objects.
++ * `retry-after-ms` (milliseconds) wins over `retry-after` (seconds or an
++ * HTTP-date); a date in the past yields no delay.
++ */
++function extractRetryAfterMs(error) {
++    const headers = error?.headers;
++    if (!headers)
++        return undefined;
++    const read = (name) => {
++        if (typeof headers.get === "function") {
++            const value = headers.get(name);
++            return value === null || value === undefined ? undefined : value;
++        }
++        if (typeof headers === "object") {
++            const lower = name.toLowerCase();
++            for (const [key, value] of Object.entries(headers)) {
++                if (key.toLowerCase() === lower && typeof value === "string")
++                    return value;
++            }
++        }
++        return undefined;
++    };
++    const ms = read("retry-after-ms");
++    if (ms !== undefined) {
++        const value = Number.parseFloat(ms);
++        if (Number.isFinite(value) && value > 0)
++            return Math.round(value);
++    }
++    const after = read("retry-after");
++    if (after !== undefined) {
++        const seconds = Number.parseFloat(after);
++        if (Number.isFinite(seconds) && seconds > 0)
++            return Math.round(seconds * 1000);
++        const at = Date.parse(after);
++        if (Number.isFinite(at)) {
++            const delta = at - Date.now();
++            if (delta > 0)
++                return Math.round(delta);
++        }
++    }
++    return undefined;
++}
+ /**
+  * Probe the HTTP status, first numeric hit wins, in SDK-field order:
+  * `statusCode` (Mistral) → `status` (`openai`, `@google/genai`) →
+@@ -109,12 +155,21 @@ function isPlainNonEmptyObject(value) {
+  * - prefix:    `"<prefix> (<status>): <body>"`
+  */
+ export function formatProviderError(norm, prefix) {
++    let text;
+     if (norm.messageCarriesBody || norm.status === undefined || norm.body === undefined) {
+-        return prefix !== undefined && norm.status !== undefined
++        text = prefix !== undefined && norm.status !== undefined
+             ? `${prefix} (${norm.status}): ${norm.message}`
+             : norm.message;
+     }
+-    return prefix !== undefined ? `${prefix} (${norm.status}): ${norm.body}` : `${norm.status}: ${norm.body}`;
++    else {
++        text = prefix !== undefined ? `${prefix} (${norm.status}): ${norm.body}` : `${norm.status}: ${norm.body}`;
++    }
++    const markers = [];
++    if (norm.status !== undefined)
++        markers.push(`status=${norm.status}`);
++    if (norm.retryAfterMs !== undefined)
++        markers.push(`retry-after-ms=${norm.retryAfterMs}`);
++    return markers.length > 0 ? `${text} [${markers.join(", ")}]` : text;
+ }
+ export function truncateErrorText(text, maxChars) {
+     if (text.length <= maxChars)

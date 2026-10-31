@@ -9,7 +9,7 @@
  */
 
 import { brandString } from '@deepseek-ai/dsh-brand'
-import { CONTEXT_WINDOW_EXCEEDED_CODE, EMPTY_RESPONSE_CODE, isContextWindowExceededError, isQuotaExceededError, LlmError, QUOTA_EXCEEDED_CODE } from '@deepseek-ai/dsh-llm'
+import { CONTEXT_WINDOW_EXCEEDED_CODE, EMPTY_RESPONSE_CODE, formatResetLocal, isContextWindowExceededError, isQuotaExceededError, isResetEligibleCode, LlmError, parseQuotaResetAt, QUOTA_EXCEEDED_CODE } from '@deepseek-ai/dsh-llm'
 import type { FinishReason, StreamChunk, TokenUsage, ToolCallId } from '@deepseek-ai/dsh-llm'
 import { isContextOverflow } from '@earendil-works/pi-ai/utils/overflow'
 import type { AssistantMessage, AssistantMessageEvent, Usage as PiUsage } from '@earendil-works/pi-ai'
@@ -77,7 +77,7 @@ function classifyPiAiError(message: string): string {
  *   `EMPTY_RESPONSE` error, while terminal `pending` and `deferred` states map
  *   to non-retryable `PI_AI_ERROR` failures.
  */
-export function mapStopReason(message: AssistantMessage, contextWindow?: number): FinishReason {
+export function mapStopReason(message: AssistantMessage, contextWindow?: number, quotaResetTimezone?: string): FinishReason {
   const piAiOverflow = isContextOverflow(message, contextWindow)
   const harnessOverflow = message.stopReason === 'error'
     && message.errorMessage !== undefined
@@ -122,8 +122,80 @@ export function mapStopReason(message: AssistantMessage, contextWindow?: number)
     }
     case 'error': {
       const text = message.errorMessage ?? 'pi-ai stream error'
-      return { kind: 'error', failure: { message: text, code: classifyPiAiError(text) } }
+      const markers = parseProviderMarkers(text)
+      const code = markers?.status !== undefined
+        ? codeForStatus(markers.status) ?? classifyPiAiError(text)
+        : classifyPiAiError(text)
+      let failureMessage = text
+      let providerRetryAfterMs = markers?.retryAfterMs
+      // fork(quota-reset): a usage-window reset named in the message body.
+      // Provider headers (the marker above) stay authoritative; the body
+      // parse only fills the gap, and renders the reset in the SERVER's
+      // local time so the error is actionable in the turn-error row.
+      if (providerRetryAfterMs === undefined && isResetEligibleCode(code)) {
+        const reset = parseQuotaResetAt(text, quotaResetTimezone)
+        if (reset !== undefined) {
+          providerRetryAfterMs = reset.delayMs
+          failureMessage += `\nQuota resets at ${formatResetLocal(reset.resetAtMs)} (provider time zone: ${reset.timeZone}).`
+        }
+      }
+      return {
+        kind: 'error',
+        failure: {
+          message: failureMessage,
+          code,
+          ...providerRetryAfterMs === undefined ? {} : { providerRetryAfterMs },
+        },
+      }
     }
+  }
+}
+
+interface ProviderMarkers {
+  readonly status: number
+  readonly retryAfterMs?: number
+}
+
+/**
+ * Read the machine-readable trailer the pi-ai patch appends to provider
+ * errors: `[status=429, retry-after-ms=120000]` at end-of-message. Header
+ * facts beat any text heuristic, so a match decides the code before the
+ * regex classifier is even consulted.
+ * @param message - the flattened provider error message.
+ * @returns the parsed marker values, or undefined when the message carries none.
+ */
+function parseProviderMarkers(message: string): ProviderMarkers | undefined {
+  const match = /\[\s*status=(\d{3})(?:,\s*retry-after-ms=(\d+))?\s*\]\s*$/.exec(message)
+  if (match === null) return undefined
+  const status = Number(match[1])
+  const retryAfterMs = match[2] === undefined ? undefined : Math.round(Number(match[2]))
+  return {
+    status,
+    ...(retryAfterMs === undefined || !Number.isFinite(retryAfterMs) || retryAfterMs <= 0
+      ? {}
+      : { retryAfterMs }),
+  }
+}
+
+/**
+ * Map an HTTP status to the harness failure code; undefined keeps the text
+ * classifier in charge (the message body often carries the decisive wording,
+ * e.g. quota plan names on a 429).
+ * @param status - the provider HTTP status.
+ * @returns the harness failure code, or undefined for unmapped statuses.
+ */
+function codeForStatus(status: number): string | undefined {
+  switch (status) {
+    case 401:
+    case 403: return 'AUTH'
+    case 402: return QUOTA_EXCEEDED_CODE
+    case 408: return 'TIMEOUT'
+    case 429: return 'RATE_LIMIT'
+    case 400:
+    case 404:
+    case 413:
+    case 422: return 'INVALID_REQUEST'
+    default: return status >= 500 ? 'SERVER' : undefined
   }
 }
 
@@ -146,6 +218,7 @@ export async function* toStreamChunks(
   contextWindow?: number,
   callerSignal?: AbortSignal,
   requestedModel?: string,
+  quotaResetTimezone?: string,
 ): AsyncGenerator<StreamChunk> {
   // pi-ai contentIndex ↔ our block index map 1:1 (both count blocks from 0
   // in stream order), but we track ids per index for tool calls.
@@ -219,7 +292,7 @@ export async function* toStreamChunks(
         }
         yield {
           type: 'finish',
-          reason: mapStopReason(event.message, contextWindow),
+          reason: mapStopReason(event.message, contextWindow, quotaResetTimezone),
           replayState: toPiReplayState(event.message, requestedModel),
         }
         return
@@ -232,6 +305,7 @@ export async function* toStreamChunks(
           reason: mapStopReason(
             callerSignal?.aborted ? { ...event.error, stopReason: 'aborted' } : event.error,
             contextWindow,
+            quotaResetTimezone,
           ),
         }
         return

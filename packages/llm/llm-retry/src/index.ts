@@ -10,7 +10,7 @@ import type { Context, Events } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { z as zod } from 'zod'
 import type { Agent, RequestErrorAction } from '@deepseek-ai/dsh-agent'
-import type { LlmFailure, ResolvedRetryPolicy } from '@deepseek-ai/dsh-llm'
+import { isResetEligibleCode, type LlmFailure, type ResolvedRetryPolicy } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-session-projection'
 import { RetryId } from './brand.ts'
 import type { LlmRetryEventData } from './types.ts'
@@ -62,6 +62,17 @@ function localDelay(config: ResolvedRetryPolicy, retry: number, random: () => nu
   const jitter = 1 - config.jitterRatio + 2 * config.jitterRatio * random()
   return Math.min(exponential * jitter, config.maxDelayMs)
 }
+
+/**
+ * Hard cap for honoring a provider-named quota reset longer than the policy's
+ * local `maxDelayMs` (usage-window providers pause the turn for hours).
+ * Beyond the cap the provider's estimate is distrusted and the ordinary
+ * decline applies; within it the wait is exact plus a small cushion, and the
+ * ordinary retry counter still bounds the sequence against a lying provider.
+ */
+const MAX_RESET_WAIT_MS = 6 * 60 * 60 * 1000
+/** Added to every honored provider delay; clocks are rarely in perfect agreement. */
+const RESET_CUSHION_MS = 5_000
 
 function retryPolicyKey(policy: ResolvedRetryPolicy): string {
   return policy.mode === 'always'
@@ -225,8 +236,21 @@ export async function apply(ctx: Context, config: Config = {}, internals: RetryI
       && Number.isFinite(failure.providerRetryAfterMs)
       && failure.providerRetryAfterMs > 0) {
       if (failure.providerRetryAfterMs > policy.maxDelayMs) {
-        if (policy.mode === 'normal') return next()
-        delayMs = localDelay(policy, retry, random)
+        // fork(quota-reset): a usage-window reset (RATE_LIMIT/QUOTA with a
+        // provider-named delay, e.g. a 5-hour plan window) pauses the turn
+        // for the named delay — exact server-said sleep plus a cushion, no
+        // jitter — instead of declining. Beyond the hard cap, or for any
+        // non-reset code, the ordinary decline applies.
+        if (policy.mode === 'normal') {
+          if (isResetEligibleCode(failure.code)
+            && failure.providerRetryAfterMs <= MAX_RESET_WAIT_MS) {
+            delayMs = failure.providerRetryAfterMs + RESET_CUSHION_MS
+          } else {
+            return next()
+          }
+        } else {
+          delayMs = localDelay(policy, retry, random)
+        }
       } else {
         delayMs = failure.providerRetryAfterMs
       }

@@ -53,6 +53,11 @@ Every diff hunk in upstream files carries a `fork(context-editor):` marker.
 | `packages/client/ui-settings-general/src/client/CurrentVersionRow.tsx` + `locales.ts` | optional fork segment: `DSH_CLIENT_FORK_VERSION` renders "Local fork package: …" beside the dsh base version | The About row names both the base and the fork build |
 | `scripts/client-build-environment.ts` | `repositoryClientBuildEnvironment` emits `DSH_CLIENT_FORK_VERSION` from the manifest's optional `dshFork.version` field | Single source for the fork version (root package.json) |
 
+| `patches/@earendil-works__pi-ai@1.3.0.patch` | fork(quota-reset): `utils/error-body.js` extracts `Retry-After`/`retry-after-ms` headers from provider errors and appends machine-readable `[status=N, retry-after-ms=M]` markers to every provider error message; `api/anthropic-messages.js` flattens through the shared formatter instead of dropping everything but `error.message` | pi-ai flattens errors to strings; the markers give dsh real status codes and server retry hints for every pi-ai route |
+| `packages/llm/llm/src/quota-reset.ts` | NEW additive file; exported from the package index | Parses usage-window reset moments from RATE_LIMIT/QUOTA failure messages (calendar wall clocks + unix epochs, EN/ZH wording), interpreted in a per-provider `quotaResetTimezone` (llm-pi-ai profile field), so GLM-style UTC+8 reset times become correct UTC instants |
+| `packages/llm/llm/src/error.ts` | `isQuotaExceededError` gains "used up" phrasing (marked) | Usage-window plans phrase exhaustion as "quota has been used up, please retry after …" |
+| `packages/llm/llm-retry/src/index.ts` | a provider-named delay beyond `maxDelayMs` is honored for reset-eligible codes (RATE_LIMIT/QUOTA) up to a 6h hard cap — exact sleep + 5s cushion, no jitter; beyond the cap or for other codes the ordinary decline applies | Auto-wait through usage-window resets; the ordinary retry counter still bounds the sequence against a lying provider |
+
 Upstream TEST files updated to the new contracts (marked in-file):
 `packages/core/session/tests/canonical-envelopes.spec.ts` (assistant citations
 validate like every other type), `packages/core/session/tests/surface.spec.ts`

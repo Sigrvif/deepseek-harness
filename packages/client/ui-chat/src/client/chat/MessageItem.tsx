@@ -43,6 +43,17 @@ function retrySeconds(milliseconds: number): number {
   return Math.max(1, Math.ceil(milliseconds / 1_000))
 }
 
+/** Coarse live duration for long waits ("45s", "18m 30s", "2h 13m"). */
+function retryDuration(milliseconds: number): string {
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1_000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  if (hours > 0) return `${hours}h ${minutes}m`
+  if (minutes > 0) return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`
+  return `${seconds}s`
+}
+
 interface RetryCountdown {
   deadline: number
   seconds: number
@@ -110,7 +121,14 @@ function ModelRetryItem({ node, active, t }: {
       <summary className={css.retrySummary}>
         <span className={css.retryText} role="status">
           <TextShimmer active={active}>
-            {t('message.retry.status', { label, retry: node.retry, maximum, seconds })}
+            {node.delayMs >= 60_000
+              ? t('message.retry.longStatus', {
+                label,
+                retry: node.retry,
+                maximum,
+                duration: retryDuration(active ? deadline - Date.now() : node.delayMs),
+              })
+              : t('message.retry.status', { label, retry: node.retry, maximum, seconds })}
           </TextShimmer>
         </span>
       </summary>

@@ -413,7 +413,7 @@ describe('provider-routed retry policy', () => {
 
     await context.fiber.dispose()
     const rejected = new ScriptedAdapter([
-      new LlmError('wait too long', 'RATE_LIMIT', { providerRetryAfterMs: 10_001 }),
+      new LlmError('wait too long', 'INVALID_REQUEST', { providerRetryAfterMs: 10_001 }),
     ])
     ;({ ctx: context } = await harness(rejected))
     const rejectedAgent = await context.agentLoop.create(SessionId('retry-after-rejected'), { provider: 'mock', model: 'mock' })
@@ -422,6 +422,39 @@ describe('provider-routed retry policy', () => {
     await rejectedIdle
     expect(rejected.requests).toHaveLength(1)
     expect(rejectedAgent.session.snapshotEvents().some(event => event.type === 'llm/retry')).toBe(false)
+  })
+
+  it('honors an over-cap quota reset delay with the cushion, and declines beyond the reset cap', async () => {
+    // fork(quota-reset): a usage-window reset (RATE_LIMIT naming a delay the
+    // local policy would cap) pauses the turn for the provider-named wait.
+    vi.useFakeTimers()
+    const accepted = new ScriptedAdapter([
+      new LlmError('quota window', 'RATE_LIMIT', { providerRetryAfterMs: 60_000 }),
+      textResponse('done'),
+    ])
+    ;({ ctx: context } = await harness(accepted, { mock: normalConfig({
+      backoff: { jitterRatio: 1 },
+    }) }))
+    const acceptedAgent = await context.agentLoop.create(SessionId('reset-wait-accepted'), { provider: 'mock', model: 'mock' })
+    const scheduled = waitForRetry(context, acceptedAgent, 1)
+    acceptedAgent.followup(createUserMessage({ content: [{ type: 'text', text: 'go' }], source: { kind: 'user' } }))
+    expect((await scheduled).data.delayMs).toBe(65_000)
+    const acceptedIdle = waitForIdle(context, acceptedAgent)
+    await vi.advanceTimersByTimeAsync(65_000)
+    await acceptedIdle
+    expect(accepted.requests).toHaveLength(2)
+
+    await context.fiber.dispose()
+    const beyond = new ScriptedAdapter([
+      new LlmError('window beyond the cap', 'RATE_LIMIT', { providerRetryAfterMs: 7 * 60 * 60 * 1000 }),
+    ])
+    ;({ ctx: context } = await harness(beyond))
+    const beyondAgent = await context.agentLoop.create(SessionId('reset-wait-beyond-cap'), { provider: 'mock', model: 'mock' })
+    const beyondIdle = waitForIdle(context, beyondAgent)
+    beyondAgent.followup(createUserMessage({ content: [{ type: 'text', text: 'go' }], source: { kind: 'user' } }))
+    await beyondIdle
+    expect(beyond.requests).toHaveLength(1)
+    expect(beyondAgent.session.snapshotEvents().some(event => event.type === 'llm/retry')).toBe(false)
   })
 
   it('uses local jittered backoff when always mode receives an over-cap Retry-After', async () => {
