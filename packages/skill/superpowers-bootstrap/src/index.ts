@@ -1,11 +1,15 @@
 /**
  * @deepseek-ai/dsh-superpowers-bootstrap — automatic superpowers bootstrap.
  *
- * fork(superpowers): loads the bundled `using-superpowers` skill on every
- * fresh user prompt, exactly as if the user had typed `/using-superpowers`
- * themselves, so the workflow discipline reaches the users who would forget
- * to invoke it. The skills themselves live in
- * `@deepseek-ai/dsh-superpowers-skills` (vendored from superpowers 7.0.1,
+ * fork(superpowers): loads the bundled `using-superpowers` skill once per
+ * session — on the first fresh user prompt that has no visible invocation
+ * already — exactly as if the user had typed `/using-superpowers` themselves,
+ * so the workflow discipline reaches the users who would forget to invoke it
+ * without re-sending the body on every turn of a long back-and-forth. If a
+ * later compaction drops the invocation out of the model's visible surface,
+ * the next prompt re-asserts it once; a Context Editor exclusion of the
+ * invocation is respected and does not re-trigger. The skills themselves live
+ * in `@deepseek-ai/dsh-superpowers-skills` (vendored from superpowers 7.0.1,
  * MIT — see that package's README); this plugin only decides whether the
  * bootstrap fires.
  *
@@ -19,9 +23,10 @@
  */
 
 import type { Context, Volatile } from '@deepseek-ai/cordis'
-import type { PreStepDecision } from '@deepseek-ai/dsh-agent'
+import type { Agent, PreStepDecision } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import type { UserMessage } from '@deepseek-ai/dsh-session'
+import type { SessionEvent, SessionSeq, UserMessage } from '@deepseek-ai/dsh-session'
+import { contextEditShadowedSeqs } from '@deepseek-ai/dsh-session/surface'
 import {
   isUserInvocable,
   renderSkillContent,
@@ -37,12 +42,12 @@ export const name = 'superpowers-bootstrap'
 /** Required services: the skill registry and the per-agent working directory. */
 export const inject = ['skills', 'workingDirectory']
 
-/** The skill every fresh prompt is bootstrapped with. */
+/** The skill every session is bootstrapped with. */
 export const BOOTSTRAP_SKILL = 'using-superpowers'
 
 /** Runtime toggle projected to the browser. */
 export interface Config {
-  /** Load the using-superpowers skill on every fresh user prompt. */
+  /** Keep the using-superpowers skill loaded in every session. */
   autoUsingSuperpowers: Volatile<boolean>
 }
 
@@ -61,7 +66,7 @@ const EXPLICIT_GESTURE = /(^|\s)\/using-superpowers(?=\s|$)/
 /**
  * Whether the claimed batch carries at least one direct user message. A turn's
  * first step claims the user's prompt; continuation steps claim only tool
- * results, so the bootstrap fires once per task, not once per model call.
+ * results, so the bootstrap decision runs once per prompt, not per model call.
  * @param messages - the step's claimed batch.
  * @returns whether a fresh user prompt begins this step.
  */
@@ -86,11 +91,42 @@ function explicitlyInvoked(messages: readonly UserMessage[]): boolean {
   return false
 }
 
+/** The latest persisted `using-superpowers` invocation in the session log, if any. */
+function latestInvocation(events: readonly SessionEvent[]): SessionEvent | undefined {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index]
+    if (event === undefined || event.type !== 'user/message') continue
+    const source = (event.data as { source?: { kind?: unknown; name?: unknown } }).source
+    if (source?.kind === 'skill-invocation' && source.name === BOOTSTRAP_SKILL) return event
+  }
+  return undefined
+}
+
+/**
+ * Whether the session already shows the bootstrap to the model. Absent means
+ * inject; present but shadowed by a Context Editor replacement means the
+ * user's edit wins; present and visible means nothing to do; present but
+ * NOT visible means a compaction summarized it away — the one case that
+ * re-asserts, so compression can silently drop the discipline.
+ * @param agent - the agent whose session log and surface are read.
+ * @returns whether the session still carries a visible invocation.
+ */
+function sessionCarriesBootstrap(agent: Agent): boolean {
+  const session = agent.session
+  const events = session.snapshotEvents()
+  const last = latestInvocation(events)
+  if (last === undefined) return false
+  const shadowed = contextEditShadowedSeqs(events.map(event => ({ event })))
+  if (shadowed.has(Number(last.seq))) return true
+  const visible = new Set<SessionSeq>(session.surface.nodes)
+  return visible.has(last.seq)
+}
+
 /**
  * Mount the bootstrap listener. Registration happens once; the volatile
- * toggle, skill availability, and gesture suppression are decided per fire,
- * so toggling, uninstalling, or shadowing the skill all take effect without
- * remounting.
+ * toggle, skill availability, gesture suppression, and the once-per-session
+ * history check are all decided per fire, so toggling, uninstalling, or
+ * shadowing the skill all take effect without remounting.
  * @param ctx - host context carrying the skill registry and working directory.
  * @param config - plugin config; the volatile reference is read on every step.
  */
@@ -104,6 +140,7 @@ export function apply(ctx: Context, config: Config): void {
     if (config.autoUsingSuperpowers.get() !== true) return decision
     if (!hasFreshPrompt(messages) || explicitlyInvoked(messages)) return decision
     signal.throwIfAborted()
+    if (sessionCarriesBootstrap(agent)) return decision
     const cwd = await ctx.workingDirectory.ensure(agent, signal)
     const skill = await ctx.skills.get(BOOTSTRAP_SKILL, { cwd, signal, scope: agent })
     // A missing, unreadable, or user-disabled skill stays silent: the

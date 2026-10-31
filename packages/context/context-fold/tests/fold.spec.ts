@@ -66,6 +66,56 @@ describe('planFold', () => {
     for (const seq of plan.shadowedSeqs) expect(after).not.toContain(seq)
   })
 
+  it('never folds a skill invocation; the window starts after it', () => {
+    // fork(context-fold): skill invocations are standing instructions (the
+    // `/name` gesture and the superpowers bootstrap) — compression must not
+    // be the thing that drops the discipline out of the model's view.
+    const session = Session.create(SessionId('fold-skill-invocation'))
+    addTurn(session, 1, [
+      { kind: 'user', text: 'first user message stays visible' },
+    ])
+    session.append('user/message', createUserMessage({
+      content: [{ type: 'text', text: '<skill_content name="using-superpowers">…' }],
+      source: { kind: 'skill-invocation', name: 'using-superpowers', form: 'instructions' },
+    }), { surfaceOp: 'append' })
+    addTurn(session, 2, [
+      { kind: 'assistant', text: 'assistant answer with plenty of body text to fold away' },
+      { kind: 'user', text: 'follow-up user message with more text' },
+      { kind: 'assistant', text: 'second assistant answer with plenty of body text to fold away' },
+    ])
+    const plan = planFold(session.snapshotEvents(), { keepLast: 1, minFoldChars: 1 })
+    const nodes = surfaceSeqs(session)
+    const invocationSeq = nodes[1]!
+    expect(plan.shadowedSeqs).not.toContain(invocationSeq)
+    expect(plan.startSeq).toBe(nodes[2])
+  })
+
+  it('a mid-history invocation splits the range and older content stays unfolded', () => {
+    const session = Session.create(SessionId('fold-invocation-mid'))
+    addTurn(session, 1, [
+      { kind: 'user', text: 'first user message stays visible' },
+      { kind: 'assistant', text: 'old assistant answer with plenty of body text that would fold' },
+    ])
+    session.append('user/message', createUserMessage({
+      content: [{ type: 'text', text: '<skill_content name="brainstorming">…' }],
+      source: { kind: 'skill-invocation', name: 'brainstorming', form: 'instructions' },
+    }), { surfaceOp: 'append' })
+    addTurn(session, 2, [
+      { kind: 'assistant', text: 'newer assistant answer with plenty of body text to fold away' },
+      { kind: 'user', text: 'recent user message' },
+      { kind: 'assistant', text: 'recent assistant answer with body' },
+    ])
+    const plan = planFold(session.snapshotEvents(), { keepLast: 1, minFoldChars: 1 })
+    const nodes = surfaceSeqs(session)
+    const invocationIdx = nodes.findIndex(seq => seq === plan.startSeq) - 1
+    expect(nodes[invocationIdx]).toBeDefined()
+    // Everything in the window sits after the invocation node.
+    const nodeOrder = new Map(nodes.map((seq, index) => [Number(seq), index]))
+    for (const seq of plan.shadowedSeqs) {
+      expect(nodeOrder.get(Number(seq))!).toBeGreaterThan(invocationIdx)
+    }
+  })
+
   it('does not pin an assistant-first surface', () => {
     const session = Session.create(SessionId('fold-assistant-first'))
     addTurn(session, 1, [

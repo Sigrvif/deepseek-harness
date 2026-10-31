@@ -34,10 +34,46 @@ function prompt(text: string): UserMessage {
   return createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'user' } })
 }
 
+/**
+ * A session stub over a mutable log: tests grow it with `addInvocation` (the
+ * persisted skill-invocation event the real listener writes) and control
+ * what the surface still shows, which is exactly the state the once-per-
+ * session gate reads.
+ */
+function stubSession() {
+  const events: Array<Record<string, unknown>> = []
+  const visible = new Set<number>()
+  const session = {
+    id: 's',
+    snapshotEvents: () => events,
+    surface: { nodes: visible },
+  }
+  const addInvocation = (seq: number, options: { visible?: boolean; excluded?: boolean } = {}) => {
+    events.push({
+      seq, type: 'user/message',
+      data: { source: { kind: 'skill-invocation', name: BOOTSTRAP_SKILL, form: 'instructions' }, content: [] },
+    })
+    if (options.excluded === true) {
+      // A Context Editor replacement shadowing the invocation: the user's
+      // edit wins over the bootstrap either way.
+      events.push({
+        seq: seq + 1, type: 'user/message',
+        surfaceOp: { op: 'replace', startSeq: seq, endSeq: seq },
+        data: { contextEdit: { mode: 'excluded' } },
+      })
+    } else if (options.visible !== false) {
+      visible.add(seq)
+    }
+    return session
+  }
+  return { session, events, visible, addInvocation }
+}
+
 async function mounted(options: {
   enabled?: boolean
   /** The registry's answer for `using-superpowers`; null means the skill is missing. */
   skill?: SkillDefinition | null
+  session?: ReturnType<typeof stubSession>['session']
 } = {}) {
   const ctx = new Context()
   contexts.push(ctx)
@@ -48,8 +84,9 @@ async function mounted(options: {
   ctx.provide('workingDirectory', { ensure: () => Promise.resolve('/workspace') })
   const auto: Volatile<boolean> = createVolatile(options.enabled ?? true)
   apply(ctx, { autoUsingSuperpowers: auto } satisfies Config)
+  const agent = { session: options.session ?? stubSession().session } as unknown as Agent
   const step = (messages: UserMessage[]) =>
-    agentEvents(ctx, { session: { id: 's' } } as unknown as Agent).waterfall(
+    agentEvents(ctx, agent).waterfall(
       'agent/pre-step',
       { modelSelection: { provider: 'p', model: 'm' }, messages, turn: 1, step: 1, signal: SIGNAL },
       () => Promise.resolve({ kind: 'enter' as const, messages: [...messages] }),
@@ -63,7 +100,7 @@ function entered(decision: PreStepDecision): { kind: 'enter'; messages: UserMess
 }
 
 describe('superpowers-bootstrap', () => {
-  it('injects the using-superpowers body on a fresh user prompt', async () => {
+  it('injects the using-superpowers body on the first fresh user prompt', async () => {
     const { step } = await mounted()
     const decision = entered(await step([prompt('Fix the login bug')]))
     expect(decision.messages).toHaveLength(2)
@@ -73,6 +110,33 @@ describe('superpowers-bootstrap', () => {
     expect((injected.source as { form?: string }).form).toBe('instructions')
     expect(injected.content[0]).toMatchObject({ type: 'text' })
     expect((injected.content[0] as { text: string }).text).toContain('<skill_content name="using-superpowers">')
+  })
+
+  it('injects once per session, not again while the invocation stays visible', async () => {
+    const state = stubSession()
+    const { step } = await mounted({ session: state.session })
+    expect(entered(await step([prompt('Task one')])).messages).toHaveLength(2)
+    // The turn persisted; the second prompt of the same session sees the
+    // invocation already in the visible surface and carries nothing extra.
+    state.addInvocation(5)
+    expect(entered(await step([prompt('Task two')])).messages).toHaveLength(1)
+    expect(entered(await step([prompt('Task three')])).messages).toHaveLength(1)
+  })
+
+  it('re-asserts once when a compaction drops the invocation from the surface', async () => {
+    const state = stubSession()
+    const { step } = await mounted({ session: state.session })
+    // Same log, but a compaction checkpoint shadowed the invocation out of
+    // the visible surface: the next prompt re-asserts the bootstrap.
+    state.addInvocation(5, { visible: false })
+    expect(entered(await step([prompt('After compaction')])).messages).toHaveLength(2)
+  })
+
+  it('respects a Context Editor exclusion of the invocation', async () => {
+    const state = stubSession()
+    const { step } = await mounted({ session: state.session })
+    state.addInvocation(5, { excluded: true })
+    expect(entered(await step([prompt('Task')])).messages).toHaveLength(1)
   })
 
   it('does not inject on a continuation step without a fresh user message', async () => {
@@ -89,14 +153,6 @@ describe('superpowers-bootstrap', () => {
     })
     const decision = entered(await step([catalog]))
     expect(decision.messages).toHaveLength(1)
-  })
-
-  it('fires once per prompt, not again on the next step of the same turn', async () => {
-    const { step } = await mounted()
-    const first = entered(await step([prompt('Do the thing')]))
-    expect(first.messages).toHaveLength(2)
-    const second = entered(await step([]))
-    expect(second.messages).toHaveLength(0)
   })
 
   it('stays silent when the volatile toggle is off, and fires again after it flips on', async () => {
@@ -143,7 +199,7 @@ describe('superpowers-bootstrap', () => {
     ctx.provide('skills', { get: () => Promise.resolve(skill()) } as unknown as SkillRegistry)
     ctx.provide('workingDirectory', { ensure: () => Promise.resolve('/workspace') })
     apply(ctx, { autoUsingSuperpowers: createVolatile(true) } satisfies Config)
-    const decision = await agentEvents(ctx, { session: { id: 's' } } as unknown as Agent).waterfall(
+    const decision = await agentEvents(ctx, { session: stubSession().session } as unknown as Agent).waterfall(
       'agent/pre-step',
       { modelSelection: { provider: 'p', model: 'm' }, messages: [prompt('Task')], turn: 1, step: 1, signal: SIGNAL },
       () => Promise.resolve({ kind: 'reject' as const }),
@@ -161,7 +217,7 @@ describe('superpowers-bootstrap', () => {
     ctx.provide('skills', { get: () => Promise.resolve(skill()) } as unknown as SkillRegistry)
     ctx.provide('workingDirectory', { ensure: () => Promise.resolve('/workspace') })
     await ctx.plugin(plugin).await()
-    const decision = entered(await agentEvents(ctx, { session: { id: 's' } } as unknown as Agent).waterfall(
+    const decision = entered(await agentEvents(ctx, { session: stubSession().session } as unknown as Agent).waterfall(
       'agent/pre-step',
       { modelSelection: { provider: 'p', model: 'm' }, messages: [prompt('Task')], turn: 1, step: 1, signal: SIGNAL },
       () => Promise.resolve({ kind: 'enter' as const, messages: [] as UserMessage[] }),

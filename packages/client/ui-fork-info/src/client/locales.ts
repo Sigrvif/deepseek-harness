@@ -11,7 +11,7 @@ export const en = {
   'superpowers.name': 'Bundled Superpowers Skills',
   'superpowers.summary': 'The fifteen superpowers workflow skills (brainstorming, test-driven development, systematic debugging, and friends) ship with the app and appear in every session\'s skill catalog. Project, custom, and user skill roots all outrank the bundled one, so any skill can be shadowed with your own copy.',
   'autoSkills.name': 'Auto Superpowers Toggle',
-  'autoSkills.summary': 'A General settings switch (default on) that loads the using-superpowers skill at the start of every task, so the workflow discipline reaches users who would forget to invoke it. Turn it off to invoke skills manually; each task then starts without the bootstrap.',
+  'autoSkills.summary': 'A General settings switch (default on) that loads the using-superpowers skill once per session, so the workflow discipline reaches users who would forget to invoke it. Follow-up prompts never re-send it: folds keep it visible, and if the engine\'s own compaction ever drops it, the next prompt re-asserts it once. Turn it off to invoke skills manually.',
   'tab.attribution': 'Context Fold\'s behavior is adapted from the open-source billion-context project (MIT + attribution term). The bundled superpowers skills are vendored from the open-source superpowers project by Jesse Vincent (MIT). See the fork documentation for the full inventory.',
 } as const
 
@@ -34,6 +34,6 @@ export const zh: Record<ForkInfoLocaleKey, string> = {
   'superpowers.name': '内置 Superpowers 技能',
   'superpowers.summary': '十五个 superpowers 工作流技能（头脑风暴、测试驱动开发、系统化调试等）随应用一起分发，出现在每个会话的技能目录中。项目、自定义与用户技能目录的优先级都高于内置目录，任何技能都可以用同名副本覆盖。',
   'autoSkills.name': '自动 Superpowers 开关',
-  'autoSkills.summary': '常规设置页中的开关（默认开启）：在每个任务开始时自动加载 using-superpowers 技能，让工作流纪律覆盖到容易忘记调用的用户。关闭后可手动调用技能，任务不再自动引导。',
+  'autoSkills.summary': '常规设置页中的开关（默认开启）：每个会话加载一次 using-superpowers 技能，让工作流纪律覆盖到容易忘记调用的用户。后续提示不会重复发送；折叠会保留其内容，若引擎自身的压缩将其移出上下文，下一条提示会重新补发一次。关闭后可手动调用技能。',
   'tab.attribution': '上下文折叠的行为改编自开源项目 billion-context（MIT + 署名条款）；内置的 superpowers 技能来自 Jesse Vincent 的开源项目 superpowers（MIT）。完整清单见分支文档。',
 }

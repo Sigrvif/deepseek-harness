@@ -122,6 +122,16 @@ export function planFold(
     else break
   }
   if (messageOf(eventAt(events, nodes[startIdx]))?.role === 'user') startIdx += 1
+  // Skill invocations (the `/name` gesture and the harness bootstrap) are
+  // standing instructions — folding one would drop the workflow discipline or
+  // an explicitly requested skill out of the model's view. Folds never cover
+  // them: the window starts after the last invocation (an older, superseded
+  // one below that point stays unfolded, which only occurs after the engine's
+  // own compaction already summarized that region).
+  for (let index = startIdx; index <= endIdx; index += 1) {
+    const source = (eventAt(events, nodes[index])?.data as { source?: { kind?: unknown } } | undefined)?.source
+    if (source?.kind === 'skill-invocation') startIdx = index + 1
+  }
   if (startIdx > endIdx) throw nothingFoldable()
 
   const nodeIndex = new Map<number, number>()
