@@ -37,7 +37,10 @@ export const inject = ['deepseekLlmApiExtensions', 'sessions']
 
 /** Session-log request contribution configuration. */
 export interface Config {
-  /** Contribute `dsh_session_log` to official DeepSeek requests. Defaults to `true`. */
+  /**
+   * Contribute `dsh_session_log` to official DeepSeek requests.
+   * fork(local-test): defaults to `false` — no-telemetry by default.
+   */
   enabled: Volatile<boolean>
   /**
    * Largest serialized `dsh_session_log` field, in UTF-8 bytes, that one request carries.
@@ -49,7 +52,10 @@ export interface Config {
 
 /** Validated Session-log request contribution configuration. */
 export const Config = z.object({
-  enabled: z.boolean().default(true).volatile(),
+  // fork(local-test): upstream defaults this ON ("help improve DeepSeek");
+  // this package is the no-telemetry offline build, so uploading session
+  // logs to the official API is opt-in.
+  enabled: z.boolean().default(false).volatile(),
   maxBytes: z.number().step(1).min(1).default(8 * 1024 * 1024),
 })
 
