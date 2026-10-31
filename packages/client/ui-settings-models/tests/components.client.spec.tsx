@@ -866,6 +866,61 @@ describe('ModelsSection', () => {
     expect(within(row as HTMLElement).getByRole('button', { name: deepSeekCopy(en.editProvider) })).toBeTruthy()
   })
 
+  // fork(local-test): the shipped slr-runtime preset opens its editor on
+  // start (the user must adjust the model before doing anything) and stops
+  // opening once the model list differs from the shipped example.
+  const SLR_EXAMPLE_ID = '/run/media/veracrypt1/devpod/Test Models/Qwen3.6-35B-A3B-MTP-APEX-I-MiniPlus-V2.1-Abliterated-GGUF/Qwen3.6-35B-A3B.APEX-I-MiniPlus-V2.1-Abliterated.gguf'
+
+  function slrFace(models: unknown) {
+    const scripted = scriptedFace()
+    const namespaces = wireNamespaces().map(view => view.ns === 'llm-pi-ai'
+      ? {
+        ...view,
+        value: {
+          ...(view.value as Record<string, unknown>),
+          providers: {
+            ...((view.value as { providers?: Record<string, unknown> }).providers ?? {}),
+            'slr-runtime': {
+              api: 'openai-completions',
+              baseURL: 'http://127.0.0.1:1234/v1',
+              apiKeyEnv: 'SLR_RUNTIME_API_KEY',
+              models,
+            },
+          },
+        },
+      }
+      : view)
+    scripted.face.llm.listProviders.mockResolvedValue(remoteOk([
+      { id: 'deepseek-official', name: 'DeepSeek' },
+      { id: 'openai', name: 'openai' },
+      { id: 'slr-runtime', name: 'SLR Runtime' },
+    ]))
+    scripted.face.llm.listConfigurableProviders.mockResolvedValue(remoteOk([
+      { provider: 'slr-runtime', displayName: 'slr-runtime', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'slr-runtime'] },
+    ]))
+    scripted.face.settings.describe.mockResolvedValue(remoteOk({
+      writable: true, hasDocument: false, namespaces,
+    } as { writable: boolean; hasDocument: boolean; namespaces: SettingsNamespaceView[] }))
+    scripted.face.credentials.describe.mockImplementation((refs: string[]) => Promise.resolve(remoteOk(
+      Object.fromEntries(refs.map(ref => [ref, { configured: true, writable: true }]))),
+    ))
+    return scripted
+  }
+
+  it('opens the shipped slr-runtime preset editor on start', async () => {
+    await mountFace(slrFace([{ id: SLR_EXAMPLE_ID, name: 'Qwen3.6-35B-A3B', contextWindow: 262144, maxTokens: 32768, input: ['text', 'image'] }]))
+    // The setup card is open without any click: the model needs adjusting.
+    expect(screen.getByLabelText(en.keyInput)).toBeTruthy()
+    expect(screen.getByText('slr-runtime')).toBeTruthy()
+  })
+
+  it('renders slr-runtime as a collapsed row once its model changed', async () => {
+    await mountFace(slrFace([{ id: 'something-else.gguf', name: 'Served model', contextWindow: 262144, maxTokens: 32768 }]))
+    expect(screen.queryByLabelText(en.keyInput)).toBeNull()
+    expect(screen.getByText('slr-runtime')).toBeTruthy()
+    expect(screen.getByRole('button', { name: deepSeekCopy(en.editProvider).replace('DeepSeek (deepseek-official)', 'slr-runtime') })).toBeTruthy()
+  })
+
   it('derives conventional credential references from route ids', () => {
     expect(deriveKeyRef('anthropic')).toBe('ANTHROPIC_API_KEY')
     expect(deriveKeyRef('minimax-cn')).toBe('MINIMAX_CN_API_KEY')

@@ -178,6 +178,16 @@ export async function removeProviderProfile(
 export const internals = { setupCardEnabled: false }
 
 /**
+ * fork(local-test): the shipped slr-runtime preset's example model id —
+ * kept in sync with the seed in the bundle's
+ * `dsh-home/profiles/web/cordis.patch.yml`. While the preset still serves
+ * exactly this example, its editor opens on start so the user adjusts the
+ * model to the GGUF their SLR Runtime actually serves.
+ */
+export const SLR_RUNTIME_EXAMPLE_MODEL_ID =
+  '/run/media/veracrypt1/devpod/Test Models/Qwen3.6-35B-A3B-MTP-APEX-I-MiniPlus-V2.1-Abliterated-GGUF/Qwen3.6-35B-A3B.APEX-I-MiniPlus-V2.1-Abliterated.gguf'
+
+/**
  * Whether a whole-section provider still needs its first key: an unconfigured
  * credential opens the setup card instead of showing a row. This is the
  * first-run posture alone — a user who can already reach some provider gets an
@@ -200,6 +210,12 @@ export function needsSetup(row: ProviderRow, anyUsable: boolean): boolean {
  * derived half is what keeps the seat consistent with the editor on the
  * add-provider draft, whose dormant row names no reference yet.
  */
+/** fork(local-test): the model ids a namespace's slr-runtime provider lists. */
+function modelIdsOf(namespace: SettingsNamespaceView): unknown[] {
+  const providers = (namespace.value as { providers?: { 'slr-runtime'?: { models?: { id?: unknown }[] } } }).providers
+  return (providers?.['slr-runtime']?.models ?? []).map(model => model?.id)
+}
+
 function keyConfiguredOf(row: ProviderRow): boolean {
   return row.apiKeyEnv !== undefined
     ? row.credential?.configured === true
@@ -388,6 +404,11 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
     && row.entry.provider === 'deepseek-official'
     && row.entry.error === undefined
     && !keyConfiguredOf(row)
+  const presetNeedsAttention = (row: ProviderRow, namespace: SettingsNamespaceView | undefined): boolean =>
+    !internals.setupCardEnabled
+    && row.entry.provider === 'slr-runtime'
+    && namespace !== undefined
+    && JSON.stringify(modelIdsOf(namespace)) === JSON.stringify([SLR_RUNTIME_EXAMPLE_MODEL_ID])
   const configured = state.rows.filter(row => row.configured && !dormantDeepseek(row))
   const configurable = state.rows.filter(row => state.namespaces.has(row.entry.settingsNs))
   const addable: AddableRow[] = state.rows.flatMap((row) => {
@@ -455,7 +476,10 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
           const error = row.entry.error === undefined
             ? null
             : <p role="alert" className={styles['error']}>{row.entry.error}</p>
-          if (needsSetup(row, anyUsable) && !dismissedSetup.has(row.entry.provider)) {
+          // fork(local-test): the shipped slr-runtime preset opens its editor
+          // on start (its model still the shipped example) until dismissed or
+          // adjusted.
+          if ((needsSetup(row, anyUsable) || presetNeedsAttention(row, namespace)) && !dismissedSetup.has(row.entry.provider)) {
             // First-run posture: the provider exists but has no key — the
             // setup card IS its presence on the page, until the user closes it.
             return (
