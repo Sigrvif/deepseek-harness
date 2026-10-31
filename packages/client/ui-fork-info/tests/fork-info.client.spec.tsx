@@ -64,13 +64,17 @@ describe('ui-fork-info browser plugin', () => {
 })
 
 describe('ForkInfoTab', () => {
-  it('lists both fork additions with summaries and attribution', () => {
+  it('lists every fork addition with summaries and attribution', () => {
     render(<ForkInfoTab t={(key: string) => (en as Record<string, string>)[key] ?? key} />)
     expect(screen.getByText(en['tab.intro'])).toBeTruthy()
     expect(screen.getByText(en['editor.name'])).toBeTruthy()
     expect(screen.getByText(en['editor.summary'])).toBeTruthy()
     expect(screen.getByText(en['fold.name'])).toBeTruthy()
     expect(screen.getByText(en['fold.summary'])).toBeTruthy()
+    expect(screen.getByText(en['superpowers.name'])).toBeTruthy()
+    expect(screen.getByText(en['superpowers.summary'])).toBeTruthy()
+    expect(screen.getByText(en['autoSkills.name'])).toBeTruthy()
+    expect(screen.getByText(en['autoSkills.summary'])).toBeTruthy()
     expect(screen.getByText(en['tab.attribution'])).toBeTruthy()
   })
 
@@ -78,5 +82,7 @@ describe('ForkInfoTab', () => {
     render(<ForkInfoTab t={(key: string) => (zh as Record<string, string>)[key] ?? key} />)
     expect(screen.getByText(zh['editor.name'])).toBeTruthy()
     expect(screen.getByText(zh['fold.name'])).toBeTruthy()
+    expect(screen.getByText(zh['superpowers.name'])).toBeTruthy()
+    expect(screen.getByText(zh['autoSkills.name'])).toBeTruthy()
   })
 })

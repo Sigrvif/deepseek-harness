@@ -156,6 +156,14 @@
     - id: context-fold
       name: '@deepseek-ai/dsh-context-fold'
 
+    # fork(superpowers): automatic superpowers bootstrap — loads the bundled
+    # `using-superpowers` skill on every fresh user prompt, as if the user had
+    # typed /using-superpowers. The volatile `autoUsingSuperpowers` toggle is
+    # surfaced on the General settings page by ui-fork-auto-skills. See
+    # packages/skill/superpowers-bootstrap and FORK.md.
+    - id: superpowers-bootstrap
+      name: '@deepseek-ai/dsh-superpowers-bootstrap'
+
     # Workspace commands and reconnect-safe projection over Typert Remote.
     - id: workspace-controller
       name: '@deepseek-ai/dsh-api-workspace-controller'
@@ -443,6 +451,10 @@
     # fork(local-test): the Fork additions tab in the Plugins settings page.
     - id: ui-fork-info
       name: '@deepseek-ai/dsh-client-ui-fork-info'
+
+    # fork(superpowers): the auto-superpowers toggle on the General settings page.
+    - id: ui-fork-auto-skills
+      name: '@deepseek-ai/dsh-client-ui-fork-auto-skills'
 
     # Model selection: the /model popupSelect + composer seat over session.models.
     - id: ui-model-selection

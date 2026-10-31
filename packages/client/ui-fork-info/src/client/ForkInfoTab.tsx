@@ -21,6 +21,14 @@ export function ForkInfoTab({ t }: PropsLocale<'forkInfo'>) {
         <h3 className={css.name}>{t('fold.name')}</h3>
         <p className={css.summary}>{t('fold.summary')}</p>
       </section>
+      <section className={css.entry}>
+        <h3 className={css.name}>{t('superpowers.name')}</h3>
+        <p className={css.summary}>{t('superpowers.summary')}</p>
+      </section>
+      <section className={css.entry}>
+        <h3 className={css.name}>{t('autoSkills.name')}</h3>
+        <p className={css.summary}>{t('autoSkills.summary')}</p>
+      </section>
       <p className={css.attribution}>{t('tab.attribution')}</p>
     </div>
   )
