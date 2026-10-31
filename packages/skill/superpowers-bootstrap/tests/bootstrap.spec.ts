@@ -6,7 +6,7 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { SkillDefinition, SkillRegistry } from '@deepseek-ai/dsh-skill'
 import type { UserMessage } from '@deepseek-ai/dsh-session'
 import { afterEach, describe, expect, it } from 'vitest'
-import { BOOTSTRAP_SKILL, apply, type Config } from '../src/index.ts'
+import { BOOTSTRAP_SKILL, apply, default as plugin, type Config } from '../src/index.ts'
 
 const contexts: Context[] = []
 afterEach(async () => {
@@ -149,5 +149,24 @@ describe('superpowers-bootstrap', () => {
       () => Promise.resolve({ kind: 'reject' as const }),
     )
     expect(decision).toEqual({ kind: 'reject' })
+  })
+
+  it('resolves its default config when mounted through cordis without one', async () => {
+    // Regression: the loader mounts the default export; a default export
+    // without the Config static left `config` undefined and the first
+    // prompt died reading `autoUsingSuperpowers` of undefined (found on the
+    // wire in the offline bundle, where the patch row carries no config).
+    const ctx = new Context()
+    contexts.push(ctx)
+    ctx.provide('skills', { get: () => Promise.resolve(skill()) } as unknown as SkillRegistry)
+    ctx.provide('workingDirectory', { ensure: () => Promise.resolve('/workspace') })
+    await ctx.plugin(plugin).await()
+    const decision = entered(await agentEvents(ctx, { session: { id: 's' } } as unknown as Agent).waterfall(
+      'agent/pre-step',
+      { modelSelection: { provider: 'p', model: 'm' }, messages: [prompt('Task')], turn: 1, step: 1, signal: SIGNAL },
+      () => Promise.resolve({ kind: 'enter' as const, messages: [] as UserMessage[] }),
+    ))
+    expect(decision.messages).toHaveLength(1)
+    expect((decision.messages[0]!.source as { kind?: string }).kind).toBe('skill-invocation')
   })
 })

@@ -127,4 +127,4 @@ export function apply(ctx: Context, config: Config): void {
   ctx.inject(['settings'], (child) => { child.effect(() => child.settings.configure({ auto: false }, ctx.fiber)) })
 }
 
-export default { name, inject, apply }
+export default { name, inject, Config, apply }
