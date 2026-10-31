@@ -1,6 +1,6 @@
-# FORK.md — this fork's contract with upstream
+# FORK.md — DSLRH's contract with upstream
 
-Base: **deepseek-harness v0.2.2-alpha.2** (commit `e9b21682`, pristine upstream).
+DSLRH (DeepSeek Local Runtime Harness) is the working name of this fork in all project documentation. Base: **deepseek-harness v0.2.2-alpha.2** (commit `e9b21682`, pristine upstream).
 Branch `context-editor` adds the native **Context Editor** feature
 (`docs/superpowers/specs/2026-10-28-context-editor-design.md`).
 
@@ -94,3 +94,11 @@ validate like every other type), `packages/core/session/tests/surface.spec.ts`
   keep their inherited route) and are NOT inherited by session forks.
 - Re-installing the old third-party "Agent Context Editor" plugin alongside
   this feature is unsupported (two editors would fight over the same sessions).
+- `pnpm run doc-sync` is NOT green in this fork and is not part of its
+  baseline (the 10 build gates + per-package suites are). The fork packages
+  lack several upstream documentation-standard artifacts (package README
+  Summaries / model-experience sections, persistence catalog entries,
+  export-JSDoc audits, design docs with bilingual counterparts beyond the
+  recorded exclusions in `scripts/translation-pairing.manifest.json`).
+  Closing that debt is optional future work; upstream doc gates may also
+  flag fork packages after a merge.

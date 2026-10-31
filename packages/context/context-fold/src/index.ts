@@ -43,9 +43,9 @@ export { installNudge } from './nudge.ts'
 /**
  * Mount the fold capability: system section, tools, and nudges.
  * @param ctx - host context.
- * @param config - plugin config; every field defaults.
+ * @param config - plugin config; `resolveConfig` fills every omitted field.
  */
-export function apply(ctx: Context, config: unknown): void {
+export function apply(ctx: Context, config: Config = {} as Config): void {
   const resolved = resolveConfig(config)
   if (!resolved.enabled) return
   ctx.effect(() => registerFoldSection(ctx))

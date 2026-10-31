@@ -33,13 +33,21 @@ import {
 
 /** Every fold knob, resolved from plugin config (Task 8) or constructed directly in tests. */
 export interface ResolvedFoldConfig {
+  /** Master switch; `apply` mounts nothing when false. */
   enabled: boolean
+  /** Messages at the recent tail never covered by a fold plan. */
   keepLast: number
+  /** Minimum foldable-range character count before a compress call is accepted. */
   minFoldChars: number
+  /** Minimum summary character count a model-written fold must produce. */
   minSummaryChars: number
+  /** Character cap on the originals one decompress call may read back. */
   decompressCapChars: number
+  /** Maximum hits one search_context call may return. */
   searchLimit: number
+  /** Context growth in tokens that arms one growth nudge. */
   nudgeGrowthTokens: number
+  /** Visible-context pressure fraction that arms a pressure nudge. */
   pressureNudgeRatio: number
 }
 

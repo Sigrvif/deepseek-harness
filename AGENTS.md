@@ -1,187 +1,189 @@
-# AGENTS.md
+# AGENTS.md — DSLRH (DeepSeek Local Runtime Harness)
 
-DeepSeek Harness is an all-plugin Cordis agent harness. Read [docs/architecture.md](docs/architecture.md) before changing `packages/`; follow [docs/AGENTS.md](docs/AGENTS.md) for documentation.
+DSLRH is a local fork of **DeepSeek Harness v0.2.2-alpha.2** (upstream commit
+`e9b21682`, branch `context-editor`) built for **offline local testing against
+the SLR Runtime** (an OpenAI-compatible local model server). It is not
+published: distribution is versioned offline 7z archives (`dsh-linux-x64-*`,
+`dsh-windows-x64-*`) that always carry everything done so far as a
+ready-to-use package. Git exists for checkpoints during development; there is
+no GitHub remote, no PRs, no CI.
 
-## Pre-stable APIs and released Session data
+Fork contract: [FORK.md](FORK.md) — read it before changing `packages/`. It
+lists every new package, every marked upstream edit, and the upstream-merge
+runbook. Every diff hunk in an upstream file carries a `fork(...)` marker.
 
-Public APIs are pre-stable; update every consumer. Follow [version/status](docs/session-format-status.md) and [type acknowledgements](docs/cookbook/reviewing-persistence-type-changes.md). [Adjacent migration](.agents/notes/implemented/architecture/2026-08-31-released-session-format-migrations.md) may add a version-named successor but never move, overwrite, or delete committed generations; predecessors imply neither fallback nor downgrade support. SQLite uses monotonic `SCHEMA_VERSION`.
+**Naming:** documentation calls the project DSLRH. Package identifiers,
+plugin ids, and CLI names stay `@deepseek-ai/dsh-*` / upstream-shaped so an
+upstream merge never collides on renames. Do not rename code identifiers.
 
-Acknowledge [declared persistence-type changes](docs/cookbook/reviewing-persistence-type-changes.md).
+Commits: `git -c user.name=fork -c user.email=fork@local`; build **only at a
+clean HEAD** (a dirty tree stamps `-dirty` into the client build
+environment). Fork version lives in the root `package.json` `dshFork.version`
+and bumps whenever shipped behavior or bundle content changes.
 
-Record each externally perceptible breaking change immediately in an [upgrade guide](.agents/skills/dsh-create-upgrade-guide/SKILL.md).
+## Upstream components and how to update them
 
-**Application launch.** Only `dsh` profiles launch supported Node apps; package bins, demos, and public SDK argv escapes are forbidden ([rule](docs/architecture.md#application-launch)).
+Four upstream projects feed this fork. When one ships a meaningful update,
+evaluate, adopt deliberately, and re-verify — never blend silently. After any
+update: bump `dshFork.version`, update [FORK.md](FORK.md), `VERSION.txt` and
+the bundle READMEs, run the affected suites plus a full `pnpm run build` at a
+clean HEAD, refresh the offline bundles, wire-verify the affected feature,
+and repack both archives with an extraction check.
+
+### 1. DeepSeek Harness — https://github.com/deepseek-ai/deepseek-harness
+
+The base. The current baseline is recorded in the root `package.json`
+(`dshFork.base`, `dshFork.upstreamCommit`). To adopt a newer release: extract
+it into a fresh worktree and commit as a pristine baseline, merge/rebase
+resolving conflicts **only** in [FORK.md](FORK.md) §2 files (new packages
+never conflict), then `pnpm install`, run the fork's suites (note: upstream
+has ~14 pre-existing cross-file isolation failures at the baseline; run
+suites per package), full build, boot-check, refresh bundles, repack. The
+`packages/settings/settings/src/index.ts` LEGACY map and similar upstream
+files must keep their `fork(...)` markers through the merge.
+
+### 2. agent-context-editor — https://github.com/jermaine123123/agent-context-editor
+
+Behavioral ancestor of the native Context Editor. No code is used: the
+capability was re-implemented natively in `packages/context/context-editor`
+and `packages/client/ui-context-editor`, so the third-party plugin must
+never be installed alongside (two editors would fight over the same
+sessions). Update check: compare its release notes/diff against our feature
+set (request capture, surface edits, exclusions, condensation, request log,
+tools & params overrides). Adopt selectively — port behavior or UX wins into
+the native packages with tests; the native implementation is the product.
+
+### 3. billion-context — https://github.com/ranxianglei/billion-context
+
+Source of the fold semantics, growth-nudge cadence, and prompt corpus behind
+`packages/context/context-fold`. **MIT + attribution term** — attribution
+must survive in the file headers (`src/prompts.ts`), [FORK.md](FORK.md), and
+the Fork additions settings tab. Update check: diff its fold planning,
+nudge discipline, and prompts against `context-fold/src`; port deliberate
+improvements, keep the attribution, and re-verify with the fold suite plus a
+wire test (a compress call changes the next request's payload; decompress
+restores).
+
+### 4. superpowers — https://github.com/obra/superpowers
+
+Fifteen vendored workflow skills in
+`packages/skill/superpowers-skills/skills` (MIT; the upstream LICENSE is
+kept beside them). Local adaptations are minimal and marked in that
+package's README: one Platform Adaptation line and
+`skills/using-superpowers/references/dsh-tools.md`. Update: copy the new
+release's `skills/` over the vendored tree, re-apply the two adaptations,
+bump `UPSTREAM_VERSION` in `src/index.ts`, confirm the frontmatter still
+matches the dsh skill parser (`name` kebab-case + `description`; see
+`skill-filesystem`), and run the `superpowers-bootstrap` and skill suites.
 
 ## Repository layout
 
-```
-vendor/      Vendored Cordis (vendor/README.md)
-packages/    @deepseek-ai/dsh-<pkg> workspaces at packages/<group>/<pkg>/
-  core/                 agent/session API
-  api/                  remote BFF
-  typert/               type graphs
-  llm/                  model providers
-  shell/                command execution
-  subprocess/           child-process management
-  ssh/                  SSH execution providers
-  terminal/             persistent terminals
-  ptc-runtime/          PTC execution
-  sandbox/              process confinement
-  deliverables/         turn deliverables
-  fs/                   filesystem access
-  lsp/                  language servers
-  skill/                skill loading
-  web/                  search/fetch tools
-  computer-use/         computer interaction
-  browser-use/          browser interaction
-  compaction/           context compaction
-  context/              request context
-  subagent/             delegated agents
-  jobs/                 background jobs
-  bundle/               profile bundles
-  workflow/             workflow execution
-  todo/                 todo_write tool
-  plan/                 logged planning
-  goal/                 session goals
-  schedule/             scheduled follow-ups
-  preset/               agent composition
-  guard/                loop/tool guards
-  extensions/           runtime self-modification
-  session/              durable sessions
-  session-query/        browsing/search/export
-  attachment/           binary attachments
-  spill/                output spill
-  storage/              non-session storage
-  workspace/            workspace entities
-  feedback/             human feedback
-  identity/             anonymous identity
-  settings/             user settings
-  credentials/          credentials/authorization
-  acp/                  automation-only ACP
-  interaction/          human interaction
-  boot/                 application boot
-  sdk/                  JSON-RPC SDK
-  host/                 GUI host
-  client/               GUI client
-  mcp/                  external tools
-  experimental/         evaluated capabilities without a product-support commitment
-  test-support/         test infrastructure
-  util/                 zero-dependency utilities
-python/      Python SDK/runtime (python/README.md)
-native/      @deepseek-ai/node-addon-system source (native/README.md)
-benchmarks/  performance gates
-.agents/     Agent workflows/notes
-docs/        Documentation (docs/AGENTS.md)
-scripts/     gates and generators
-website/     VitePress documentation projection
-```
+Upstream layout (full list: [packages/README.md](packages/README.md)):
+`vendor/` pinned Cordis, `packages/<group>/<pkg>/` (`@deepseek-ai/dsh-*`),
+`apps/`, `docs/`, `scripts/`, `.agents/` (workflows/notes), `snapshots/`.
 
-Package groups: [packages/README.md](packages/README.md). [Experimental status](packages/experimental/README.md#status) is independent of optional delivery; nonexperimental packages need product use or an explicit [classification](scripts/product-package-policy.ts).
+Fork additions (all documented in [FORK.md](FORK.md) §1):
+`packages/context/context-editor`, `packages/context/context-fold`,
+`packages/skill/superpowers-skills`, `packages/skill/superpowers-bootstrap`,
+`packages/client/ui-context-editor`, `packages/client/ui-fork-info`,
+`packages/client/ui-fork-auto-skills`.
 
 ## Commands
 
 ```sh
-pnpm install            # pnpm workspaces, node >=24.9
-pnpm run clean           # remove build outputs and safe residue from deleted packages
-pnpm run test           # unit tests
-pnpm run test:coverage  # CI coverage gate: per-file 100% on packages/*/*/src
-pnpm run test:e2e       # real-API tests; self-skip without DEEPSEEK_API_KEY
-pnpm run test:expected  # owner-local process expectations
-pnpm run test:snapshot  # keyless recorded-session replay through shipped profiles; filter: -t <name>
-pnpm run test:snapshot:record  # re-record expected outputs (needs key)
-pnpm run typecheck
-pnpm run lint
-pnpm run duplication    # cross-file TypeScript clone detection
-pnpm run build          # build:artifacts + build:check, concurrently
-pnpm run build:artifacts # artifacts: tsc emits lib/types, tsdown bundles runtime, Web
-pnpm run build:check    # typecheck aggregate tests/scripts against current build:artifacts output
-pnpm run hygiene        # publint + workspace/package/dependency checks + NodeNext consumer check
-pnpm run check:windows-wine  # ONLY when diagnosing a known Windows failure (needs wine); CI owns this signal
-pnpm run doc-sync       # documentation gates (scripts/run-gates.ts)
-pnpm run test:docs      # quick documentation checks (no build; doc-quick aggregate)
-pnpm run website:build  # VitePress build (doubles as dead-link check)
-pnpm dsh --profile headless "task"  # run one task from source (needs DEEPSEEK_API_KEY)
-pnpm run demo:ptc -- "task"  # headless PTC mode run (needs key)
-pnpm run dev:web | dev:desktop  # build:artifacts, then launch; Web also rebuilds client bundles on edits. start:web | start:desktop skip the build
-make web|dev-web|desktop|dev-desktop|build  # the same commands; ARGS='--no-open' forwards options
+pnpm install             # pnpm workspaces, node >=24.9
+pnpm run build           # the full gate graph (10 gates); run at clean HEAD
+pnpm run test            # unit tests; ~14 pre-existing cross-file isolation
+                         # failures exist at the baseline — run suites per package
+pnpm run typecheck       # host + client aggregate checks
+pnpm dsh web             # run from source (dev profiles need no key with the SLR preset)
 ```
 
-### Host sandbox failures
+The offline bundles refresh after a successful build (recipe below); the
+refresh tooling lives **outside** this repo in `/workspaces/devpod/DSH/bundle-tools`
+(`hoist-parity.py`, `swap-win32-natives.sh`, recipe in its README).
 
-If a required `gh`, `pnpm`, build, test, or generator command fails because the sandbox blocks credentials, network, IPC, watching, or nested `sandbox-exec`, retry unchanged with the narrowest host escalation. Require sandbox evidence; never bypass test failures or the product sandbox.
+### Bundle refresh recipe
 
-### Run relevant checks locally
+1. Commit at a clean HEAD, then `pnpm run build` (10/10 gates).
+2. `pnpm --filter @deepseek-ai/dsh deploy --prod --config.auto-install-peers=true --config.node-linker=hoisted /workspaces/devpod/DSH/.deploy-hoisted` (the ignored-build warning for dsh-subprocess-local is expected).
+3. `python3 hoist-parity.py` — restores vendor packages and `src/` trees the deploy misses (needs the previous bundle tree present).
+4. Replace `dsh-linux-x64-v2/app` and `dsh-windows-x64-v2/app` with the hoisted tree; run `swap-win32-natives.sh` for the Windows tree (saved win32 natives in `/tmp/win32-natives2`).
+5. Reset both `dsh-home/` to the pristine seed (extract `dsh-home/` from an earlier archive), update `VERSION.txt` + bundle READMEs, bump the archive version.
+6. `7za a -t7z -mx=9 dsh-<platform>-v<x.y.z>.7z dsh-<platform>-v2`, then extract each archive to a scratch dir and boot the Linux one (`./dsh web --no-open`); Windows gets structural checks (bin.js, win32 natives, CRLF launchers, node.exe).
 
-Before pushing, follow [dsh-pre-push-checks](.agents/skills/dsh-pre-push-checks/SKILL.md); report only commands run. After `gh stack sync`, validate immediately; do not merge before checks pass.
+### Wire verification
 
-- Match evidence to the surface: focused behavior tests, model/user-output snapshots, `doc-sync` for docs, built smokes for published paths, and real-API e2e for providers.
-- Never default to the full suite or repeat a passing check for commit or push. CI owns exhaustive coverage and the platform matrix; rehearse all locally only by explicit request, for CI diagnosis, or for an irreducibly repository-wide change.
-- `test:coverage`, not `test`, is the CI coverage gate ([why](docs/testing.md)).
-- Develop with `build:artifacts`; before claiming completion, run `build:check` after the latest `build:artifacts`, or `build` ([layout](docs/development.md#typescript-project-layout)).
-- **Web browser automation and GIF recording:** launch with `pnpm dsh web --patch apps/web/tests/pin-browse-picker.overlay.yml` to use the [in-page directory picker](apps/web/tests/pin-browse-picker.overlay.yml); omit this override only when testing native picker behavior explicitly.
+Feature claims are verified against the real bundle, not only unit tests:
+run a minimal fake OpenAI-compatible server on `127.0.0.1:1234` that logs
+every request body to a JSONL file, boot the bundle server with the
+launcher's environment (`SLR_RUNTIME_API_KEY=slr-local`,
+`DSH_BUNDLED_SKILL_DIR=<app>/node_modules/@deepseek-ai/dsh-superpowers-skills/skills`),
+create a session and send prompts over the wire API (`/connect?token=` then
+`POST /api/<ns>/<method>` with `{type:'client-request', rpcId, method,
+payload:{args}}`; `session/create`, `session/prompt`, `session/wait`), and
+read assertions from the fake's request log and the session log
+(`dsh-home/sessions/*/**.jsonl.zstd`, read with `zstd -dc`). For UI checks:
+Xvfb `:61` + the bundled LibreWolf with `--remote-debugging-port 9222`
+(`devtools.debugger.remote-enabled` is fork-enabled in the shipped
+`librewolf.cfg`) and WebDriver BiDi over `ws://127.0.0.1:9222/session`.
 
-## Secrets / .env
+## Run relevant checks locally
 
-Windows packaging/signing: [required reading](apps/desktop/windows-signing/README.md).
+Match evidence to the surface: focused behavior tests for the changed
+packages, the full 10-gate `pnpm run build` before claiming completion, and
+a wire/extract check for anything that ships. Never default to the whole
+test corpus; upstream CI conventions (coverage gates, snapshot projection,
+real-API e2e) do not run in this fork.
 
-Real-API tests/demos read `DEEPSEEK_API_KEY`, optional `DEEPSEEK_BASE_URL`, and root `.env`. cordis.yml allows `!!js` (never `!js`) under plugin `config` and entry `disabled`; other metadata stays literal, so conditional composition also uses overlays ([primer](docs/cordis-primer.md#loader-configuration)). Never commit credentials. CI e2e skips without a key; [testing.md](docs/testing.md) owns key policy.
+## Settings storage
+
+All Settings-UI state lives in the active profile patch
+(`dsh-home/profiles/<profile>/cordis.patch.yml`, written atomically by the
+settings service; the shipped SLR preset seed lives in the same file).
+Stored credentials are `dsh-home/.credentials.yaml`. The user-facing reset
+recipe is documented in the bundle READMEs ("Resetting settings").
 
 ## Conventions
 
-- Packages use `@deepseek-ai/dsh-<name>`; vendor is [rescoped](docs/rescope.md) and `private: true`. Harness packages declare `@deepseek-ai/cordis` in `peerDependencies`/`devDependencies`. Workspace dependency sections use DSH `workspace:*`, vendor/native `workspace:~` ([rules](.agents/notes/implemented/process/2026-08-10-npm-release-sequences.md)).
-- ESM everywhere (`"type": "module"`). Use package names across packages and `.ts` in local relative imports. Config subprocesses run built `lib/` under plain Node; source regressions use their declared launcher ([testing policy](docs/testing.md#test-subprocess-launch-modes)). The `dsh` CLI source launch runs through tsx's ESM-only hook (`node --import tsx/esm`); modules it reaches must stay ESM (no CJS-only exports) ([source-launch contract](.agents/notes/implemented/architecture/2026-07-29-dsh-source-launch-tsx-esm.md)). Raw/Web `cordis.yml` bare plugins must appear in their resolver manifest's `dependencies`; `verify-cordis-config` enforces it.
-- **Registrations are effects**: every contribution goes through `ctx.effect()` / `ctx.on()`; a registry's `register()` returns the disposer, directly or through its documented registration handle.
-- **Typed events use declaration merging** and merge-extensible maps. Event JSDoc needs `@mode` and payload `@param`. Public service methods document parameters and non-void returns. `SessionEventMap` members are required-on-read unless the envelope carries `ignorable: true`. Bump `SESSION_FORMAT_VERSION` only when existing discriminators cannot prevent unsafe interpretation; same-version changes require safe reader behavior ([review](.agents/notes/implemented/process/2026-10-08-session-reader-compatibility-review.md)).
-- **Switch on discriminant tags.** Closed unions end in `assertNever`; merge-extensible unions fall through a documented default.
-- **Waterfall listeners MUST call `next()`** to delegate; returning without it short-circuits the chain ([semantics](docs/cordis-primer.md#cordis-waterfall-semantics)).
-- **Model-visible ⟺ logged**: anything that reaches a model request must be reconstructable from the session log; a new model-visible input requires a session event.
-- **Session projections:** follow [dsh-session-projection](.agents/skills/dsh-session-projection/SKILL.md) when creating, extending, or reviewing one, or migrating a fold helper to one.
-- **Plugins, not loop changes**: new behavior goes on documented extension points; changing `agent-loop` requires updating docs/architecture.md.
-- **A capability seam comprises Service Definition / Service Provider / Consumer roles.** It is complete, never one role; split only when roles evolve independently ([glossary](docs/glossary.md#capability-seam)).
-- **Prefer maintained dependencies over hand-rolling** when they genuinely delete owned code and tests ([policy](.agents/notes/implemented/process/2026-07-26-dependencies-over-hand-rolling.md)).
-- **Explicit > implicit at package boundaries**: defaulting is an explicit `resolve(request): Spec` step in the owning implementation, never a hidden `?? default` inside `run()` (the `dsh-shell` request/spec split is the template).
-- **No hardcoded tunables in plugins**: deployment-varying choices are validated `Config` fields changeable from cordis.yml; a `DEFAULT_*` constant or test hook is not configurability. Protocol constants, external specs, and security invariants stay fixed.
-- **Misconfiguration fails loud** at load when self-contained, otherwise at the earliest resolvable point; never silently skip a missing referent.
-- **Opaque cross-boundary ids are branded** (`Branded<B>` from `dsh-brand`), never bare `string`.
-- **Trust TypeScript at typed same-process boundaries.** Do not add runtime validation, fallback behavior, or hostile-input tests solely for values the static interface requires; validate at parser/config, queued, model/tool JSON, durable/file, worker, process, and wire boundaries.
-- **No new assertions to `unknown`** (`as unknown` or `<unknown>`). Preserve or reduce the exact legacy baseline; use typed values or validation for replacements ([rule](.agents/notes/implemented/process/2026-09-19-no-unknown-casts.md)).
-- **Source plane vs artifact plane, never mixed.** Static gates and tests resolve workspace imports through tsconfig `paths` to `src` and pass on a clean tree; gates consuming built `lib/` declare that dependency ([layout](docs/development.md#typescript-project-layout)).
-- **Keep compiler faces explicit.** A package with both Host and Client programs exposes face-specific leaf configs and a solution-only root; repo-wide programs seed a face config, never the root solution ([layout](docs/development.md#typescript-project-layout)).
-- **Error handling:** use typed, structured failures and localized, actionable reports. Define handling ownership, containment, and failure guarantees; stop dependent work and visibly report untrusted state or unknown outcomes. Follow [dsh-error-handling](.agents/skills/dsh-error-handling/SKILL.md).
-- **An empty `catch` names the error** and why; keep its `try` to one statement.
-- **Keep comments local.** Do not restate code, expand unrelated comments, or explain distant behavior without local need ([rationale](.agents/skills/dsh-prose-standard/SKILL.md)).
-- **Ban `prove` + `nance`** ([rule](.agents/notes/implemented/process/2026-08-26-ban-ambiguous-origin-label.md)).
-- **Prefer symmetry for parallel values**; unexplained asymmetry usually signals a missed extraction.
-- **Tests describe behavior, not correctness.** Change obsolete behavior with its tests; explain why in the PR.
-- **Create Agent Notes only for durable decision rationale;** mechanical/local edits are exempt, including local UI changes ([scope](.agents/notes/README.md#when-to-write-one)). Archived notes are frozen: never edit or treat them as current authority ([archive policy](.agents/notes/README.md#archiving-and-deletion)).
-- **Official plugin artwork:** use [dsh-official-plugin-artwork](.agents/skills/dsh-official-plugin-artwork/SKILL.md) for official and official experimental plugin icons; obtain designer approval before landing new glyphs.
-- **Client UI copy is locale-owned.** Route product text through typed dictionaries and `t` or localized primitive props; `verify-client-ui-i18n` rejects hardcoded copy ([decision](.agents/notes/implemented/architecture/2026-08-23-locale-owned-client-ui-copy.md)). English copy, including plugin titles, uses sentence case ([rule](.agents/skills/dsh-prose-standard/SKILL.md#required-coverage-by-prose-location)).
-- **Testing policy** — [docs/testing.md](docs/testing.md). Every non-trivial model- or product-user-visible change updates a keyless recorded-session snapshot; [snapshot ownership](snapshots/AGENTS.md) reserves the top-level tree for session-driven cases and keeps other expected output owner-local. Fixtures replay on macOS/Linux; fix fixtures, not normalizers.
-- **Design each tool's UI presentation up front.** Host presenters stay pure; Web cards derive from raw events and persisted result metadata ([cookbook](docs/cookbook/adding-a-tool.md)).
-- **Plan unit, e2e, and snapshot coverage** for capability seams, lifecycle paths, and transcript output; include missing snapshot-harness support in the same change.
-- **Both SDKs project the loop.** Agent-loop, session-lifecycle, and `SessionEventMap` changes update the TypeScript and Python SDK expected outputs in the same PR; `pnpm run test` covers neither ([surfaces](docs/testing.md#when-a-snapshot-test-is-required)).
-- **Choose PR history deliberately.** Split independent changes and fix the introducing PR before propagation. Standalone/stack branches may merge-forward or rebase. Rewrites use `--force-with-lease`, abort on remote movement, never raw `--force`; preserve an in-progress merge-forward checkpoint before taking a newer base ([rationale](.agents/notes/implemented/process/2026-08-02-native-github-stacks-and-optional-rebases.md)).
-- **Labels:** one PR `kind/*`, all material `area/*`, and native Issue Type ([taxonomy](.agents/notes/implemented/process/2026-08-08-unified-github-label-taxonomy.md)).
-- **PR descriptions:** write and update every PR description with [dsh-pr-description](.agents/skills/dsh-pr-description/SKILL.md).
-- TODO markers: `FIXME`/`TODO`/`XXX` by urgency ([semantics](docs/development.md)).
-- Files end with exactly one trailing newline; `git diff --cached --check` (pre-commit) gates it.
+The upstream coding standards still govern every edit (condensed; the full
+list lives in the upstream tree this fork is based on):
 
-## Defensive patterns
-
-Read [docs/defensive-patterns/README.md](docs/defensive-patterns/README.md) before changing a package surface, remote service, client component or state, conversation or Session behavior, or lifecycle, concurrency, subprocess, and teardown code. Its [review principles](docs/defensive-patterns/README.md#why-these-rules) apply per artifact.
-
-## Type safety and documentation
-
-Everything compiles under `strict: true` with `noImplicitAny`; every remaining `any` explains why narrowing is infeasible. Every module and export has concise JSDoc for its non-obvious contract; function-like exports include `@param`/`@returns`, as enforced by `verify-export-jsdoc`. Heritage-declared members, plugin-protocol slots, and constructors keep their docs at the declaring Service Definition, protocol, or class.
-
-Comments and docs state complete contracts and context, not reasoning transcripts. Use direct, concrete terms. Do not use metaphors. Before writing `contract`, `boundary`, or `shape`, ask whether a more exact term names the subject: write `response fields`, `JSON validation`, or `ESM exports` instead of `response shape`, `validation boundary`, or `module shape`. Keep `contract` for preconditions, postconditions, invariants, compatibility promises, and other obligations that callers, callees, implementers, providers, producers, or consumers rely on. Keep a literal process, wire, security, transaction, or lifecycle boundary. Do not narrate control flow or tests, preserve review history, or restate code. Keep behavior, failure, timing, ownership, and safe-use facts; link the rationale. Use [dsh-prose-standard](.agents/skills/dsh-prose-standard/SKILL.md) for decisions. Wire mechanically checkable invariants into an executed top-level gate and prove each changed acceptance path rejects an invalid case. Use narrow, justified exceptions instead of disabling a rule globally.
-
-Docs accompany every code change: update affected README and JSDoc contracts together. Routine bilingual work follows [docs/AGENTS.md](docs/AGENTS.md); only explicit user invocation may run `dsh-translate-docs`. Current-state prose, one physical line per paragraph, one home per fact, and word budgets live there.
-
-## Editing these instructions
-
-`CLAUDE.md` symlinks `AGENTS.md` at root and `packages/`; edit the real file. Keep each rule self-contained while linking high-level docs. Condense when clarity survives; raise a `verify-doc-budgets` ceiling when the required content genuinely needs more space.
+- **Registrations are effects**: contributions go through `ctx.effect()` /
+  `ctx.on()`; registries return disposers.
+- **Waterfall listeners must call `next()`** to delegate; returning without
+  it short-circuits the chain.
+- **Model-visible ⟺ logged**: anything reaching a model request must be
+  reconstructable from the session log.
+- **Plugins, not loop changes**: new behavior goes on documented extension
+  points; `agent-loop` changes require architecture-doc updates.
+- **No hardcoded tunables in plugins**: deployment-varying choices are
+  validated `Config` fields; a `DEFAULT_*` constant is not configurability.
+  Volatile config fields (`z.<type>().default(...).volatile()`) are read
+  per use and update live without remounting.
+- **Misconfiguration fails loud**; never silently skip a missing referent.
+- **Branded ids** at boundaries (`Branded<B>`), **no new `as unknown`
+  casts**, `strict` TS with JSDoc on non-obvious exports (`@param`/
+  `@returns`).
+- **Client UI copy is locale-owned**: typed dictionaries and `t`; the
+  fork's own additions ship en + zh (other languages fall back to English).
+- **Tests describe behavior**; change obsolete behavior with its tests.
+- **Comments stay local**; state contracts, not reasoning transcripts.
+- Files end with exactly one trailing newline; keep every `fork(...)`
+  marker intact when touching upstream files.
 
 ## Vendoring policy
 
-`vendor/` packages are pinned source copies (manifest with upstream SHAs in [vendor/README.md](vendor/README.md)). Update via the sync procedure there; re-apply or retire the logged local modifications; rerun `pnpm run test && pnpm run build`.
+`vendor/` packages are pinned source copies (upstream SHAs in
+[vendor/README.md](vendor/README.md)); update via the sync procedure there.
+The npm dependency `@earendil-works/pi-ai` carries a maintained pnpm patch
+(`patches/@earendil-works__pi-ai@1.3.0.patch`, fork extensions marked
+`fork(quota-reset)`); regenerate patches by editing a pristine copy and
+diffing — never hand-write hunks against the installed tree.
+
+## Editing these instructions
+
+`CLAUDE.md` symlinks `AGENTS.md` at root and in `packages/`; edit the real
+file. Keep each rule self-contained while linking detail docs. When the
+project gains a new upstream source, a new bundle artifact, or a new
+verification rig, document it here in the same turn.

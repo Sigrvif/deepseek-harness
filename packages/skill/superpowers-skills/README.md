@@ -24,3 +24,10 @@ Local adaptations, kept minimal and marked:
   plan-mode surfaces.
 
 Everything else is verbatim upstream.
+
+## Known Limitations and Deferred Work
+
+<a id="known-limitations-and-deferred-work"></a>
+
+- The skills are vendored verbatim from superpowers 7.0.1; a re-vendor must re-apply the two marked adaptations (Platform Adaptation line, `references/dsh-tools.md`) and bump `UPSTREAM_VERSION`.
+- Skill frontmatter must keep the dsh parser's contract (`name` kebab-case + non-empty `description`); upstream format drift lands as skipped skills, logged by `skill-filesystem`.
