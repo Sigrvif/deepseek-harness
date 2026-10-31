@@ -108,9 +108,9 @@ refresh tooling lives **outside** this repo in `/workspaces/devpod/DSH/bundle-to
 1. Commit at a clean HEAD, then `pnpm run build` (10/10 gates).
 2. `pnpm --filter @deepseek-ai/dsh deploy --prod --config.auto-install-peers=true --config.node-linker=hoisted /workspaces/devpod/DSH/.deploy-hoisted` (the ignored-build warning for dsh-subprocess-local is expected).
 3. `python3 hoist-parity.py` — restores vendor packages and `src/` trees the deploy misses (needs the previous bundle tree present).
-4. Replace `dsh-linux-x64-v2/app` and `dsh-windows-x64-v2/app` with the hoisted tree; run `swap-win32-natives.sh` for the Windows tree (saved win32 natives in `/tmp/win32-natives2`).
+4. Replace `DSLRH-Linux/app` and `DSLRH-Windows/app` with the hoisted tree; run `swap-win32-natives.sh` for the Windows tree (saved win32 natives in `/tmp/win32-natives2`).
 5. Reset both `dsh-home/` to the pristine seed (extract `dsh-home/` from an earlier archive), update `VERSION.txt` + bundle READMEs, bump the archive version.
-6. `7za a -t7z -mx=9 dsh-<platform>-v<x.y.z>.7z dsh-<platform>-v2`, then extract each archive to a scratch dir and boot the Linux one (`./dsh web --no-open`); Windows gets structural checks (bin.js, win32 natives, CRLF launchers, node.exe).
+6. `7za a -t7z -mx=9 dslrh-<platform>-x64-v<x.y.z>.7z DSLRH-<Platform>`, then extract each archive to a scratch dir and boot the Linux one (`./dsh web --no-open`); Windows gets structural checks (bin.js, win32 natives, CRLF launchers, node.exe).
 
 ### Wire verification
 

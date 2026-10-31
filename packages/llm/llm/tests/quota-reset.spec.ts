@@ -98,6 +98,18 @@ describe('parseQuotaResetAt', () => {
     expect(configured!.timeZone).toBe('Asia/Shanghai')
   })
 
+  it('parses a second real usage-limit sample (provider pause, 2026-10-31)', () => {
+    // Live sample from a real GLM-style 5-hour limit, pasted verbatim by the
+    // user: id wall clock 2026-10-31 18:36:38 UTC+8, reset wall 19:46:52.
+    const message = '[1308][Usage limit reached for 5 hour. Your limit will reset at 2026-10-31 19:46:52][20261031183638bca83f22b7084ba1]'
+    const now = Date.parse('2026-10-31T10:36:43Z')
+    const reset = parseQuotaResetAt(message, undefined, now)
+    expect(reset).toBeDefined()
+    expect(reset!.resetAtMs).toBe(Date.parse('2026-10-31T11:46:52Z'))
+    expect(reset!.timeZone).toBe('UTC+08:00 (inferred)')
+    expect(reset!.delayMs).toBe(4209_000)
+  })
+
   it('infers a zero offset for a UTC provider and handles half-hour zones', () => {
     const request = Date.parse('2026-10-30T21:44:50Z')
     const utc = parseQuotaResetAt(
