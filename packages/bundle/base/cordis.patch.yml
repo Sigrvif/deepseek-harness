@@ -234,26 +234,33 @@
     - id: subprocess
       name: '@deepseek-ai/dsh-subprocess-local'
 
-    # Every shipped CLI mode starts with the same file-effect boundary.
-    # The environment remains an explicit deployment override; otherwise fresh
-    # sessions pin workspace-write + ask through the permission service below.
-    - id: sandbox
-      name: '@deepseek-ai/dsh-sandbox-local'
-
+    # fork(sandbox-removal): upstream confines shell commands through a sandbox
+    # provider whose Windows backend (dsh-sandbox-windows-acl) writes standing
+    # deny ACEs and a Low integrity label into every chosen project folder — a
+    # machine mutation that outlives the harness by design. DSLRH has no
+    # scenario for in-process command confinement: a test needing isolation
+    # gets a VM, not folder ACLs. The provider, the sandboxed bash/pwsh
+    # executors, fs-sandbox, and the permission-preset service (whose
+    # constructor refuses an unconfined executor) are NOT mounted; the plain
+    # local executors run instead. The policy service stays mounted because
+    # plugin-manager injects it, and its danger-full-access default keeps the
+    # terminal path provider-free. The sandbox packages remain in the
+    # dependency closure as inert code; nothing constructs a grant anywhere
+    # in this composition.
     - id: sandbox-policy
       name: '@deepseek-ai/dsh-sandbox-policy'
       config:
-        mode: !!js process.env.DSH_PERMISSION_MODE ?? 'workspace-write'
+        mode: !!js process.env.DSH_PERMISSION_MODE ?? 'danger-full-access'
         workspaceRoot: !!js process.cwd()
 
-    - id: bash-sandbox
-      name: '@deepseek-ai/dsh-bash-sandbox'
+    - id: bash-local
+      name: '@deepseek-ai/dsh-bash-local'
       disabled: !!js process.platform === 'win32'
       config:
         timeoutMs: 60000
 
-    - id: pwsh-sandbox
-      name: '@deepseek-ai/dsh-pwsh-sandbox'
+    - id: pwsh-local
+      name: '@deepseek-ai/dsh-pwsh-local'
       disabled: !!js process.platform !== 'win32'
 
     - id: approval
@@ -261,19 +268,10 @@
       config:
         policy: !!js "(process.env.DSH_PERMISSION_MODE ?? 'workspace-write') === 'danger-full-access' ? 'never' : 'ask'"
 
-    - id: permission
-      name: '@deepseek-ai/dsh-permission-presets'
-      config:
-        presets:
-          read-only:
-            sandbox: read-only
-            approval: ask
-          workspace-write:
-            sandbox: workspace-write
-            approval: ask
-          danger-full-access:
-            sandbox: danger-full-access
-            approval: never
+    # fork(sandbox-removal): the permission-preset service is not mounted —
+    # presets bundle a sandbox mode and refuse to compose over an unconfined
+    # executor. Sessions run unconfined; the approval row above keeps its
+    # fail-safe 'ask' default, which nothing in this composition consults.
 
     - id: shell-env
       name: '@deepseek-ai/dsh-shell-env'
@@ -390,16 +388,24 @@
         provider: fork
         toolName: subagent_fork
 
+    # fork(sandbox-removal): the PTC runtime executes model-written scripts
+    # through the sandbox seam and never activates without a provider, which
+    # strands the workflow tool's engine with it. In-process code execution
+    # is the same capability DSLRH removed; the tool-executor-ptc row below
+    # was already disabled.
     - id: ptc-runtime
       name: '@deepseek-ai/dsh-ptc-runtime-node'
+      disabled: true
 
     - id: workflow-ptc
       name: '@deepseek-ai/dsh-workflow-ptc'
+      disabled: true
       config:
         provider: spawn
 
     - id: tool-workflow
       name: '@deepseek-ai/dsh-tool-workflow'
+      disabled: true
 
     - id: timeout-policy
       name: '@deepseek-ai/dsh-tool-call-timeout-policy'
@@ -515,10 +521,11 @@
       config:
         agents: []
 
-    # The sandboxed filesystem provider. `cwd` defaults to `process.cwd()`; an
-    # overlay can pin another workspace.
-    - id: fs-sandbox
-      name: '@deepseek-ai/dsh-fs-sandbox'
+    # fork(sandbox-removal): the plain filesystem provider — no ctx.fs.sandboxMode,
+    # so the fs tools mount without their sandbox controller. `cwd` defaults to
+    # `process.cwd()`; an overlay can pin another workspace.
+    - id: fs-local
+      name: '@deepseek-ai/dsh-fs-local'
 
     # The native DeepSeek adapter. No key or endpoint is inlined: both resolve per
     # request from the `llm-deepseek:` settings section over this entry, with the

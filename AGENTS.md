@@ -9,8 +9,10 @@ ready-to-use package. Git exists for checkpoints during development; there is
 no GitHub remote, no PRs, no CI.
 
 Fork contract: [FORK.md](FORK.md) — read it before changing `packages/`. It
-lists every new package, every marked upstream edit, and the upstream-merge
-runbook. Every diff hunk in an upstream file carries a `fork(...)` marker.
+lists every new package, every marked upstream edit (including the sandbox
+composition removal: DSLRH never confines commands nor touches project-folder
+ACLs — isolation happens outside the process), and the upstream-merge runbook.
+Every diff hunk in an upstream file carries a `fork(...)` marker.
 
 **Naming:** documentation calls the project DSLRH. Package identifiers,
 plugin ids, and CLI names stay `@deepseek-ai/dsh-*` / upstream-shaped so an

@@ -99,12 +99,9 @@
                 config:
                   provider: fork
                   toolName: subagent_fork
-              - id: workflow-ptc
-                name: '@deepseek-ai/dsh-workflow-ptc'
-                config:
-                  provider: spawn
-              - id: tool-workflow
-                name: '@deepseek-ai/dsh-tool-workflow'
+              # fork(sandbox-removal): the workflow tool rides the PTC runtime,
+              # which executes model-written scripts through the removed sandbox
+              # seam; the same removal disabled these rows in the base bundle.
           - id: tool-ask-user
             name: '@deepseek-ai/dsh-tool-ask-user'
           - id: tool-todo
