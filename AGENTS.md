@@ -127,6 +127,9 @@ read assertions from the fake's request log and the session log
 Xvfb `:61` + the bundled LibreWolf with `--remote-debugging-port 9222`
 (`devtools.debugger.remote-enabled` is fork-enabled in the shipped
 `librewolf.cfg`) and WebDriver BiDi over `ws://127.0.0.1:9222/session`.
+The launcher must `mkdir -p` the `--profile` directory first: LibreWolf
+refuses a missing profile directory and windowed mode hides the error as a
+silent startup hang.
 
 ## Run relevant checks locally
 
