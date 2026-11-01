@@ -308,7 +308,7 @@
     "@deepseek-ai/dsh-action-cards": "workspace:*"
   },
   "dshFork": {
-    "version": "2.4.3",
+    "version": "2.4.4",
     "base": "0.2.2-alpha.2",
     "upstreamCommit": "e9b2168"
   }

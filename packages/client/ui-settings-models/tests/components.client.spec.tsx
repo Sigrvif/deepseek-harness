@@ -869,7 +869,7 @@ describe('ModelsSection', () => {
   // fork(local-test): the shipped slr-runtime preset opens its editor on
   // start (the user must adjust the model before doing anything) and stops
   // opening once the model list differs from the shipped example.
-  const SLR_EXAMPLE_ID = '/run/media/veracrypt1/devpod/Test Models/Qwen3.6-35B-A3B-MTP-APEX-I-MiniPlus-V2.1-Abliterated-GGUF/Qwen3.6-35B-A3B.APEX-I-MiniPlus-V2.1-Abliterated.gguf'
+  const SLR_EXAMPLE_ID = 'Qwen3.6-35B-A3B.APEX-I-MiniPlus-V2.1-Abliterated.gguf'
 
   function slrFace(models: unknown) {
     const scripted = scriptedFace()

@@ -183,13 +183,13 @@ export const internals = { setupCardEnabled: false }
 
 /**
  * fork(local-test): the shipped slr-runtime preset's example model id —
- * kept in sync with the seed in the bundle's
+ * the bare GGUF file name, kept in sync with the seed in the bundle's
  * `dsh-home/profiles/web/cordis.patch.yml`. While the preset still serves
  * exactly this example, its editor opens on start so the user adjusts the
  * model to the GGUF their SLR Runtime actually serves.
  */
 export const SLR_RUNTIME_EXAMPLE_MODEL_ID =
-  '/run/media/veracrypt1/devpod/Test Models/Qwen3.6-35B-A3B-MTP-APEX-I-MiniPlus-V2.1-Abliterated-GGUF/Qwen3.6-35B-A3B.APEX-I-MiniPlus-V2.1-Abliterated.gguf'
+  'Qwen3.6-35B-A3B.APEX-I-MiniPlus-V2.1-Abliterated.gguf'
 
 /**
  * Whether a whole-section provider still needs its first key: an unconfigured
