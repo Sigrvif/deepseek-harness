@@ -26,7 +26,6 @@ import {
   reportedBrowserTimeZone,
   renderBrowserTimeZoneContext,
 } from './request-zone.ts'
-import type { BrowserTimeZoneContext } from './request-zone.ts'
 import { createTimestampFormatter, formatTimestamp } from './timestamp.ts'
 
 /** Cordis plugin name used by loader diagnostics. */
@@ -52,7 +51,11 @@ export const inject = ['agents', 'sessionProjections']
 export interface Config {
   /** Fallback display zone when the open turn has no unique browser zone. Omit to use the process zone. */
   timeZone?: string
-  /** Minimum milliseconds between durable injections in one session. Defaults to 600000 (10 minutes); 0 injects at every eligible step. */
+  /**
+   * Minimum milliseconds between durable injections in one session.
+   * fork(local-test): defaults to 3600000 (one hour; upstream shipped 10
+   * minutes); 0 injects at every eligible step.
+   */
   refreshIntervalMs?: number
 }
 
@@ -85,7 +88,6 @@ function formatDuration(elapsedMs: number): string {
 function requestMessages(agent: Agent, turn: number, proposed: readonly UserMessage[]): UserMessage[] {
   const entered: UserMessage[] = []
   for (let seq = agent.session.seq - 1; seq >= 0; seq -= 1) {
-    // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
     const event = agent.session.eventAt(SessionSeq(seq))
     if (event?.type === 'turn/start' && event.data.turn === turn) {
       return [...entered.reverse(), ...proposed]
@@ -102,13 +104,12 @@ function renderText(
   previous: number | undefined,
   formatter: Intl.DateTimeFormat,
   timeZone: string,
-  browserContext: BrowserTimeZoneContext,
+  browserText: string | undefined,
 ): string {
   const elapsed = previous === undefined ? 'unavailable' : formatDuration(now - previous)
   const baseline = step === 1 ? 'model-visible message' : 'step context'
-  const browserText = renderBrowserTimeZoneContext(browserContext)
   return `Time sampled while preparing turn ${turn}, step ${step}: ${formatTimestamp(now, formatter, timeZone)}\n`
-    + `${browserText}\n`
+    + `${browserText === undefined ? '' : `${browserText}\n`}`
     + `Elapsed since the preceding ${baseline}: ${elapsed}.`
 }
 
@@ -132,7 +133,12 @@ function validateRefreshInterval(refreshIntervalMs: number): void {
  */
 export async function apply(ctx: Context, config: Config): Promise<void> {
   const timeZone = config.timeZone
-  const refreshIntervalMs = config.refreshIntervalMs ?? 600_000
+  // fork(local-test): upstream refreshed the durable time sample every ten
+  // minutes, which on long local runs litters the context with dozens of
+  // near-identical notices (22 in one observed session). An hourly sample
+  // still tells the model how long the working session has been running; a
+  // deployment that wants the tighter cadence sets refreshIntervalMs back.
+  const refreshIntervalMs = config.refreshIntervalMs ?? 3_600_000
   validateRefreshInterval(refreshIntervalMs)
   let fallbackFormatter: Intl.DateTimeFormat
   try {
@@ -220,6 +226,14 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       ? deriveBrowserTimeZoneContext(decision.messages, state.browserTimeZones)
       : deriveBrowserTimeZoneContext(requestMessages(agent, turn, decision.messages))
     const selectedTimeZone = browser.kind === 'resolved' ? browser.timeZone : fallbackTimeZone
+    // fork(local-test): a browser zone identical to the request zone adds no
+    // information - the timestamp line already names it. Anti-fingerprinting
+    // browsers report a fixed zone (LibreWolf freezes the timezone API), so
+    // on a host in that zone every sample repeated the same attribution line.
+    // Only an actually differing, mixed, or missing zone is spelled out.
+    const browserText = browser.kind === 'resolved' && browser.timeZone === fallbackTimeZone
+      ? undefined
+      : renderBrowserTimeZoneContext(browser)
     const text = renderText(
       now,
       turn,
@@ -227,7 +241,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       previous,
       formatterFor(selectedTimeZone),
       selectedTimeZone,
-      browser,
+      browserText,
     )
     return {
       ...decision,

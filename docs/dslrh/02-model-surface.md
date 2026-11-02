@@ -80,7 +80,7 @@ Off switch: **Settings → General → Auto Superpowers**.
 |---|---|
 | Persona | "You are a coding agent powered by the {{model}} model." (minimal replaces the whole prompt) |
 | `AGENTS.md` pickup | Project root `AGENTS.md`/`CLAUDE.md` (+ `.local` variants) and the user-global file, within a 64 KB budget; re-read on change |
-| Time context | Current timestamp + timezone each eligible step |
+| Time context | Durable time sample at most once per hour (fork default; upstream 10 min), stating the elapsed time since the previous sample; the browser-zone attribution line is suppressed when the browser zone equals the request zone |
 | Tool-result pruner | Results over 8192 chars compacted head-4096/tail-1024 |
 | Compaction | Automatic summarization at ≥80 % context use; folds restore the originals |
 | Spill policy | Tool results over 12.5 k tokens go to a file; the model sees a notice + path |
@@ -92,4 +92,4 @@ Off switch: **Settings → General → Auto Superpowers**.
 | Session title | **One extra model request per session** (first prompt) — routed to the session's own provider, i.e. your local server |
 | Plan mode | Rules injected only while active; tool catalog unchanged for cache stability |
 | Goal driver | Automatic continuation rounds while a goal is active |
-| Context Editor / Fold | Fork additions: request capture + surface edits/exclusions/overrides; model-driven reversible folds (`compress`/`decompress`/`search_context`/`acp_status`) — see [05](05-fork-changes.md) |
+| Context Editor / Fold | Fork additions: request capture + surface edits/exclusions/overrides; model-driven reversible folds (`compress`/`decompress`/`search_context`/`acp_status`), with a growth nudge repeating every ~30k tokens of new growth since the last fold — see [05](05-fork-changes.md) |

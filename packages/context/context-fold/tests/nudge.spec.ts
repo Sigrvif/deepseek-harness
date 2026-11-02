@@ -146,6 +146,26 @@ describe('installNudge', () => {
     expect(nudges(await step(session))).toBe(1)
   })
 
+  it('does not treat downward estimate drift as a shrink', async () => {
+    const { step } = await mounted()
+    window = 400000
+    const session = plainSession('nudge-drift')
+    await step(session)
+    pressure = 60000
+    await step(session) // first nudge: 60000 growth over the step-1 baseline
+    pressure = 61000
+    await step(session) // quiet: barely past the fired nudge
+    // The pruner rewrote a result and estimates moved: pressure ticks down a
+    // little. That is not an event - the baseline must survive it, or the
+    // growth cadence goes silent for the rest of the session (the final
+    // pressure is only 54500 above the drifted value, but 115000 above the
+    // real one).
+    pressure = 60500
+    await step(session)
+    pressure = 115000
+    expect(nudges(await step(session))).toBe(1)
+  })
+
   it('never nudges when the meter has no measurement', async () => {
     const ctx = new Context()
     contexts.push(ctx)

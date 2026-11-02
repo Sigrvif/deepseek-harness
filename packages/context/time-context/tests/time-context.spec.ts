@@ -172,8 +172,9 @@ describe('durable step context', () => {
     await fire(ctx, sessionAgent(session), 1, 1)
 
     expect(contextTexts(session)).toEqual([
+      // fork(local-test): the browser zone equals the fallback zone, so the
+      // attribution line is suppressed - the timestamp already names the zone.
       'Time sampled while preparing turn 1, step 1: 2026-07-15T09:01:01+08:00[Asia/Shanghai]\n'
-      + 'Browser time zone for this request: Asia/Shanghai. Interpret otherwise-unqualified dates and times in this zone.\n'
       + 'Elapsed since the preceding model-visible message: 1d 1h 1m 1s.',
     ])
     const event = session.snapshotEvents().at(-1)
@@ -188,7 +189,6 @@ describe('durable step context', () => {
       sections: [{
         name: 'time-context',
         text: 'Time sampled while preparing turn 1, step 1: 2026-07-15T09:01:01+08:00[Asia/Shanghai]\n'
-          + 'Browser time zone for this request: Asia/Shanghai. Interpret otherwise-unqualified dates and times in this zone.\n'
           + 'Elapsed since the preceding model-visible message: 1d 1h 1m 1s.',
       }],
     })
@@ -291,7 +291,7 @@ describe('durable step context', () => {
   })
 
   it.each([
-    ['default interval', {}, 600_000],
+    ['default interval', {}, 3_600_000],
     ['explicit interval', { refreshIntervalMs: 1_000 }, 1_000],
   ] as const)('uses a shadowed durable injection after resume at the exact %s threshold', async (_label, config, interval) => {
     const { ctx } = await mount(config)

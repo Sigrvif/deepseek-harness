@@ -9,8 +9,14 @@
  * (https://github.com/ranxianglei/billion-context, MIT + attribution term):
  * at most one nudge per full threshold of NEW growth - a fold landing re-arms
  * the baseline but not the growth gate (the model just acted), while a
- * context shrink WITHOUT a model fold (the engine's own compaction, editor
- * exclusions) re-arms everything: the world changed under us.
+ * SUBSTANTIAL context shrink WITHOUT a model fold (the engine's own
+ * compaction, a large editor exclusion) re-arms everything: the world changed
+ * under us. Small downward drift of the pressure estimate is not a shrink:
+ * the tool-result pruner rewrites oversized results and token estimates move
+ * between steps, so any downward tick re-arming the baseline would silence
+ * the growth cadence for the rest of a long session (observed: exactly one
+ * growth nudge after a fold, then none for the remainder of a 100k-token
+ * run). A shrink counts only when it is large enough to be an event.
  * @module
  */
 
@@ -36,6 +42,11 @@ interface NudgeState {
 }
 
 const states = new Map<string, NudgeState>()
+
+/** A downward pressure move smaller than this is estimate drift, not an event. */
+const EXTERNAL_SHRINK_MIN_TOKENS = 2_000
+/** …and it must also move the pressure by at least this fraction to re-arm. */
+const EXTERNAL_SHRINK_RATIO = 0.1
 
 function formatTokens(value: number): string {
   return value.toLocaleString('en-US')
@@ -68,9 +79,12 @@ function decide(
     // fold must not nudge every step.
     state.baseline = pressureTokens
     state.foldCount = foldCount
-  } else if (pressureTokens < state.lastPressure) {
-    // The context shrank with no model fold - engine compaction or an editor
-    // exclusion. Everything re-arms: one fresh nudge is allowed if still tight.
+  } else if (state.lastPressure - pressureTokens >= EXTERNAL_SHRINK_MIN_TOKENS
+    && state.lastPressure - pressureTokens >= state.lastPressure * EXTERNAL_SHRINK_RATIO) {
+    // The context shrank substantially with no model fold - engine compaction
+    // or a large editor exclusion. Everything re-arms: one fresh nudge is
+    // allowed if still tight. Smaller downward moves are estimate drift (see
+    // the module comment); they leave the baseline and the gate alone.
     state.baseline = pressureTokens
     state.lastNudgePressure = undefined
   }
