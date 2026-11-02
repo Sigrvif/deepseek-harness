@@ -119,8 +119,15 @@
             config:
               fetch: true
               searchTimeoutMs: 60000
+          # fork(sandbox-removal): the PTC executor waits for the ptcRuntime
+          # service, which the base bundle keeps disabled — with this row
+          # live, every session created under the ptc preset failed at
+          # activation (agent-preset/invalid: tool-executor-ptc waiting
+          # for ptcRuntime). Disabled here like its base-bundle row; the
+          # preset's sessions run on the native executor.
           - id: tool-executor-ptc
             name: '@deepseek-ai/dsh-tool-executor-ptc'
+            disabled: true
           - id: present
             name: '@deepseek-ai/dsh-tool-present'
           - id: tool-plugin-manager

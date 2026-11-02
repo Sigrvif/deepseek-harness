@@ -90,6 +90,29 @@ Fork additions (all documented in [FORK.md](FORK.md) §1):
 `packages/client/ui-context-editor`, `packages/client/ui-fork-info`,
 `packages/client/ui-fork-auto-skills`.
 
+## Documentation contract
+
+[docs/dslrh/](docs/dslrh/) is the fork's user documentation set (six files,
+indexed by its README). It ships inside both bundles as `docs/` and is the
+systematic record of what the shipped package is, does, and touches —
+created after the sandbox incident precisely so that no "feature" ships
+undocumented again. Maintaining it is part of the fork contract, on par with
+FORK.md rows:
+
+- Any change that alters shipped behavior, composition, data, settings, the
+  model-facing surface, or the host/network footprint updates the matching
+  doc file **in the same change** — a shipped change without its doc update
+  is incomplete.
+- [docs/dslrh/03-host-and-network.md](docs/dslrh/03-host-and-network.md) is
+  exhaustive by design: every spawned process, write outside `DSH_HOME`, and
+  reachable endpoint carries a row with its trigger and its off switch.
+  Accuracy over reassurance — where a guard is absent, the doc says so.
+- Doc claims are verified against the shipped composition, not source
+  comments (the base patch once overstated web-fetch pinning; the docs state
+  what is actually enforced).
+- The bundle refresh copies `docs/dslrh/` into both trees as `docs/`
+  (recipe step 5); the bundle READMEs index it and stay operational only.
+
 ## Commands
 
 ```sh
@@ -111,7 +134,7 @@ refresh tooling lives **outside** this repo in `/workspaces/devpod/DSH/bundle-to
 2. `pnpm --filter @deepseek-ai/dsh deploy --prod --config.auto-install-peers=true --config.node-linker=hoisted /workspaces/devpod/DSH/.deploy-hoisted` (the ignored-build warning for dsh-subprocess-local is expected).
 3. `python3 hoist-parity.py` — restores vendor packages and `src/` trees the deploy misses (needs the previous bundle tree present).
 4. Replace `DSLRH-Linux/app` and `DSLRH-Windows/app` with the hoisted tree; run `swap-win32-natives.sh` for the Windows tree (saved win32 natives in `/tmp/win32-natives2`).
-5. Reset both `dsh-home/` to the pristine seed (extract `dsh-home/` from an earlier archive), update `VERSION.txt` + bundle READMEs, bump the archive version.
+5. Reset both `dsh-home/` to the pristine seed (extract `dsh-home/` from an earlier archive), copy `docs/dslrh/` into both trees as `docs/`, update `VERSION.txt` + bundle READMEs, bump the archive version.
 6. `7za a -t7z -mx=9 dslrh-<platform>-x64-v<x.y.z>.7z DSLRH-<Platform>`, then extract each archive to a scratch dir and boot the Linux one (`./dsh web --no-open`); Windows gets structural checks (bin.js, win32 natives, CRLF launchers, node.exe).
 
 ### Wire verification
@@ -191,4 +214,6 @@ diffing — never hand-write hunks against the installed tree.
 `CLAUDE.md` symlinks `AGENTS.md` at root and in `packages/`; edit the real
 file. Keep each rule self-contained while linking detail docs. When the
 project gains a new upstream source, a new bundle artifact, or a new
-verification rig, document it here in the same turn.
+verification rig, document it here in the same turn — and per the
+documentation contract above, in `docs/dslrh/` when it changes shipped
+behavior.

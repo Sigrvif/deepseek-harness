@@ -25,6 +25,12 @@ Every diff hunk in upstream files carries a `fork(context-editor):` marker.
 | `packages/client/ui-fork-auto-skills` | web client | The "Auto Superpowers" Switch row on the General settings page (after Developer tools): reads/writes the `superpowers-bootstrap` namespace through the shared configForms service |
 | `packages/client/ui-fork-info` | web client | The "Fork additions" tab in the Plugins settings page: names the additions (Context Editor, Context Fold, bundled superpowers skills, auto-superpowers toggle) with summaries and the billion-context + superpowers attributions |
 
+Fork user documentation lives in `docs/dslrh/` (six files, indexed by its
+`README.md`) and ships inside both offline bundles as `docs/`. AGENTS.md's
+documentation contract requires it to be updated in the same change as any
+behavior it describes; it is the systematic record of what the shipped
+package is, does, and touches.
+
 ## 2. Marked upstream edits (small, each hunk commented `fork(context-editor):`)
 
 | File | Change | Why |
@@ -61,6 +67,7 @@ Every diff hunk in upstream files carries a `fork(context-editor):` marker.
 | `packages/bundle/base/cordis.patch.yml` | `fork(sandbox-removal):` the sandbox provider (`dsh-sandbox-local`), the confined `bash-sandbox`/`pwsh-sandbox` executors, `fs-sandbox`, and the permission-preset service are NOT mounted; plain `bash-local`/`pwsh-local`/`fs-local` run instead. `sandbox-policy` stays (plugin-manager injects it) with its default mode flipped to `danger-full-access`; the `approval` row is untouched (nothing in this composition consults it). `ptc-runtime`, `workflow-ptc`, and `tool-workflow` are disabled: the PTC runtime executes model-written scripts through the sandbox seam and never activates without a provider, which strands the workflow tool's engine | The Windows ACL sandbox backend wrote standing deny ACEs and a Low integrity label into every chosen project folder (`S-1-4-<sha256(path)>` capability grant, Everyone delete-child deny, inheritable Low label) — a machine mutation that outlives the harness by design. DSLRH has no confinement scenario: a test needing isolation gets a VM, not folder ACLs. The sandbox packages stay in the dependency closure as inert code; nothing constructs a grant |
 | `packages/bundle/web-app/cordis.patch.yml` | `fork(sandbox-removal):` the `ui-permission` browser row is not mounted | The preset picker (session composer + General default-preset row) rides the removed permission service; there is no preset catalog to render |
 | `packages/bundle/web-app/presets/{standard,cordis}.patch.yml` | `fork(sandbox-removal):` the enabled `workflow-ptc` + `tool-workflow` rows are removed from the two presets' delegation groups (`ptc.patch.yml` ships them disabled upstream; `minimal` has none) | Agent presets re-mount plugins per session: enabled workflow rows there fail session creation (`waiting for ptcRuntime`) once the sandbox seam is gone — the workflow tool rides the PTC runtime, which executes model-written scripts through the sandbox |
+| `packages/bundle/web-app/presets/ptc.patch.yml` | `fork(sandbox-removal):` the `tool-executor-ptc` row is disabled (2.4.7) | Same failure family, missed in 2.4.5: the executor waits for the never-activating `ptcRuntime` service, so every session created under the ptc preset failed with `agent-preset/invalid` (wire-reproduced on 2.4.6); the preset's sessions now run on the native executor |
 
 Upstream TEST files updated to the new contracts (marked in-file):
 `packages/core/session/tests/canonical-envelopes.spec.ts` (assistant citations
