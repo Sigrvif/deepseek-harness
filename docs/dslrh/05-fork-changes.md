@@ -24,6 +24,7 @@ described in [01](01-what-it-is.md)–[04](04-data-and-settings.md).
 | **Bundled superpowers skills + auto-bootstrap** | Fifteen workflow skills shipped as the lowest-precedence skill root; `using-superpowers` auto-injected once per session (toggle in Settings → General) |
 | **SLR Runtime preset** | Local OpenAI-compatible provider preconfigured (`127.0.0.1:1234`, placeholder key); its editor opens on start until the model id is changed from the example |
 | **Quota-aware retry** | Provider usage-limit messages are parsed into exact reset times and slept through (≤6 h); request-id clock inference for providers that don't state a timezone |
+| **Local-hardware timeouts** | The stream idle timeout defaults to **2 hours** (upstream: 5 min) and is a per-provider field in the Models page — a cold big-context prefill on a local runtime streams nothing until the first token, and the upstream default aborted + restarted exactly those requests; the Shell settings tab is restored (it had bound the removed sandbox executors' namespaces) |
 | **Local-test UI defaults** | Dark theme; DeepSeek routes sorted last and dormant until keyed; the version row names the fork package; a "Fork additions" settings tab |
 | **Robustness fixes** | Serving-probe before browser open (Windows empty-page race); spill-store fallback when %TEMP% denies writes |
 
@@ -42,4 +43,6 @@ described in [01](01-what-it-is.md)–[04](04-data-and-settings.md).
 
 The full changelog lives in `VERSION.txt` beside this folder. Milestones:
 2.4.5 removed the sandbox; 2.4.6 added the migration guide; 2.4.7 added this
-documentation set and fixed the ptc preset.
+documentation set and fixed the ptc preset; 2.4.8 raised the stream idle
+timeout to two hours, exposed it per provider in the Models page, and
+restored the Shell settings tab.

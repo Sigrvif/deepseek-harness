@@ -45,11 +45,11 @@ Main namespaces the UI writes:
 
 | Namespace | Controls |
 |---|---|
-| `llm-pi-ai` | Custom model providers (the SLR Runtime preset): base URL, key env, model catalog, compat flags |
+| `llm-pi-ai` | Custom model providers (the SLR Runtime preset): base URL, key env, model catalog, compat flags, stream idle timeout (editable per provider in the Models page's customized section) |
 | `agent-default-model` | Provider/model for new sessions |
 | `llm-deepseek*` | DeepSeek route (base URL, thinking, models) |
 | `web`, `web-search-deepseek`, `web-deepseek-api` | Web search/fetch providers and their keys |
-| `bash-local`/`pwsh-local` | Shell timeout, cwd, output caps |
+| `bash-local`/`pwsh-local` | Shell timeout, cwd, output caps (the Shell tab under Built-in plugins — restored in 2.4.8, it had bound the removed sandbox executors' names) |
 | `agent-loop` | Parallel tool-call cap |
 | `subagent-model-selection-settings` | Allowed child models |
 | `session-log-deepseek` | Session-log upload (default **off**) |

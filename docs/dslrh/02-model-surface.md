@@ -88,6 +88,7 @@ Off switch: **Settings → General → Auto Superpowers**.
 | Repeat reminders | Nudges after 3/5/8 identical consecutive tool calls |
 | Timeout policy | Per-tool deadlines (`web_fetch` 30 s, search 60 s, glob/grep 30 s) |
 | Retry / quota-reset | Exponential backoff honoring `Retry-After`; a provider-named usage-window reset is slept through exactly, up to 6 h (fork addition) |
+| Stream idle timeout | A request is aborted when the provider sends **nothing** for 2 h (fork default; upstream was 5 min). Per-provider field **Stream idle timeout (ms)** under Settings → Models → provider → customized. Do not lower it blindly for local runtimes: a cold big-context prefill streams nothing until the first token, and each timeout-retry restarts that prefill from zero |
 | Session title | **One extra model request per session** (first prompt) — routed to the session's own provider, i.e. your local server |
 | Plan mode | Rules injected only while active; tool catalog unchanged for cache stability |
 | Goal driver | Automatic continuation rounds while a goal is active |

@@ -1,7 +1,15 @@
 /** Shared provider limits and Chat Files API defaults. */
 
-/** Default maximum idle interval while an adapter stream read is outstanding. */
-export const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 300_000
+/**
+ * Default maximum idle interval while an adapter stream read is outstanding.
+ *
+ * fork(local-test): raised from upstream's five minutes for the same reason
+ * as the pi-ai twin's constant — this fork's deployments point the DeepSeek
+ * route at local gateways (`baseURL` override) too, where a cold large-context
+ * prefill sends no stream events until the first token and routinely exceeds
+ * five minutes. The section's volatile `streamIdleTimeoutMs` still overrides.
+ */
+export const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 7_200_000
 /** Default combined request/response context capacity. */
 export const DEFAULT_CONTEXT_WINDOW = 1_000_000
 /** Default per-request output-token cap. */

@@ -46,6 +46,9 @@ import styles from './ModelsSection.module.css'
 /** Per-adapter-family curated field sets (unknown namespaces get the hint alone). */
 type EditorLayout = 'deepseek' | 'pi-ai' | 'unknown'
 
+/** Largest delay Node timers accept — the same ceiling the adapters' schemas enforce. */
+const MAX_IDLE_TIMEOUT_MS = 2_147_483_647
+
 
 
 /** Props of {@link ProviderEditor}. */
@@ -194,9 +197,31 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
     () => schema.getPath(namespace.user, settingsPath),
   )
   const [expectedRevision, setExpectedRevision] = useState(() => namespace.revision)
+  // fork(local-test): the stream idle timeout rides the same draft protocol as
+  // the other customized fields, but the input keeps its own TEXT state so
+  // intermediate keystrokes render verbatim; the draft only ever receives a
+  // parsed positive integer (or the key's removal), and an invalid draft text
+  // blocks submit below instead of touching the stored profile.
+  const [idleTimeoutText, setIdleTimeoutText] = useState<string>(() => {
+    const value = schema.getPath(schema.getPath(namespace.user, settingsPath), ['streamIdleTimeoutMs'])
+    return typeof value === 'number' ? String(value) : ''
+  })
   const root = useMemo(() => schema.rehydrate(namespace.schema), [namespace.schema, schema])
   const node = useMemo(() => schema.nodeAtPath(root, settingsPath), [root, schema, settingsPath])
   const fallback = schema.getPath(namespace.value, settingsPath)
+  // The idle interval this card resets to: the composed profile's value, or
+  // the schema default beneath it (the same read `inheritedModels` makes).
+  const idleTimeoutInherited = (() => {
+    const composed = schema.getPath(fallback, ['streamIdleTimeoutMs'])
+    if (typeof composed === 'number') return composed
+    const declared = schema.nodeAtPath(root, [...settingsPath, 'streamIdleTimeoutMs'])?.meta.default
+    return typeof declared === 'number' ? declared : undefined
+  })()
+  const idleTimeoutTrimmed = idleTimeoutText.trim()
+  const idleTimeoutFailure = idleTimeoutTrimmed.length === 0
+    || (/^\d+$/.test(idleTimeoutTrimmed) && Number(idleTimeoutTrimmed) >= 1 && Number(idleTimeoutTrimmed) <= MAX_IDLE_TIMEOUT_MS)
+    ? undefined
+    : 'streamIdleTimeoutInvalid' as const
   const disabled = props.readOnly || busy
   const layout = layoutOf(namespace.ns)
   const keyRef = refFor(schema, namespace, settingsPath, props.provider)
@@ -222,6 +247,18 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
     setDraft(current => value === undefined
       ? schema.deletePath(current, [key])
       : schema.setPath(current, [key], value))
+  }
+
+  /** fork(local-test): mirror the idle-timeout text into the draft as a number. */
+  const setIdleTimeout = (text: string): void => {
+    setIdleTimeoutText(text)
+    const value = text.trim()
+    const valid = /^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= MAX_IDLE_TIMEOUT_MS
+    setDraft(current => value.length === 0
+      ? schema.deletePath(current, ['streamIdleTimeoutMs'])
+      : valid
+        ? schema.setPath(current, ['streamIdleTimeoutMs'], Number(value))
+        : current)
   }
 
   // The model list is validated by the same per-row checker for both families,
@@ -538,6 +575,29 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
                   onBusyChange={setListBusy}
                 />
               )}
+            {/* fork(local-test): the stream idle timeout is the one profile
+                knob a locally hosted route routinely needs (a cold big-context
+                prefill streams nothing until the first token), so it joins the
+                curated fields for both families. The placeholder names the
+                value clearing restores. */}
+            <div className={styles['field']}>
+              <span className={styles['fieldLabel']}>{t('streamIdleTimeout')}</span>
+              <input
+                className={styles['input']}
+                type="text"
+                inputMode="numeric"
+                value={idleTimeoutText}
+                placeholder={idleTimeoutInherited === undefined ? '' : String(idleTimeoutInherited)}
+                aria-label={t('streamIdleTimeout')}
+                aria-invalid={idleTimeoutFailure !== undefined}
+                disabled={disabled}
+                onChange={(event) => { setIdleTimeout(event.target.value) }}
+              />
+              {idleTimeoutInherited === undefined
+                ? null
+                : <span className={styles['advancedHint']}>{t('streamIdleTimeoutHint').replace('{default}', () => String(idleTimeoutInherited))}</span>}
+              {idleTimeoutFailure === undefined ? null : <p className={styles['error']}>{t(idleTimeoutFailure)}</p>}
+            </div>
           </div>
         </details>}
       </>
@@ -572,6 +632,7 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
         busy={busy}
         submitDisabled={disabled || layout === 'unknown'
           || (props.credentialOnly !== true && modelFailure !== undefined)
+          || idleTimeoutFailure !== undefined
           || shownKeyFailure !== undefined
           || (props.credentialRequired === true && keyValue.length === 0)}
         submitLabelKey={props.submitLabelKey ?? 'apply'}

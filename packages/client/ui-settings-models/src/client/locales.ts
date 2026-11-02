@@ -140,6 +140,9 @@ export const en = {
   onboardingSave: 'Save and continue',
   onboardingSaving: 'Saving…',
   keyRequired: 'Enter an API key to continue.',
+  streamIdleTimeout: 'Stream idle timeout (ms)',
+  streamIdleTimeoutHint: 'Abort the request when the provider sends nothing for this long. Raise it for large contexts on slow local runtimes, whose prefill streams nothing until the first token. Default: {default}.',
+  streamIdleTimeoutInvalid: 'Enter a positive number of milliseconds.',
 }
 
 /** The settings.models namespace key union. */
@@ -285,6 +288,9 @@ export const zh: { [Key in keyof typeof en]: string } = {
   onboardingSave: '保存并继续',
   onboardingSaving: '保存中…',
   keyRequired: '请输入 API 密钥后继续。',
+  streamIdleTimeout: '流空闲超时（毫秒）',
+  streamIdleTimeoutHint: '当提供方在此时间内没有发送任何内容时中止请求。本地大上下文预填充在首个词元之前不会有任何输出，慢速本地运行时应调大此值。默认：{default}。',
+  streamIdleTimeoutInvalid: '请输入正的毫秒数。',
 }
 
 /** Japanese copy, checked against the English keys. */
@@ -427,6 +433,9 @@ export const ja = {
   'onboardingSave': '保存して続ける',
   'onboardingSaving': '保存中…',
   'keyRequired': '続けるにはAPIキーを入力してください。',
+  'streamIdleTimeout': 'ストリームアイドルタイムアウト（ミリ秒）',
+  'streamIdleTimeoutHint': 'プロバイダーがこの時間何も送信しない場合にリクエストを中止します。最初のトークンまで何も送信しない大規模コンテキストのローカル実行環境では、値を大きくしてください。既定:{default}。',
+  'streamIdleTimeoutInvalid': '正のミリ秒数を入力してください。',
 } satisfies Record<keyof typeof en, string>
 
 /** Spanish dictionary, checked against the English keys. */
@@ -569,6 +578,9 @@ export const es = {
   onboardingSave: 'Guardar y continuar',
   onboardingSaving: 'Guardando…',
   keyRequired: 'Ingrese una clave API para continuar.',
+  streamIdleTimeout: 'Tiempo de inactividad del stream (ms)',
+  streamIdleTimeoutHint: 'Anula la solicitud si el proveedor no envía nada durante este tiempo. Auméntalo para contextos grandes en servidores locales lentos, cuyo prefill no emite nada hasta el primer token. Predeterminado: {default}.',
+  streamIdleTimeoutInvalid: 'Introduce un número positivo de milisegundos.',
 } satisfies Record<keyof typeof en, string>
 
 /** French dictionary, checked against the English keys. */
@@ -711,6 +723,9 @@ export const fr = {
   onboardingSave: 'Enregistrer et continuer',
   onboardingSaving: 'Sauvegarde…',
   keyRequired: 'Entrez une clé API pour continuer.',
+  streamIdleTimeout: 'Délai d’inactivité du flux (ms)',
+  streamIdleTimeoutHint: 'Interrompt la requête si le fournisseur n’envoie rien pendant cette durée. Augmentez-la pour les grands contextes sur les serveurs locaux lents, dont le préfillage n’émet rien avant le premier jeton. Par défaut : {default}.',
+  streamIdleTimeoutInvalid: 'Saisissez un nombre positif de millisecondes.',
 } satisfies Record<keyof typeof en, string>
 
 /** German dictionary, checked against the English keys. */
@@ -853,6 +868,9 @@ export const de = {
   onboardingSave: 'Speichern und fortfahren',
   onboardingSaving: 'Speichern…',
   keyRequired: 'Geben Sie einen API-Schlüssel ein, um fortzufahren.',
+  streamIdleTimeout: 'Stream-Idle-Timeout (ms)',
+  streamIdleTimeoutHint: 'Bricht die Anfrage ab, wenn der Anbieter so lange nichts sendet. Bei großen Kontexten auf langsamen lokalen Runtimes erhöhen – deren Prefill sendet bis zum ersten Token nichts. Standard: {default}.',
+  streamIdleTimeoutInvalid: 'Geben Sie eine positive Millisekundenzahl ein.',
 } satisfies Record<keyof typeof en, string>
 
 /** Russian dictionary, checked against the English keys. */
@@ -995,6 +1013,9 @@ export const ru = {
   onboardingSave: 'Сохранить и продолжить',
   onboardingSaving: 'Сохранение…',
   keyRequired: 'Введите ключ API, чтобы продолжить.',
+  streamIdleTimeout: 'Тайм-аут простоя потока (мс)',
+  streamIdleTimeoutHint: 'Прерывает запрос, если провайдер ничего не присылает в течение этого времени. Увеличьте для больших контекстов на медленных локальных средах — их префиллинг не отправляет ничего до первого токена. По умолчанию: {default}.',
+  streamIdleTimeoutInvalid: 'Введите положительное число миллисекунд.',
 } satisfies Record<keyof typeof en, string>
 
 /** Portuguese dictionary, checked against the English keys. */
@@ -1137,4 +1158,7 @@ export const pt = {
   onboardingSave: 'Salvar e continuar',
   onboardingSaving: 'Salvando…',
   keyRequired: 'Insira uma chave de API para continuar.',
+  streamIdleTimeout: 'Tempo limite de inatividade do stream (ms)',
+  streamIdleTimeoutHint: 'Cancela a solicitação se o provedor não enviar nada por esse tempo. Aumente para contextos grandes em runtimes locais lentos, cujo prefill não envia nada até o primeiro token. Padrão: {default}.',
+  streamIdleTimeoutInvalid: 'Digite um número positivo de milissegundos.',
 } satisfies Record<keyof typeof en, string>

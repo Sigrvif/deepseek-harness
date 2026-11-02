@@ -43,8 +43,20 @@ import type {
 } from './catalog.ts'
 import { buildProvider, supportedProtocols } from './provider.ts'
 
-/** Default maximum idle interval while an adapter stream read is outstanding. */
-export const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 300_000
+/**
+ * Default maximum idle interval while an adapter stream read is outstanding.
+ *
+ * fork(local-test): upstream defaulted this to five minutes, which is tuned
+ * for hosted providers that start streaming almost immediately. This fork
+ * targets locally hosted models on consumer hardware, where a cold
+ * (cache-miss) prefill of a large context sends no stream events at all
+ * until the first token — a 100k-token prompt routinely out-prefills five
+ * minutes, and the watchdog abort + retry restarted that prefill from zero
+ * every time. Two hours bounds a genuinely dead provider without making
+ * big-context local resumes impossible; per-provider `streamIdleTimeoutMs`
+ * still overrides.
+ */
+export const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 7_200_000
 
 /**
  * Default request-level bound on base64-encoded image payload. Every image in

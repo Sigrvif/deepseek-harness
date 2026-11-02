@@ -6,10 +6,13 @@ import {
   type SettingsFieldState, type SettingsFormActions, type SettingsFormScope, type SettingsFormShell,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 
+// fork(sandbox-removal): the sandboxed executors are not mounted in this
+// fork; the page binds the plain local executors that run instead, restoring
+// the Shell settings tab (timeout / output cap) it lost in 2.4.5.
 /** Profile entry id of the POSIX shell executor; the base bundle composes it off Windows. */
-export const BASH_NS = 'bash-sandbox'
+export const BASH_NS = 'bash-local'
 /** Profile entry id of the PowerShell executor; the base bundle composes it on Windows. */
-export const PWSH_NS = 'pwsh-sandbox'
+export const PWSH_NS = 'pwsh-local'
 
 /** The shell fields this page edits — a subset of the served schema by design. */
 export interface ShellSettings {
