@@ -70,8 +70,12 @@
               compaction: true
               toolResultPruner: true
             config:
+              # fork(auto-compaction-off): see the base bundle's compaction-basic
+              # row — sessions compact through Context Fold or manual /compact only.
               - id: compaction-basic
                 name: '@deepseek-ai/dsh-compaction-basic'
+                config:
+                  auto: false
               - id: command-compact
                 name: '@deepseek-ai/dsh-command-compact'
               - id: tool-result-pruner

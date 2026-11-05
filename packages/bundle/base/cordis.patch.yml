@@ -346,8 +346,24 @@
     - id: token-meter
       name: '@deepseek-ai/dsh-token-meter'
 
+    # fork(auto-compaction-off): upstream's automatic engine compaction (the
+    # step-pressure, model-switch, and context-overflow triggers behind the
+    # `auto` flag) summarized history with the CURRENTLY ROUTED model. Its
+    # model-switch trigger priced the proposed window before switching and
+    # compacted FIRST — through the old model. Switching to a model with a
+    # smaller window therefore force-compacted through the model being
+    # switched away from; when that model no longer exists, every attempt 404s
+    # and the switch is refused (MODEL_SWITCH_COMPACTION_FAILED), permanently
+    # bricking the session. The threshold math made it worse: compaction
+    # headroom (65,536) plus the request's reserved completion tokens do not
+    # scale with the window, so a 262k -> 128k switch tripped compaction at
+    # ~30k tokens of history. This fork compacts through Context Fold
+    # (model-driven, reversible); /compact stays mounted as the manual engine
+    # path, and the tool-result pruner (per-result size guard) is unaffected.
     - id: compaction-basic
       name: '@deepseek-ai/dsh-compaction-basic'
+      config:
+        auto: false
 
     # Human `/compact`: one useful reduction below the automatic threshold. Backend
     # independent, so it follows whichever compaction service this leaf mounts.

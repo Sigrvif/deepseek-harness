@@ -48,7 +48,7 @@ child receives `DSH_HOME`, `DSH_SESSION_ID`, `DSH_PROFILE`, `DSH_WEB_URL`.
 
 ## Slash commands
 
-`/compact` (manual context summarization), `/goal …` (manage the session
+`/compact` (manual context summarization — the only engine compaction left), `/goal …` (manage the session
 goal), `/feedback <text>` (records feedback — see telemetry in
 [03](03-host-and-network.md)), `/export` (download the session log),
 `/plan [off|message]` (toggle plan mode), `/model` (UI-only model picker).
@@ -82,7 +82,7 @@ Off switch: **Settings → General → Auto Superpowers**.
 | `AGENTS.md` pickup | Project root `AGENTS.md`/`CLAUDE.md` (+ `.local` variants) and the user-global file, within a 64 KB budget; re-read on change |
 | Time context | Durable time sample at most once per hour (fork default; upstream 10 min), stating the elapsed time since the previous sample; the browser-zone attribution line is suppressed when the browser zone equals the request zone |
 | Tool-result pruner | Results over 8192 chars compacted head-4096/tail-1024 |
-| Compaction | Automatic summarization at ≥80 % context use; folds restore the originals |
+| Compaction | **Manual only** (`/compact`) since 2.4.10 — upstream's automatic triggers (step pressure, model-switch, context-overflow recovery) summarized history through the currently routed model and could brick a session on model switch; Context Fold is the standing compaction path and the engine fallback stays available by hand |
 | Spill policy | Tool results over 12.5 k tokens go to a file; the model sees a notice + path |
 | Image offload | On image-budget rejection, oldest images become placeholders and the request retries |
 | Repeat reminders | Nudges after 3/5/8 identical consecutive tool calls |
