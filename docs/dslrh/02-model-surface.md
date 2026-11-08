@@ -92,4 +92,4 @@ Off switch: **Settings → General → Auto Superpowers**.
 | Session title | **One extra model request per session** (first prompt) — routed to the session's own provider, i.e. your local server |
 | Plan mode | Rules injected only while active; tool catalog unchanged for cache stability |
 | Goal driver | Automatic continuation rounds while a goal is active |
-| Context Editor / Fold | Fork additions: request capture + surface edits/exclusions/overrides; model-driven reversible folds (`compress`/`decompress`/`search_context`/`acp_status`), with a growth nudge repeating every ~30k tokens of new growth since the last fold — see [05](05-fork-changes.md) |
+| Context Editor / Fold | Fork additions: request capture + surface edits/exclusions/overrides; model-driven reversible folds (`compress`/`decompress`/`search_context`/`acp_status`), with a growth nudge repeating every ~30k tokens of new growth whose wording escalates with usage — informational below 40% of the window, advisory to 70%, demanding to 90%, urgent past it (boundaries configurable) — see [05](05-fork-changes.md) |

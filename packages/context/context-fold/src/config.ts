@@ -17,6 +17,11 @@ export const Config: z<ResolvedFoldConfig> = z.object({
   // runs — a low-power model needs the reminder repeated to act on it.
   nudgeGrowthTokens: z.number().step(1).default(30000),
   pressureNudgeRatio: z.number().default(0.75),
+  // Nudge phrasing escalates with usage: informational below nudgeAdviseRatio
+  // (small models otherwise fold needlessly early), advisory from there,
+  // demanding from nudgeDemandRatio, urgent at 90%.
+  nudgeAdviseRatio: z.number().default(0.4),
+  nudgeDemandRatio: z.number().default(0.7),
 })
 
 /**
@@ -26,5 +31,13 @@ export const Config: z<ResolvedFoldConfig> = z.object({
  */
 export function resolveConfig(input: unknown): ResolvedFoldConfig {
   // Loader config is schemastery-processed before apply(); tests pass partials.
-  return Config(input as never)
+  const resolved = Config(input as never)
+  if (!(resolved.nudgeAdviseRatio > 0 && resolved.nudgeAdviseRatio < resolved.nudgeDemandRatio)
+    || resolved.nudgeDemandRatio > 1) {
+    throw new TypeError(
+      'context-fold: nudgeAdviseRatio must be positive and below nudgeDemandRatio, '
+        + `and nudgeDemandRatio must not exceed 1 (got ${String(resolved.nudgeAdviseRatio)} / ${String(resolved.nudgeDemandRatio)})`,
+    )
+  }
+  return resolved
 }

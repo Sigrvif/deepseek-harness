@@ -105,13 +105,36 @@ function decide(
   const usage = contextWindow === undefined
     ? `Context has grown by ~${formatTokens(growth)} tokens since the last fold.`
     : `Context usage: ~${formatTokens(pressureTokens)} of ${formatTokens(contextWindow)} (${Math.floor((pressureTokens / contextWindow) * 100)}%), grown ~${formatTokens(Math.max(0, growth))} since the last fold.`
-  const urgent = ratio !== undefined && ratio >= 0.9
   return nudgeMessage(
-    `${usage} ${urgent
-      ? 'Call compress NOW: fold the oldest consumed ranges into a summary you write, keeping the protected tail.'
-      : 'Consider calling compress now: fold the oldest consumed ranges into a summary you write (one compress call per batch). acp_status shows details.'}`,
+    `${usage} ${nudgeInstruction(ratio, config)}`,
     `context ${ratio === undefined ? 'growth' : 'pressure'} nudge`,
   )
+}
+
+/**
+ * The reminder's urgency follows the measured usage. A flat "compress now"
+ * at 15% of a large window made literal-minded small models fold needlessly
+ * early, while the same gentle wording high in the window got ignored — so
+ * the wording escalates: informational while the window is mostly free,
+ * advisory once usage is real, demanding past the demand ratio, and urgent
+ * near the limit.
+ */
+function nudgeInstruction(ratio: number | undefined, config: ResolvedFoldConfig): string {
+  if (ratio === undefined || ratio < config.nudgeAdviseRatio) {
+    return 'Context is accumulating; no action is needed yet. When it builds up, '
+      + 'you can call compress to fold consumed ranges into summaries you write — '
+      + 'the originals stay readable via decompress. acp_status shows details.'
+  }
+  if (ratio < config.nudgeDemandRatio) {
+    return 'Consider calling compress now: fold the oldest consumed ranges into a '
+      + 'summary you write (one compress call per batch). acp_status shows details.'
+  }
+  if (ratio < 0.9) {
+    return 'Compress now, before producing more output: call compress on the oldest '
+      + 'consumed ranges (one compress call per batch). Do not postpone folding — '
+      + 'waiting makes the eventual cleanup lossier. acp_status shows details.'
+  }
+  return 'Call compress NOW: fold the oldest consumed ranges into a summary you write, keeping the protected tail.'
 }
 
 /**

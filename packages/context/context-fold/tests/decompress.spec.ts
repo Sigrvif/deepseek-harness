@@ -28,6 +28,8 @@ const CONFIG: ResolvedFoldConfig = {
   searchLimit: 8,
   nudgeGrowthTokens: 50000,
   pressureNudgeRatio: 0.75,
+  nudgeAdviseRatio: 0.4,
+  nudgeDemandRatio: 0.7,
 }
 
 const SUMMARY = 'Open objectives: ship the fold feature. Decision: folds are checkpoints. File: src/fold.ts:1'

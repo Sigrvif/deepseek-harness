@@ -49,6 +49,17 @@ export interface ResolvedFoldConfig {
   nudgeGrowthTokens: number
   /** Visible-context pressure fraction that arms a pressure nudge. */
   pressureNudgeRatio: number
+  /**
+   * Usage fraction below which a fired nudge is informational: it names the
+   * accumulating context and the compress option without urging action, so a
+   * literal-minded small model does not fold needlessly early.
+   */
+  nudgeAdviseRatio: number
+  /**
+   * Usage fraction at or above which a fired nudge demands compression
+   * instead of suggesting it; past 0.9 the wording turns urgent.
+   */
+  nudgeDemandRatio: number
 }
 
 /** The compress tool's canonical value: a fold receipt or gate guidance. */

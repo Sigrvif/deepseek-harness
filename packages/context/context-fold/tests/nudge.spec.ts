@@ -23,6 +23,8 @@ const CONFIG: ResolvedFoldConfig = {
   searchLimit: 8,
   nudgeGrowthTokens: 50000,
   pressureNudgeRatio: 0.75,
+  nudgeAdviseRatio: 0.4,
+  nudgeDemandRatio: 0.7,
 }
 
 const SIGNAL = new AbortController().signal
@@ -99,6 +101,43 @@ describe('installNudge', () => {
     const criticalDecision = await step(critical)
     expect(nudges(criticalDecision)).toBe(1)
     expect(JSON.stringify(criticalDecision.kind === 'enter' ? criticalDecision.messages : [])).toContain('NOW')
+  })
+
+  it('escalates the nudge wording with context usage', async () => {
+    const { step } = await mounted()
+    // A large window so the growth gate can fire at low ratios.
+    window = 300000
+    // 20% of the window: the growth threshold fires, but the wording is
+    // informational - a flat "compress now" here made small models fold
+    // needlessly early.
+    const early = plainSession('nudge-tier-info')
+    pressure = 2000
+    await step(early)
+    pressure = 60000
+    const earlyDecision = await step(early)
+    const earlyText = JSON.stringify(earlyDecision.kind === 'enter' ? earlyDecision.messages : [])
+    expect(nudges(earlyDecision)).toBe(1)
+    expect(earlyText).toContain('no action is needed yet')
+    expect(earlyText).not.toContain('Consider calling compress')
+
+    // 53%: advisory - the incumbent wording.
+    const advise = plainSession('nudge-tier-advise')
+    pressure = 2000
+    await step(advise)
+    pressure = 160000
+    const adviseDecision = await step(advise)
+    const adviseText = JSON.stringify(adviseDecision.kind === 'enter' ? adviseDecision.messages : [])
+    expect(adviseText).toContain('Consider calling compress now')
+
+    // 80%: demanding - imperative, with a named consequence for ignoring it.
+    const demand = plainSession('nudge-tier-demand')
+    pressure = 2000
+    await step(demand)
+    pressure = 240000
+    const demandDecision = await step(demand)
+    const demandText = JSON.stringify(demandDecision.kind === 'enter' ? demandDecision.messages : [])
+    expect(demandText).toContain('Compress now, before producing more output')
+    expect(demandText).toContain('Do not postpone folding')
   })
 
   it('resets the baseline when a fold lands', async () => {

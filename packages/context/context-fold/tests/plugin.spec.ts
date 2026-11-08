@@ -64,6 +64,8 @@ describe('context-fold plugin', () => {
       searchLimit: 8,
       nudgeGrowthTokens: 30000,
       pressureNudgeRatio: 0.75,
+      nudgeAdviseRatio: 0.4,
+      nudgeDemandRatio: 0.7,
     })
   })
 })
