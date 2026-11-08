@@ -60,14 +60,29 @@ Skill roots, highest precedence first: project `<root>/.dsh/skills` →
 `$DSH_HOME/skills` → `~/.agents/skills` → **bundled superpowers** (lowest).
 Roots are watched; catalogs update live.
 
-The bundled set is the fifteen **superpowers 7.0.1** workflow skills
-(brainstorming, test-driven-development, systematic-debugging,
-writing-plans, executing-plans, subagent-driven-development,
-dispatching-parallel-agents, using-git-worktrees,
-requesting/receiving-code-review, verification-before-completion,
-finishing-a-development-branch, writing-skills, diagnosing-superpowers,
-using-superpowers), vendored verbatim (MIT) with a small adaptation file
-mapping their actions to dsh's tools.
+The bundled set is **six workflow skills rewritten for this fork** (2.4.13),
+derived from superpowers 7.0.1 (MIT) for DSLRH's audience — small local
+models doing small projects, often with no repository:
+
+| Skill | Role |
+|---|---|
+| `using-superpowers` | Check the catalog before acting; skip skills for trivial asks; dsh tool names |
+| `brainstorming` | Clarify open requests, settle the approach, write the short `SPEC.md` |
+| `working-in-steps` | Spec → todo list → one verified step at a time; updates edit existing files |
+| `systematic-debugging` | Read the error, reproduce, one change at a time, three strikes → rethink |
+| `verification-before-completion` | Run the real command and quote its output before any "done/fixed" claim |
+| `dispatching-parallel-agents` | Genuinely independent tasks → one focused `subagent` each |
+
+The **spec loop** is the spine: non-trivial work gets a short `SPEC.md` in
+the working folder (goal, approach, requirements, non-goals — a screenful,
+plain language). The user approves it and can point at it when the model
+drifts; `working-in-steps` re-reads it before claiming done; requirement
+changes update the spec first. Upstream's repo-centric skills (git
+worktrees, branch/PR lifecycle, subagent implementer/reviewer pipelines,
+TDD dogma, skill-authoring meta-process, maintainer bug-report bundling)
+are deliberately absent; their kernels live inside the six above. The
+whole set is ~280 lines with no sidecar files — short enough for a small
+model to hold, and the per-step catalog block shrank with it.
 
 **Auto-bootstrap:** once per session, on the first prompt that doesn't
 already invoke a skill, the harness injects `using-superpowers` as if the
