@@ -164,6 +164,15 @@
     - id: superpowers-bootstrap
       name: '@deepseek-ai/dsh-superpowers-bootstrap'
 
+    # fork(mcp-ui): user-managed MCP servers — persists definitions in the
+    # mcp_servers storage domain and mounts each enabled one as its own
+    # dsh-mcp-client fiber, so the Settings → MCP Servers page
+    # (ui-settings-mcp) can add/edit/remove them live without touching the
+    # comment-bearing profile patch. Manual mcp-client rows keep working
+    # beside it. See packages/mcp/mcp-manager and FORK.md.
+    - id: mcp-manager
+      name: '@deepseek-ai/dsh-mcp-manager'
+
     # Workspace commands and reconnect-safe projection over Typert Remote.
     - id: workspace-controller
       name: '@deepseek-ai/dsh-api-workspace-controller'
@@ -455,6 +464,10 @@
     # fork(superpowers): the auto-superpowers toggle on the General settings page.
     - id: ui-fork-auto-skills
       name: '@deepseek-ai/dsh-client-ui-fork-auto-skills'
+
+    # fork(mcp-ui): the MCP Servers settings page over the mcpManager remote.
+    - id: ui-settings-mcp
+      name: '@deepseek-ai/dsh-client-ui-settings-mcp'
 
     # Model selection: the /model popupSelect + composer seat over session.models.
     - id: ui-model-selection

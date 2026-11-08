@@ -19,9 +19,12 @@ settings, and stored keys.
 | `.env` | Optional user-level env layer (keys etc.; cannot set `DSH_*`/`PATH`/proxy vars) |
 
 KV domains under `storages/`: `session_projcache` (session-listing
-checkpoints), `workspace`, `schedule` (persistent reminders), and
+checkpoints), `workspace`, `schedule` (persistent reminders),
 `context_editor` (the Context tab's request log + edits/exclusions/overrides,
-keyed by session id — migrate it together with `sessions/`).
+keyed by session id — migrate it together with `sessions/`), and
+`mcp_servers` (2.4.14: the MCP Servers settings page's server definitions —
+each record is one server: name, transport, command/args/env or URL/headers,
+enabled flag).
 
 ## Session logs
 

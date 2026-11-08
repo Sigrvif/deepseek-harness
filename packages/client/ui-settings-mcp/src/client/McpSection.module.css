@@ -1,0 +1,162 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 720px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.header button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.header h2 {
+  margin: 0 0 4px;
+}
+
+.intro {
+  margin: 0;
+  opacity: 0.75;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.error {
+  margin: 0;
+  color: var(--dsh-danger, #e5484d);
+  font-size: 13px;
+}
+
+.notice {
+  margin: 0;
+  opacity: 0.75;
+  font-size: 13px;
+}
+
+.empty {
+  margin: 0;
+  opacity: 0.65;
+  font-size: 13px;
+}
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.summary {
+  opacity: 0.6;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardBody {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.transportTag {
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 999px;
+  padding: 1px 8px;
+  opacity: 0.75;
+}
+
+.stateText {
+  opacity: 0.7;
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.form {
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fieldRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 240px;
+}
+
+.field > span {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.field small {
+  opacity: 0.55;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.field select,
+.field textarea {
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  padding: 6px 8px;
+  font: inherit;
+}
+
+.field textarea {
+  font-family: var(--dsh-mono, monospace);
+  font-size: 12px;
+  resize: vertical;
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+}

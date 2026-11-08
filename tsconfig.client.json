@@ -163,6 +163,8 @@
     { "path": "./packages/client/ui-settings/tsconfig.client.json" },
     { "path": "./packages/client/ui-settings-general/tsconfig.client.json" },
     { "path": "./packages/client/ui-settings-models" },
+    // fork(mcp-ui): the MCP Servers settings page.
+    { "path": "./packages/client/ui-settings-mcp" },
     { "path": "./packages/client/ui-plugin-manager/tsconfig.client.json" },
     { "path": "./packages/client/ui-plugin-market" },
     { "path": "./packages/client/ui-settings-plugin-inventory" },

@@ -22,6 +22,7 @@ fork; see [05](05-fork-changes.md).)
 | `web_search` | DeepSeek's search API (a full auxiliary model request) | Advertised only when a `DEEPSEEK_API_KEY` credential resolves; 60 s; 1–4 queries, ≤8 results |
 | `web_fetch` | Anonymous GET of any public-looking http(s) URL | See [03](03-host-and-network.md) for the exact guard list and its gap; no cookies, plain UA, same-origin redirects only, ≤5 hops, 5 MB / 100 k chars, 30 s |
 | `present` | Declare up to 4 files as the turn's deliverables (cards in the UI) | Files must exist |
+| `mcp__<server>__<tool>` | One entry per tool exposed by a configured MCP (Model Context Protocol) server | Configured per profile — see MCP servers below; absent until a server connects |
 | `subagent` | Start an independent child agent in-process; returns immediately | Depth cap 1 (children cannot spawn grandchildren); model selectable per child |
 | `subagent_fork` | One-shot fork of the parent conversation (KV-cache-friendly) | No model-selection args |
 | `list_subagent_models` | List routes allowed for child selection | |
@@ -88,6 +89,48 @@ model to hold, and the per-step catalog block shrank with it.
 already invoke a skill, the harness injects `using-superpowers` as if the
 user typed `/using-superpowers` (re-asserted once if compaction drops it).
 Off switch: **Settings → General → Auto Superpowers**.
+
+## MCP servers
+
+External MCP (Model Context Protocol) servers add their tools to every
+session under stable `mcp__<serverName>__<tool>` names (the same shape
+Claude Code and Codex use: two servers may both expose `search` and
+coexist). Two ways to configure them; both can be mixed:
+to configure them; both can be mixed:
+
+- **Settings → MCP Servers (2.4.14)** — the fork's management page:
+  add/edit/enable/disable/restart servers live; definitions persist in
+  `$DSH_HOME/storages/mcp_servers/` and survive restarts. Transport
+  choices: **stdio** (spawn a local command, e.g. `npx -y camofox-mcp@latest`
+  or `x64dbg-automate-mcp`) and **streamable-http** (a URL, e.g.
+  `http://127.0.0.1:3000/mcp`). Per-server tool-call timeout (default
+  60 s), auto-reconnect with backoff after a lost connection, image
+  results when the model accepts images, server instructions injected as
+  literal text (MCP prompt templates are unsupported).
+- **Manual profile rows** — a `dsh-mcp-client` row in
+  `dsh-home/profiles/<profile>/cordis.patch.yml`, exactly one server per
+  row. The row **must sit under `- insert:`** — a bare top-level row is
+  silently ignored by the patch loader (verified: clean boot, no error,
+  no tools). Shape:
+
+  ```yaml
+  - insert:
+      - id: mcp-camofox
+        name: '@deepseek-ai/dsh-mcp-client'
+        config:
+          serverName: camofox
+          transport: stdio
+          command: npx
+          args: ['-y', 'camofox-mcp@latest']
+          env:
+            CAMOFOX_URL: 'http://localhost:9377'
+  ```
+
+Server tools join the standard preset's tool list (no per-preset MCP
+opt-in); the `minimal` preset's persona-only posture still strips them.
+Tool names survive restarts and reloads while the server keeps the same
+tool name. A duplicate `serverName` across a manual row and a page-managed
+server fails the later one at load with an actionable error.
 
 ## What shapes every request (no tool calls)
 

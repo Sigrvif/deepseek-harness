@@ -15,6 +15,7 @@ is a surprise.
 | node-pty shell | An interactive terminal tab is opened in the Web UI |
 | ripgrep (`rg`) | `glob`/`grep` tool calls |
 | pnpm | Plugin install/remove (`plugin_manager` tool, Plugins page, `dsh plugin`) |
+| **Configured MCP server commands** (2.4.14) | One child process per enabled stdio MCP server (Settings → MCP Servers or a profile row), spawned when the server connects and killed on disable/remove/shutdown; `streamable-http` servers are outbound HTTP instead |
 | LibreOffice (bundled kit) | Rendering an Office/PDF preview in the sidebar |
 | The OS browser opener (`xdg-open`/`open`/…) | `./dsh` without `--no-open` — opens your **system** browser; `dsh-gui` instead uses the bundled LibreWolf with a private profile |
 | External applications (VS Code, `explorer.exe`, Terminal…) | You click "Open In…" on a session/workspace |
@@ -57,6 +58,7 @@ telemetry — use the launchers.)
 | `registry.npmjs.org` / `registry.npmmirror.com` | Plugin management — including the model-facing `plugin_manager` tool in the standard preset | Don't use plugins; needs network anyway |
 | Arbitrary public http(s) URLs | The model's `web_fetch` (below) | Preset config `fetch: false` |
 | Ambient proxies (`HTTP(S)_PROXY`…) | All outbound requests, if the env names one | Unset the env |
+| Whatever your MCP servers name (2.4.14) | stdio server child processes (any local IPC/exec they do), `streamable-http` server URLs + headers | Don't configure the server |
 
 There is **no version or update check** anywhere in the harness.
 
@@ -103,7 +105,10 @@ but it is stated here because "public destinations only" would overstate it.
 
 - Loopback-only server bind; one-time token; HMAC cookies; uniform 401
   otherwise; `--trusted-host` is explicit.
-- Shell child environments scrubbed of secret-looking and `DSH_*` variables.
+- Shell child environments scrubbed of secret-looking and `DSH_*` variables;
+  MCP server child processes (2.4.14) get the same scrub plus the server's
+  own `env` block, and the bundled `node/bin` is on the harness's `PATH`
+  (launchers export it), so bare `npx` commands resolve offline.
 - Credential store file locked to 0600, written atomically, watched for
   external edits.
 - Tools execute in-process with schema validation; no tool runs at boot.

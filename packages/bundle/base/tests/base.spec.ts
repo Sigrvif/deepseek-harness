@@ -49,7 +49,11 @@ describe('dsh-base bundle', () => {
     expect(manifest.dependencies).toHaveProperty('@deepseek-ai/dsh-web-fetch-http')
   })
 
-  it('gates each shell stack by platform with a symmetric disabled expression', () => {
+  // fork(sandbox-removal): upstream pinned the confined bash-sandbox/pwsh-sandbox
+  // executors here; the fork mounts the plain executors instead (the sandbox
+  // subsystem is removed) and keeps the symmetric platform gating between the
+  // bash and pwsh stacks.
+  it('gates each plain shell stack by platform with a symmetric disabled expression and mounts no sandbox', () => {
     const root = fileURLToPath(new URL('..', import.meta.url))
     const parsed = yaml.load(
       readFileSync(resolve(root, 'cordis.patch.yml'), 'utf8'),
@@ -61,15 +65,20 @@ describe('dsh-base bundle', () => {
         ? (patch as { insert?: Record<string, unknown>[] }).insert ?? []
         : [],
     )
+    // fork(sandbox-removal): no confined executor, no fs-sandbox, no
+    // permission-preset service — the removal must stay total.
+    for (const removed of ['bash-sandbox', 'pwsh-sandbox', 'fs-sandbox', 'sandbox-local', 'permission-presets']) {
+      expect(rows.some(row => row.id === removed), `${removed} stays unmounted`).toBe(false)
+    }
     // Symmetric gating: each stack's executor and tool rows carry the same
     // platform fact, inverted between the bash and pwsh twins, so exactly one
     // shell stack mounts per host. Evaluate with a platform-scoped context
     // (the `with` scope shadows the global `process`) so both outcomes pin on
     // every host.
     for (const [id, win32, linux] of [
-      ['bash-sandbox', true, false],
+      ['bash-local', true, false],
       ['tool-bash', true, false],
-      ['pwsh-sandbox', false, true],
+      ['pwsh-local', false, true],
       ['tool-pwsh', false, true],
     ] as const) {
       const row = rows.find(candidate => candidate.id === id)
