@@ -18,9 +18,12 @@ export const Config: z<ResolvedFoldConfig> = z.object({
   nudgeGrowthTokens: z.number().step(1).default(30000),
   pressureNudgeRatio: z.number().default(0.75),
   // Nudge phrasing escalates with usage: informational below nudgeAdviseRatio
-  // (small models otherwise fold needlessly early), advisory from there,
+  // (small models otherwise fold needlessly early) — and only while absolute
+  // usage stays under nudgeInfoMaxTokens, so a 1M window escalates at real
+  // token counts instead of waiting for 40% of it — advisory from there,
   // demanding from nudgeDemandRatio, urgent at 90%.
   nudgeAdviseRatio: z.number().default(0.4),
+  nudgeInfoMaxTokens: z.number().step(1).default(200000),
   nudgeDemandRatio: z.number().default(0.7),
 })
 
@@ -37,6 +40,11 @@ export function resolveConfig(input: unknown): ResolvedFoldConfig {
     throw new TypeError(
       'context-fold: nudgeAdviseRatio must be positive and below nudgeDemandRatio, '
         + `and nudgeDemandRatio must not exceed 1 (got ${String(resolved.nudgeAdviseRatio)} / ${String(resolved.nudgeDemandRatio)})`,
+    )
+  }
+  if (!Number.isSafeInteger(resolved.nudgeInfoMaxTokens) || resolved.nudgeInfoMaxTokens <= 0) {
+    throw new TypeError(
+      `context-fold: nudgeInfoMaxTokens must be a positive integer (got ${String(resolved.nudgeInfoMaxTokens)})`,
     )
   }
   return resolved

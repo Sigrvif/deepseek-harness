@@ -84,6 +84,7 @@ const CONFIG: ResolvedFoldConfig = {
   nudgeGrowthTokens: 50000,
   pressureNudgeRatio: 0.75,
   nudgeAdviseRatio: 0.4,
+  nudgeInfoMaxTokens: 200000,
   nudgeDemandRatio: 0.7,
 }
 

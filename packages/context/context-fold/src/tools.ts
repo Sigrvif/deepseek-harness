@@ -50,11 +50,13 @@ export interface ResolvedFoldConfig {
   /** Visible-context pressure fraction that arms a pressure nudge. */
   pressureNudgeRatio: number
   /**
-   * Usage fraction below which a fired nudge is informational: it names the
-   * accumulating context and the compress option without urging action, so a
-   * literal-minded small model does not fold needlessly early.
+   * Usage fraction below which a fired nudge is informational — but only
+   * while the absolute usage is also below {@link nudgeInfoMaxTokens}, so a
+   * million-token window still escalates once real token counts accumulate.
    */
   nudgeAdviseRatio: number
+  /** Absolute usage cap (tokens) on the informational tier, independent of the window fraction. */
+  nudgeInfoMaxTokens: number
   /**
    * Usage fraction at or above which a fired nudge demands compression
    * instead of suggesting it; past 0.9 the wording turns urgent.

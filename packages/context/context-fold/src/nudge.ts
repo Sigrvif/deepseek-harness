@@ -106,7 +106,7 @@ function decide(
     ? `Context has grown by ~${formatTokens(growth)} tokens since the last fold.`
     : `Context usage: ~${formatTokens(pressureTokens)} of ${formatTokens(contextWindow)} (${Math.floor((pressureTokens / contextWindow) * 100)}%), grown ~${formatTokens(Math.max(0, growth))} since the last fold.`
   return nudgeMessage(
-    `${usage} ${nudgeInstruction(ratio, config)}`,
+    `${usage} ${nudgeInstruction(ratio, pressureTokens, config)}`,
     `context ${ratio === undefined ? 'growth' : 'pressure'} nudge`,
   )
 }
@@ -115,26 +115,30 @@ function decide(
  * The reminder's urgency follows the measured usage. A flat "compress now"
  * at 15% of a large window made literal-minded small models fold needlessly
  * early, while the same gentle wording high in the window got ignored — so
- * the wording escalates: informational while the window is mostly free,
- * advisory once usage is real, demanding past the demand ratio, and urgent
- * near the limit.
+ * the wording escalates: informational while the window is mostly free AND
+ * the absolute usage is still small (a million-token window must escalate at
+ * real token counts, not wait for 40% of itself), advisory once either bound
+ * is crossed, demanding past the demand ratio, and urgent near the limit.
  */
-function nudgeInstruction(ratio: number | undefined, config: ResolvedFoldConfig): string {
-  if (ratio === undefined || ratio < config.nudgeAdviseRatio) {
-    return 'Context is accumulating; no action is needed yet. When it builds up, '
-      + 'you can call compress to fold consumed ranges into summaries you write — '
-      + 'the originals stay readable via decompress. acp_status shows details.'
+function nudgeInstruction(ratio: number | undefined, pressureTokens: number, config: ResolvedFoldConfig): string {
+  if (ratio !== undefined && ratio >= 0.9) {
+    return 'Call compress NOW: fold the oldest consumed ranges into a summary you write, keeping the protected tail.'
   }
-  if (ratio < config.nudgeDemandRatio) {
-    return 'Consider calling compress now: fold the oldest consumed ranges into a '
-      + 'summary you write (one compress call per batch). acp_status shows details.'
-  }
-  if (ratio < 0.9) {
+  if (ratio !== undefined && ratio >= config.nudgeDemandRatio) {
     return 'Compress now, before producing more output: call compress on the oldest '
       + 'consumed ranges (one compress call per batch). Do not postpone folding — '
       + 'waiting makes the eventual cleanup lossier. acp_status shows details.'
   }
-  return 'Call compress NOW: fold the oldest consumed ranges into a summary you write, keeping the protected tail.'
+  const informational = ratio !== undefined
+    && ratio < config.nudgeAdviseRatio
+    && pressureTokens < config.nudgeInfoMaxTokens
+  if (informational) {
+    return 'Context is accumulating; no action is needed yet. When it builds up, '
+      + 'you can call compress to fold consumed ranges into summaries you write — '
+      + 'the originals stay readable via decompress. acp_status shows details.'
+  }
+  return 'Consider calling compress now: fold the oldest consumed ranges into a '
+    + 'summary you write (one compress call per batch). acp_status shows details.'
 }
 
 /**

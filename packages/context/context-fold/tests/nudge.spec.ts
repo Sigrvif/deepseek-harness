@@ -24,6 +24,7 @@ const CONFIG: ResolvedFoldConfig = {
   nudgeGrowthTokens: 50000,
   pressureNudgeRatio: 0.75,
   nudgeAdviseRatio: 0.4,
+  nudgeInfoMaxTokens: 200000,
   nudgeDemandRatio: 0.7,
 }
 
@@ -138,6 +139,22 @@ describe('installNudge', () => {
     const demandText = JSON.stringify(demandDecision.kind === 'enter' ? demandDecision.messages : [])
     expect(demandText).toContain('Compress now, before producing more output')
     expect(demandText).toContain('Do not postpone folding')
+  })
+
+  it('stops being informational on absolute token count, not just ratio', async () => {
+    const { step } = await mounted()
+    // A million-token window: 25% usage is below the advise ratio, but the
+    // absolute usage passed the informational cap, so the wording escalates -
+    // "wait until 400k" is no useful advice for a model that size.
+    window = 1000000
+    const large = plainSession('nudge-tier-absolute')
+    pressure = 2000
+    await step(large)
+    pressure = 250000
+    const decision = await step(large)
+    const text = JSON.stringify(decision.kind === 'enter' ? decision.messages : [])
+    expect(text).toContain('Consider calling compress now')
+    expect(text).not.toContain('no action is needed yet')
   })
 
   it('resets the baseline when a fold lands', async () => {
