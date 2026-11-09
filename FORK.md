@@ -78,11 +78,21 @@ package is, does, and touches.
 | `packages/bundle/web-app/cordis.patch.yml` + `package.json` | `fork(mcp-ui):` host row `mcp-manager` (beside `superpowers-bootstrap`) and browser roster row `ui-settings-mcp` (2.4.14) | Mounts the MCP manager and its settings page in the web profile |
 | `packages/bundle/base/tests/base.spec.ts` | fork-marked: the shell-stack test now pins the FORK posture — sandbox rows (`bash-sandbox`/`pwsh-sandbox`/`fs-sandbox`/`sandbox-local`/permission presets) must stay unmounted, and the plain `bash-local`/`pwsh-local` executors keep upstream's symmetric platform gating (2.4.14; the test had asserted the sandbox rows the fork removed in 2.4.5 and had been failing unnoticed — build gates don't run vitest) | Keeps the sandbox removal under test |
 | Shipped-bundle launchers (`dsh`, `dsh-gui`, `dsh.cmd`, `dsh-gui.cmd`) | `PATH` gains the bundled `node/bin` (2.4.14) | Bare `npx`/`npm` MCP server commands (camofox) resolve to the bundled Node.js and spawn without a system Node install |
+| `packages/host/directory-picker-auto/src/probe.ts` + `src/index.ts` (+ `package.json` dep on `dsh-native-command`) | `fork(picker-probe):` the boot-time `linuxChooser` fact now RUNS the chooser — the first-PATH zenity/kdialog (`--version`, 3s cap) must exit cleanly, falling through tiers like a pick — instead of trusting executability; a host whose choosers cannot start resolves to the always-working `browse` backend (2.4.16) | Present-but-broken is the real-world case: a rolling-distro GTK4/libadwaita mismatch kills zenity with a symbol lookup error before any dialog, and the executability probe still selected `native`, so every workspace pick failed all session (observed on a user machine, 2.4.15) |
+| `packages/host/directory-picker-native/src/native-picker.ts` | `fork(picker-fallthrough):` on Linux, every non-cancel, non-abort zenity failure falls through to kdialog (upstream: only ENOENT); when both tiers fail, one combined error names each tier's cause (the child's stderr first line, 200-char cap; `zenity: not installed` when absent) and keeps the primary failure as `cause` with its captured stdio | Broken-zenity + working-kdialog previously dead-ended with a bare `Command failed` wall; the combined message tells the operator what to fix (e.g. the GTK library mismatch) instead of nothing |
+| `packages/api/workspace-controller/src/directory-picker.ts` | `fork(picker-fallthrough):` the `pick` verb drops its host-side `directory picker failed` prefix; `cancellableFailure` loses its unused prefix parameter (2.4.16) | The client wraps the same text once more, so the error dialog showed the prefix doubled (`directory picker failed: directory picker failed: …`) — garbled text on the one dialog an operator actually reads |
 
 Upstream TEST files updated to the new contracts (marked in-file):
 `packages/core/session/tests/canonical-envelopes.spec.ts` (assistant citations
 validate like every other type), `packages/core/session/tests/surface.spec.ts`
-(same + a new fork-contract test). New fork tests:
+(same + a new fork-contract test),
+`packages/host/directory-picker-native/tests/native-picker.spec.ts` (two
+Linux contracts moved to the fallthrough semantics: a primitive error no
+longer surfaces as-is, and the adapter test pins the combined both-tiers
+error; new cases for the kdialog fallthrough and the cancel-is-final rule),
+`packages/host/directory-picker-auto/tests/resolve.spec.ts` (new
+`hasUsableLinuxChooser` describe: version-check pass, tier fallthrough,
+unusable host, one spawn per name, real-process clean-exit rule). New fork tests:
 `packages/core/session/tests/context-edit-derivation.spec.ts`,
 `packages/core/agent-loop/tests/context-edit-registry.spec.ts`,
 `packages/client/ui-chat/tests/context-edit-timeline.client.spec.tsx`.

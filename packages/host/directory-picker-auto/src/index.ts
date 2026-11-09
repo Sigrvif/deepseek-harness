@@ -19,11 +19,13 @@ import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import { launchedThroughSsh, launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
-import { canExecute, hasLinuxChooserBinary } from './probe.ts'
+import { runNativeCommand } from '@deepseek-ai/dsh-native-command'
+// fork(picker-probe): the chooser fact now comes from hasUsableLinuxChooser.
+import { canExecute, hasUsableLinuxChooser } from './probe.ts'
 import type { DirectoryPickerBackendKind } from './resolve.ts'
 import { resolveDirectoryPickerBackend } from './resolve.ts'
 
-export { canExecute, hasLinuxChooserBinary } from './probe.ts'
+export { canExecute, hasLinuxChooserBinary, hasUsableLinuxChooser, CHOOSER_PROBE_TIMEOUT_MS } from './probe.ts'
 export type { DirectoryPickerBackendKind, DirectoryPickerEnv, DirectoryPickerHostFacts } from './resolve.ts'
 export { resolveDirectoryPickerBackend } from './resolve.ts'
 
@@ -73,7 +75,9 @@ export async function apply(ctx: Context): Promise<void> {
     platform: process.platform,
     ssh: launchedThroughSsh(launchEnvironmentOf(ctx)),
     env: process.env,
-    linuxChooser: hasLinuxChooserBinary(process.env.PATH, canExecute),
+    // fork(picker-probe): the fact is now "a chooser the picker would run
+    // starts successfully", not "some chooser binary exists on PATH".
+    linuxChooser: await hasUsableLinuxChooser(process.env.PATH, canExecute, runNativeCommand),
   })
   await ctx.effect(async () => {
     // Root-tree create: the Loader root is in-memory (write() is a no-op), so

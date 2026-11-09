@@ -1,8 +1,9 @@
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
-import { canExecute, hasLinuxChooserBinary } from '../src/probe.ts'
+import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
+import { runNativeCommand } from '@deepseek-ai/dsh-native-command'
+import { canExecute, hasLinuxChooserBinary, hasUsableLinuxChooser, type ChooserVersionRunner } from '../src/probe.ts'
 import { resolveDirectoryPickerBackend } from '../src/resolve.ts'
 import type { DirectoryPickerHostFacts } from '../src/resolve.ts'
 
@@ -94,5 +95,52 @@ describe('canExecute', () => {
     chmodSync(binary, 0o755)
     expect(canExecute(binary)).toBe(true)
     expect(canExecute(join(probeRoot, 'kdialog'))).toBe(false)
+  })
+})
+
+// fork(picker-probe): the boot fact runs the chooser, not just its presence.
+describe('hasUsableLinuxChooser', () => {
+  const passingRunner = (): Mock<ChooserVersionRunner> =>
+    vi.fn(async () => ({ stdout: 'zenity 4.2\n', stderr: '' }))
+
+  it('accepts a chooser whose version check exits cleanly, probing the exact picker resolution', async () => {
+    const run = passingRunner()
+    await expect(hasUsableLinuxChooser('/usr/bin', () => true, run)).resolves.toBe(true)
+    expect(run.mock.calls[0]).toEqual([join('/usr/bin', 'zenity'), ['--version'], expect.any(AbortSignal), 'hidden'])
+  })
+
+  it('falls through a broken first tier to a usable second', async () => {
+    const run = vi.fn<ChooserVersionRunner>()
+      .mockRejectedValueOnce(Object.assign(new Error('command failed'), { stderr: 'zenity: symbol lookup error' }))
+      .mockResolvedValueOnce({ stdout: 'kdialog 1.0\n', stderr: '' })
+    await expect(hasUsableLinuxChooser('/usr/bin', () => true, run)).resolves.toBe(true)
+    expect(run.mock.calls.map(call => call[0]))
+      .toEqual([join('/usr/bin', 'zenity'), join('/usr/bin', 'kdialog')])
+  })
+
+  it('rejects a host whose every tier cannot start', async () => {
+    const broken = vi.fn<ChooserVersionRunner>(async () => { throw new Error('cannot start') })
+    await expect(hasUsableLinuxChooser('/usr/bin', () => true, broken)).resolves.toBe(false)
+  })
+
+  it('spawns at most one candidate per name and probes nothing without a PATH', async () => {
+    const run = passingRunner()
+    const path = ['/a', '/b'].join(delimiter)
+    await expect(hasUsableLinuxChooser(path, candidate => candidate === join('/b', 'zenity'), run)).resolves.toBe(true)
+    expect(run).toHaveBeenCalledOnce()
+    expect(run.mock.calls[0]![0]).toBe(join('/b', 'zenity'))
+    await expect(hasUsableLinuxChooser(undefined, () => true, run)).resolves.toBe(false)
+    expect(run).toHaveBeenCalledOnce()
+  })
+
+  it('runs the real candidate and requires a clean exit', async () => {
+    probeRoot = mkdtempSync(join(tmpdir(), 'dsh-picker-probe-'))
+    const good = join(probeRoot, 'zenity')
+    writeFileSync(good, '#!/bin/sh\nexit 0\n')
+    chmodSync(good, 0o755)
+    expect(await hasUsableLinuxChooser(probeRoot, () => true, runNativeCommand)).toBe(true)
+
+    writeFileSync(good, '#!/bin/sh\nexit 1\n')
+    expect(await hasUsableLinuxChooser(probeRoot, () => true, runNativeCommand)).toBe(false)
   })
 })

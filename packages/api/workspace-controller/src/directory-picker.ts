@@ -57,7 +57,10 @@ export class DirectoryPickerController extends TypertRemoteService {
     try {
       return await capability.pick(signal)
     } catch (error: unknown) {
-      throw cancellableFailure(error, signal, 'directory picker was aborted', 'directory picker failed')
+      // fork(picker-fallthrough): no host-side "directory picker failed" prefix
+      // — the client wraps once, and the doubled prefix garbled the dialog the
+      // operator actually reads.
+      throw cancellableFailure(error, signal, 'directory picker was aborted')
     }
   }
 
@@ -155,18 +158,15 @@ function browseFailure(error: unknown): RemoteError {
  * @param error - the primitive's rejection.
  * @param signal - the caller lifetime the primitive ran under.
  * @param cancelled - operator-facing text for the abort outcome.
- * @param failed - prefix for a non-seam failure, when the verb has no closed codes.
  * @returns the failure to throw across the Remote boundary.
  */
 function cancellableFailure(
   error: unknown,
   signal: AbortSignal,
   cancelled: string,
-  failed?: string,
 ): RemoteError {
   if (signal.aborted) return new RemoteError('gateway/cancelled', cancelled, {}, { cause: error })
-  if (failed === undefined) return browseFailure(error)
-  return new RemoteError('gateway/internal', `${failed}: ${errorMessage(error)}`, {}, { cause: error })
+  return browseFailure(error)
 }
 
 function errorMessage(error: unknown): string {

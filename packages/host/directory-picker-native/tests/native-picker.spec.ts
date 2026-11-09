@@ -161,12 +161,16 @@ describe('native directory picker', () => {
     }
   })
 
+  // fork(picker-fallthrough): a non-cancel failure falls through to the
+  // second tier, and the combined error names both tiers — it must never read
+  // as a user cancel.
   it.each([
     ['a primitive error', 'failed'],
     ['an invalid code type', { code: true }],
   ])('does not mistake %s for a user cancel', async (_label, reason) => {
     const run = vi.fn<DirectoryPickerRunner>(async () => { throw reason })
-    await expect(pickNativeDirectory(signal(), { platform: 'linux', run })).rejects.toBe(reason)
+    await expect(pickNativeDirectory(signal(), { platform: 'linux', run }))
+      .rejects.toThrow('native directory chooser failed')
   })
 
   it('uses the Win32 dialog and never spawns a command when it answers', async () => {
@@ -216,18 +220,51 @@ describe('native directory picker', () => {
     expect(options.windowsHide).toBe(true)
     expect(options.signal).toBeInstanceOf(AbortSignal)
 
-    // A non-cancellation command failure surfaces as-is with its cause and
-    // captured stdio attached; no tier masks or rewraps it.
-    execFileMock.mockImplementationOnce((_command, _args, _options, callback) => {
-      callback(Object.assign(new Error('zenity failed'), { code: 7 }), 'partial output', 'failure details')
+    // fork(picker-fallthrough): a failed zenity no longer surfaces as-is — the
+    // kdialog tier runs, and a final failure names both tiers while keeping the
+    // primary failure (with its captured stdio) as the cause.
+    execFileMock.mockImplementation((command, _args, _options, callback) => {
+      if (command === 'zenity') {
+        callback(Object.assign(new Error('zenity failed'), { code: 7 }), 'partial output',
+          'zenity: symbol lookup error: /usr/lib/libadwaita-1.so.0: undefined symbol: gtk_enum_list_item_get_value')
+      } else {
+        callback(Object.assign(new Error('kdialog failed'), { code: 3 }), '', 'kdialog: cannot open display')
+      }
     })
     const surfaced = await pickNativeDirectory(signal(), { platform: 'linux' })
       .then(() => { throw new Error('expected rejection') }, (error: unknown) => error as Error)
-    expect(surfaced).toMatchObject({
-      message: 'zenity failed', code: 7,
-      stdout: 'partial output', stderr: 'failure details',
+    expect(surfaced.message).toContain('zenity: symbol lookup error')
+    expect(surfaced.message).toContain('kdialog: cannot open display')
+    expect((surfaced as { cause?: unknown }).cause).toMatchObject({ message: 'zenity failed', code: 7, stdout: 'partial output' })
+
+    // A broken zenity with no kdialog installed names the real cause and the fix.
+    execFileMock.mockImplementation((command, _args, _options, callback) => {
+      if (command === 'zenity') {
+        callback(Object.assign(new Error('zenity failed'), { code: 127 }), '',
+          'zenity: symbol lookup error: /usr/lib/libadwaita-1.so.0: undefined symbol: gtk_enum_list_item_get_value')
+      } else {
+        callback(Object.assign(new Error('spawn kdialog ENOENT'), { code: 'ENOENT' }), '', '')
+      }
     })
-    expect((surfaced as { cause?: unknown }).cause).toBeInstanceOf(Error)
+    const missing = await pickNativeDirectory(signal(), { platform: 'linux' })
+      .then(() => { throw new Error('expected rejection') }, (error: unknown) => error as Error)
+    expect(missing.message).toContain('gtk_enum_list_item_get_value')
+    expect(missing.message).toContain('kdialog: not installed')
+    expect((missing as { cause?: unknown }).cause).toMatchObject({ code: 127 })
+  })
+
+  it('falls through a broken zenity to a working kdialog', async () => {
+    const run = vi.fn<DirectoryPickerRunner>()
+      .mockRejectedValueOnce(failure(127, 'zenity: symbol lookup error: undefined symbol: gtk_enum_list_item_get_value'))
+      .mockResolvedValueOnce({ stdout: '/home/test/fallback\n', stderr: '' })
+    await expect(pickNativeDirectory(signal(), { platform: 'linux', run })).resolves.toBe('/home/test/fallback')
+    expect(run.mock.calls.map(call => call[0])).toEqual(['zenity', 'kdialog'])
+  })
+
+  it('treats a zenity cancel as the operator answer without consulting kdialog', async () => {
+    const run = vi.fn<DirectoryPickerRunner>().mockRejectedValueOnce(failure(1))
+    await expect(pickNativeDirectory(signal(), { platform: 'linux', run })).resolves.toBeNull()
+    expect(run).toHaveBeenCalledOnce()
   })
 
   it('uses the current process platform when no platform override is supplied', async () => {

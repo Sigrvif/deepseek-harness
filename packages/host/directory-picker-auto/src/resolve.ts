@@ -31,7 +31,9 @@ export interface DirectoryPickerHostFacts {
   ssh: boolean
   /** Environment sample; DISPLAY/WAYLAND_DISPLAY marks a Linux display. */
   env: DirectoryPickerEnv
-  /** Whether a Linux chooser binary the native backend can drive (zenity/kdialog) is on PATH; consulted only when `platform` is linux. */
+  // fork(picker-probe): the fact means a chooser the picker would run (first
+  // PATH zenity/kdialog) STARTS (`--version` exits 0), not merely exists.
+  /** Whether a Linux chooser the native backend can drive (zenity/kdialog) starts on this host; consulted only when `platform` is linux. */
   linuxChooser: boolean
 }
 
