@@ -4,6 +4,8 @@
 export const en = {
   nav: 'MCP Servers',
   title: 'MCP Servers',
+  brokerTitle: 'Broker mode',
+  brokerDescription: 'Recommended for small models: the model sees three tools (search, describe, execute) instead of every server tool, and reaches the rest through them. Turn off to expose all mcp__ tools directly.',
   intro: 'Model Context Protocol servers add extra tools to every session; their tools appear as mcp__name__tool.'
     + ' Configure a local command (stdio) or a URL (HTTP). Changes apply immediately; definitions survive restarts.',
   add: 'Add MCP server',
@@ -55,6 +57,8 @@ export type McpSettingsLocaleKey = keyof typeof en
 export const zh: Record<McpSettingsLocaleKey, string> = {
   nav: 'MCP 服务器',
   title: 'MCP 服务器',
+  brokerTitle: '代理模式',
+  brokerDescription: '推荐小模型使用：模型只看到三个工具（搜索、描述、执行），通过它们访问其余工具。关闭后直接暴露所有 mcp__ 工具。',
   intro: 'Model Context Protocol 服务器为每个会话添加额外的工具，工具名为 mcp__名称__工具。可配置本地命令（stdio）或 URL（HTTP）。更改立即生效，定义在重启后保留。',
   add: '添加 MCP 服务器',
   edit: '编辑',

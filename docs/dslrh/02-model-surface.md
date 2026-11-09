@@ -132,6 +132,27 @@ Tool names survive restarts and reloads while the server keeps the same
 tool name. A duplicate `serverName` across a manual row and a page-managed
 server fails the later one at load with an actionable error.
 
+### Broker mode (2.4.15, on by default)
+
+Every configured server's tools would otherwise land in the request
+individually — two or three servers easily mean 30+ entries, which is
+noise a small model drowns in. **Broker mode** replaces them with exactly
+three tools and reaches the rest through them:
+
+- `mcp_search_tools { query }` — lexical search over every connected
+  server's tools (name + description; name matches weigh heavier), top 8.
+- `mcp_describe_tool { tool }` — the full description and argument schema
+  of one tool, by its exact `mcp__…` name.
+- `mcp_execute_tool { tool, arguments }` — runs it. The hidden call reuses
+  the tool's own definition directly, so behavior (images, timeouts,
+  error surfaces) matches the direct path.
+
+The flow is search → describe → execute, and the tools' descriptions
+teach it. Toggle: **Settings → MCP Servers → Broker mode** (default on;
+off restores the direct `mcp__*` tools and hides the trio). Under the
+hood the visible side is a per-agent tool restriction refreshed as
+servers connect or die — the hidden side stays fully executable.
+
 ## What shapes every request (no tool calls)
 
 | Mechanism | Effect |

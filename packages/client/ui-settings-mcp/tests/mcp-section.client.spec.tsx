@@ -2,6 +2,8 @@
 /** The MCP Servers settings section: card render, states, and the add/save/remove flows. */
 
 import type { GlobalStandardProps, TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { allowAllAccess } from '@deepseek-ai/dsh-client-test-runtime'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -29,6 +31,16 @@ const t: TranslateNS<'mcpSettings'> = (key, values) => {
   let text = en[key as keyof typeof en] as string
   for (const [name, value] of Object.entries(values ?? {})) text = text.replaceAll(`{${name}}`, String(value))
   return text
+}
+
+/** Broker flag snapshot + writer for the section's InjectFace. */
+function brokerProps() {
+  const store = createSnapshotStore(true)
+  return {
+    hooks: { broker: store },
+    useBroker: bindSnapshotSelector(store),
+    setBroker: async () => undefined,
+  }
 }
 
 function def(overrides: Partial<McpServerDef> = {}): McpServerDef {
@@ -65,7 +77,7 @@ function fakeApi(entries: McpServerEntry[]): McpManagerApi & { calls: string[] }
 describe('McpSection', () => {
   it('renders server cards with status and actions', async () => {
     const api = fakeApi([{ def: def(), status: { state: 'running' } }])
-    render(<McpSection {...kit} t={t} api={api} labels={t} />)
+    render(<McpSection {...kit} {...brokerProps()} t={t} api={api} labels={t} />)
     await waitFor(() => expect(screen.getByText('camofox')).toBeTruthy())
     expect(screen.getByText(t('stateRunning'))).toBeTruthy()
     expect(screen.getByText('npx -y camofox-mcp@latest')).toBeTruthy()
@@ -76,13 +88,13 @@ describe('McpSection', () => {
 
   it('shows a failed server with its error text', async () => {
     const api = fakeApi([{ def: def(), status: { state: 'failed', lastError: 'spawn ENOENT' } }])
-    render(<McpSection {...kit} t={t} api={api} labels={t} />)
+    render(<McpSection {...kit} {...brokerProps()} t={t} api={api} labels={t} />)
     await waitFor(() => expect(screen.getByText(/spawn ENOENT/)).toBeTruthy())
   })
 
   it('saves a new stdio server through the form', async () => {
     const api = fakeApi([])
-    render(<McpSection {...kit} t={t} api={api} labels={t} />)
+    render(<McpSection {...kit} {...brokerProps()} t={t} api={api} labels={t} />)
     await waitFor(() => expect(screen.getByText(t('empty'))).toBeTruthy())
     fireEvent.click(screen.getByText(t('add')))
     fireEvent.change(screen.getByLabelText(/^Server name/), { target: { value: 'everything' } })
@@ -94,7 +106,7 @@ describe('McpSection', () => {
 
   it('blocks the save with the invalid-name message and never calls the api', async () => {
     const api = fakeApi([])
-    render(<McpSection {...kit} t={t} api={api} labels={t} />)
+    render(<McpSection {...kit} {...brokerProps()} t={t} api={api} labels={t} />)
     await waitFor(() => expect(screen.getByText(t('empty'))).toBeTruthy())
     fireEvent.click(screen.getByText(t('add')))
     fireEvent.change(screen.getByLabelText(/^Server name/), { target: { value: 'not valid!' } })
@@ -106,7 +118,7 @@ describe('McpSection', () => {
 
   it('confirms before removing a server', async () => {
     const api = fakeApi([{ def: def(), status: { state: 'running' } }])
-    render(<McpSection {...kit} t={t} api={api} labels={t} />)
+    render(<McpSection {...kit} {...brokerProps()} t={t} api={api} labels={t} />)
     await waitFor(() => expect(screen.getByText('camofox')).toBeTruthy())
     fireEvent.click(screen.getByText(t('remove')))
     fireEvent.click(screen.getByText(t('confirmDelete')))

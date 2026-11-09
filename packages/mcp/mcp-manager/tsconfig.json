@@ -12,6 +12,33 @@
       "path": "../../../vendor/cordis"
     },
     {
+      "path": "../../../vendor/cosmokit"
+    },
+    {
+      "path": "../../../vendor/schemastery"
+    },
+    {
+      "path": "../../core/agent"
+    },
+    {
+      "path": "../../core/agent-loop"
+    },
+    {
+      "path": "../../core/scope"
+    },
+    {
+      "path": "../../core/system-prompt"
+    },
+    {
+      "path": "../../core/tools"
+    },
+    {
+      "path": "../../llm/llm"
+    },
+    {
+      "path": "../../settings/settings"
+    },
+    {
       "path": "../../storage/storage-domain"
     },
     {

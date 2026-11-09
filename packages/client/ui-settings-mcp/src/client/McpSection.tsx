@@ -1,5 +1,6 @@
 /** The MCP Servers settings section: managed server cards plus an add/edit form. */
 import { useState } from 'react'
+import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
 import { Button, Input, StateDot, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -13,6 +14,9 @@ type Labels = (key: McpSettingsLocaleKey, values?: Record<string, unknown>) => s
 export interface McpSectionInjected {
   api: McpManagerApi
   labels: Labels
+  /** Live broker-mode flag (default on); flipped through the settings service. */
+  hooks: { broker: ObservableSnapshot<boolean> }
+  setBroker(enabled: boolean): Promise<void>
 }
 
 type LocaleBinder = PropsLocale<'mcpSettings'>
@@ -71,7 +75,7 @@ function draftOf(def: McpServerDef): Draft {
  * @param props - the injected API, localized copy, and runtime slot props.
  * @returns the settings page body.
  */
-export function McpSection({ api, labels: t }: PropsRuntime<'settings.section'> & LocaleBinder & InjectFace<McpSectionInjected>) {
+export function McpSection({ api, labels: t, useBroker, setBroker }: PropsRuntime<'settings.section'> & LocaleBinder & InjectFace<McpSectionInjected>) {
   const [servers, setServers] = useState<McpListValue['servers'] | undefined>(undefined)
   const [loadFailed, setLoadFailed] = useState(false)
   const [draft, setDraft] = useState<Draft | undefined>(undefined)
@@ -152,7 +156,20 @@ export function McpSection({ api, labels: t }: PropsRuntime<'settings.section'> 
     ? [def.command, ...(def.args ?? [])].join(' ')
     : (def.url ?? '')
 
+  const brokerOn = useBroker(value => value)
   return <div className={css.section}>
+    <div className={css.brokerRow}>
+      <div>
+        <div className={css.brokerTitle}>{t('brokerTitle')}</div>
+        <div className={css.intro}>{t('brokerDescription')}</div>
+      </div>
+      <Switch checked={brokerOn} disabled={busy} label={t('brokerTitle')}
+        onChange={(next) => {
+          setBusy(true)
+          setError(undefined)
+          void setBroker(next).catch((cause: unknown) => setError(`${t('opFailed')}: ${(cause as Error).message}`)).finally(() => setBusy(false))
+        }} />
+    </div>
     <div className={css.header}>
       <div>
         <h2>{t('title')}</h2>

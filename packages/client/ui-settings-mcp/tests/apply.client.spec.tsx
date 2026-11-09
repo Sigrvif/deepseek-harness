@@ -11,7 +11,13 @@ function clientCtx() {
   const registered: Array<{ options: Record<string, unknown>; component: unknown }> = []
   const registeredLocales: Array<{ ns: string; dicts: unknown }> = []
   const injected: Array<{ name: string; build: () => void }> = []
+  const form = {
+    getSnapshot: () => ({ status: 'ready' as const, value: { broker: true }, base: { broker: true }, user: { broker: true }, revision: 1, writable: true }),
+    subscribe: () => () => undefined,
+    set: async () => true,
+  }
   const ctx = {
+    configForms: { get: () => form },
     remote: { $mount: vi.fn(async () => ({})) },
     effect: (fn: () => unknown, _label?: string) => { fn(); return () => undefined },
     locale: {
@@ -53,6 +59,6 @@ describe('ui-settings-mcp client apply', () => {
   })
 
   it('declares the services it consumes', () => {
-    expect(inject).toEqual(['remote', 'slots', 'locale'])
+    expect(inject).toEqual(['remote', 'slots', 'locale', 'configForms'])
   })
 })

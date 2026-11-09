@@ -14,10 +14,12 @@ import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: pulls the SlotRegistry service merge (ctx.slots).
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-// Type-only: pulls the settings SlotMap merge (settings.section).
+// Type-only: pulls the settings SlotMap merge (settings.section) and the
+// configForms Context merge.
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 // Type-only: pulls this package's LocaleNamespaceMap merge ('mcpSettings').
 import type {} from './locales.ts'
+import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
 import { McpSection } from './McpSection.tsx'
 import type { McpSectionInjected } from './McpSection.tsx'
 import { mcpManagerApi } from './api.ts'
@@ -34,8 +36,8 @@ export { en, zh } from './locales.ts'
 /** Dictionary namespace owned by this plugin. */
 export const NS = 'mcpSettings'
 
-/** Required services to mount: the remote registry, slots, and the locale runtime. */
-export const inject = ['remote', 'slots', 'locale']
+/** Required services to mount: remotes, slots, locale, and the shared settings forms. */
+export const inject = ['remote', 'slots', 'locale', 'configForms']
 
 /**
  * Client plugin body: mount the remote, register the copy, and dock the
@@ -49,6 +51,22 @@ export async function apply(ctx: ClientContext): Promise<void> {
   await mountMcpManagerRemote(ctx)
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-settings-mcp: dictionaries')
 
+  // The broker flag lives in the mcp-manager namespace (volatile, default on);
+  // reads ride the shared settings mirror, writes the revision-fenced mutate.
+  const NAMESPACE = 'mcp-manager'
+  const form = ctx.configForms.get<{ broker?: boolean }>(NAMESPACE)
+  const broker: ObservableSnapshot<boolean> = {
+    getSnapshot: () => form.getSnapshot().value?.broker ?? true,
+    subscribe: (listener) => {
+      let previous = broker.getSnapshot()
+      return form.subscribe(() => {
+        const next = broker.getSnapshot()
+        if (next === previous) return
+        previous = next
+        listener()
+      })
+    },
+  }
   ctx.inject(['remote.mcpManager', 'slots', 'locale'], (scoped: ClientContext) => {
     scoped.slots.inject('settings.section', () => {
       const registry = scoped.slots as unknown as {
@@ -64,6 +82,10 @@ export async function apply(ctx: ClientContext): Promise<void> {
         inject: (): McpSectionInjected => ({
           api: mcpManagerApi((scoped.remote as unknown as { mcpManager: unknown }).mcpManager),
           labels: binder,
+          hooks: { broker },
+          setBroker: async (enabled: boolean) => {
+            if (!await form.set('broker', enabled)) throw new Error('Broker preference was not saved')
+          },
         }),
       }, McpSection)
     })
