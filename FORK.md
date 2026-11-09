@@ -81,6 +81,7 @@ package is, does, and touches.
 | `packages/host/directory-picker-auto/src/probe.ts` + `src/index.ts` (+ `package.json` dep on `dsh-native-command`) | `fork(picker-probe):` the boot-time `linuxChooser` fact now RUNS the chooser — the first-PATH zenity/kdialog (`--version`, 3s cap) must exit cleanly, falling through tiers like a pick — instead of trusting executability; a host whose choosers cannot start resolves to the always-working `browse` backend (2.4.16) | Present-but-broken is the real-world case: a rolling-distro GTK4/libadwaita mismatch kills zenity with a symbol lookup error before any dialog, and the executability probe still selected `native`, so every workspace pick failed all session (observed on a user machine, 2.4.15) |
 | `packages/host/directory-picker-native/src/native-picker.ts` | `fork(picker-fallthrough):` on Linux, every non-cancel, non-abort zenity failure falls through to kdialog (upstream: only ENOENT); when both tiers fail, one combined error names each tier's cause (the child's stderr first line, 200-char cap; `zenity: not installed` when absent) and keeps the primary failure as `cause` with its captured stdio | Broken-zenity + working-kdialog previously dead-ended with a bare `Command failed` wall; the combined message tells the operator what to fix (e.g. the GTK library mismatch) instead of nothing |
 | `packages/api/workspace-controller/src/directory-picker.ts` | `fork(picker-fallthrough):` the `pick` verb drops its host-side `directory picker failed` prefix; `cancellableFailure` loses its unused prefix parameter (2.4.16) | The client wraps the same text once more, so the error dialog showed the prefix doubled (`directory picker failed: directory picker failed: …`) — garbled text on the one dialog an operator actually reads |
+| `packages/api/workspace-controller/src/default-directory.ts` | `fork(picker-fallback):` when the Linux `xdg-user-dir DOCUMENTS` lookup fails with ENOENT (the `xdg-user-dirs` package is not installed), the first-use default falls back to `~/Documents` when it exists as a directory, else the home directory — bypassing upstream's home-report refusal, which stays in force for a system that ANSWERED and disabled the directory; every non-ENOENT failure keeps propagating (2.4.17) | A minimal Linux host without `xdg-user-dirs` rejected the `workspaces.initializeDefault` first-use RPC with a raw spawn error and started with no default workspace at all; `~/Documents`/home is a usable suggestion the picker pre-fills and the operator can change |
 
 Upstream TEST files updated to the new contracts (marked in-file):
 `packages/core/session/tests/canonical-envelopes.spec.ts` (assistant citations
@@ -92,7 +93,10 @@ longer surfaces as-is, and the adapter test pins the combined both-tiers
 error; new cases for the kdialog fallthrough and the cancel-is-final rule),
 `packages/host/directory-picker-auto/tests/resolve.spec.ts` (new
 `hasUsableLinuxChooser` describe: version-check pass, tier fallthrough,
-unusable host, one spawn per name, real-process clean-exit rule). New fork tests:
+unusable host, one spawn per name, real-process clean-exit rule),
+`packages/api/workspace-controller/tests/default-directory.host.spec.ts`
+(new linux-fallback describe: `~/Documents` when it exists, home otherwise,
+real-filesystem probe, non-ENOENT propagation, no fallback tier on darwin). New fork tests:
 `packages/core/session/tests/context-edit-derivation.spec.ts`,
 `packages/core/agent-loop/tests/context-edit-registry.spec.ts`,
 `packages/client/ui-chat/tests/context-edit-timeline.client.spec.tsx`.
