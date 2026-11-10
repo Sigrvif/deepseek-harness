@@ -1,0 +1,416 @@
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.17 (2026-11-09)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+      + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
+
+Fork changes on top of upstream 0.2.2-alpha.2:
+
+  First-use default without xdg-user-dirs (2.4.17)
+                      Upstream resolves the default workspace folder for
+                      first use through "xdg-user-dir DOCUMENTS" and fails
+                      the whole first-use initialization when the
+                      xdg-user-dirs package is not installed. The lookup now
+                      falls back to ~/Documents when it exists as a
+                      directory, else to the home directory - a usable
+                      pre-filled suggestion the picker lets you change. Only
+                      a MISSING binary falls back: a system that answers
+                      keeps upstream semantics (including refusing a
+                      home-reporting XDG directory as Documents), and every
+                      other lookup failure still propagates.
+
+  Workspace picker degrades gracefully (2.4.16)
+                      The native OS directory chooser (zenity, then kdialog)
+                      is now only used when it actually starts: at boot the
+                      harness runs "zenity --version" (then "kdialog
+                      --version") instead of trusting that the binary
+                      exists. A chooser that cannot start - e.g. a partial
+                      upgrade leaving libadwaita newer than gtk4, which
+                      kills zenity with "symbol lookup error: ... undefined
+                      symbol: gtk_enum_list_item_get_value" before any
+                      dialog is drawn - automatically falls back to the
+                      built-in directory browser, so workspace creation
+                      keeps working with no OS dialog at all. At pick time,
+                      every non-cancel zenity failure now falls through to
+                      kdialog (previously only a MISSING zenity did), and
+                      when both fail one readable error names each cause,
+                      e.g. "native directory chooser failed (zenity:
+                      zenity: symbol lookup error: ...; kdialog: not
+                      installed)" - replacing the doubled "directory
+                      picker failed: directory picker failed: Command
+                      failed: ..." wall the dialog used to show. Windows
+                      is unaffected: its folder dialog is fully built-in.
+
+  MCP broker mode, on by default (2.4.15)
+                      Two or three configured MCP servers mean 30+ tools in
+                      every request - noise a small model drowns in. Broker
+                      mode replaces them with three tools:
+                      - mcp_search_tools: free-text search over every
+                        connected server's tools (top 8 matches);
+                      - mcp_describe_tool: the full argument schema of one
+                        tool;
+                      - mcp_execute_tool: run it (behavior identical to the
+                        direct path - same images, timeouts, errors).
+                      Flow: search -> describe -> execute; the tools'
+                      descriptions teach it. Toggle: Settings -> MCP Servers
+                      -> Broker mode (off restores the direct mcp__ tools).
+                      Windows note: npx-based servers now work there too -
+                      the MCP client spawns through cross-spawn, which
+                      resolves npx to its npx.cmd shim, and the bundled
+                      node directory is on PATH (2.4.14).
+
+  MCP Servers settings page + npx on PATH (2.4.14)
+                      Upstream ships a full MCP (Model Context Protocol)
+                      client, but configuring it meant hand-editing the
+                      profile patch file - and the natural first attempt
+                      (a bare row instead of the required "- insert:"
+                      block) is silently ignored. This release adds:
+                      - Settings -> MCP Servers: add, edit, enable,
+                        disable, and restart MCP servers from the UI
+                        (stdio local commands or HTTP URLs). Definitions
+                        persist in dsh-home/storages/mcp_servers and
+                        survive restarts; each enabled server mounts its
+                        own connection, a failed spawn is shown per
+                        server and never blocks the others.
+                      - The launchers put the bundled node/bin (with npx)
+                        on PATH inside dsh, so npx-based servers like
+                        camofox work without a system Node install.
+                      - Tools from configured servers appear in every
+                        session as mcp__<name>__<tool> (the Claude Code /
+                        Codex naming shape); per-server 60 s call timeout
+                        and automatic reconnect are configurable.
+                      - Manual profile rows keep working beside page-
+                        managed servers. Bundle READMEs carry working
+                        recipes for camofox and x64dbg-automate.
+
+  Bundled skills rewritten for small models (2.4.13)
+                      The fifteen bundled superpowers workflow skills were
+                      written for large cloud models doing repo-based
+                      software work. They are now six short skills (about
+                      280 lines total, down from 3,300+) rewritten for this
+                      package's reality - small local models, small
+                      projects, often no repository:
+                      - using-superpowers: check the skill catalog before
+                        acting, and skip skills for trivial asks (small
+                        models were over-triggering the process skills);
+                      - brainstorming: clarify an open-ended request one
+                        question at a time, then write a short SPEC.md
+                        (goal, approach, requirements, non-goals) the user
+                        approves - the anchor both sides can point at when
+                        the model drifts mid-session;
+                      - working-in-steps: turn the spec into a todo list,
+                        one verified step at a time, re-read SPEC.md before
+                        claiming done; update requests edit the existing
+                        files instead of regenerating everything;
+                      - systematic-debugging: read the whole error,
+                        reproduce it, change one thing at a time, three
+                        failed attempts in a row = stop and rethink;
+                      - verification-before-completion: no "done/fixed/
+                        works" claim without running the real command and
+                        quoting its output;
+                      - dispatching-parallel-agents: genuinely independent
+                        tasks get one focused subagent each.
+                      The repo-centric upstream skills (git worktrees,
+                      branch/PR lifecycle, subagent implementer/reviewer
+                      pipelines, TDD dogma, skill-authoring meta-process)
+                      are gone; their useful kernels live inside the six.
+                      The per-step skill catalog shrank with the set.
+                      Sessions still load using-superpowers once (Settings
+                      -> General -> Auto Superpowers), and anyone who wants
+                      the full upstream set can drop it into
+                      dsh-home/skills or ~/.agents/skills, which outrank
+                      the bundled root.
+
+  Informational fold-reminder cap by absolute size (2.4.12)
+                      The 2.4.11 escalation ladder chose its wording purely
+                      by the usage RATIO, so a 1,000,000-token model would
+                      get the informational "no action is needed yet" until
+                      400k context - useless advice at that scale. The
+                      informational tier now also requires absolute usage
+                      below 200,000 tokens (configurable as nudgeInfoMaxTokens
+                      on the context-fold row): a small 128k model behaves
+                      exactly as before (its ratio bound binds first), while
+                      large-window models escalate to the advisory wording
+                      once real token counts accumulate.
+
+  Escalating fold-reminder wording (2.4.11)
+                      The fold reminder ("Context usage: ... Consider calling
+                      compress now") no longer uses one flat phrasing. Its
+                      wording now follows the measured context usage:
+                      - below 40% of the window: informational - "Context is
+                        accumulating; no action is needed yet..." so a
+                        literal-minded small model stops folding needlessly
+                        early (the old wording suggested compressing at 12-15%
+                        usage, and small models obeyed);
+                      - 40-69%: advisory - the previous "Consider calling
+                        compress now" form;
+                      - 70-89%: demanding - "Compress now, before producing
+                        more output... Do not postpone folding" for models
+                        that ignored the advisory form;
+                      - 90%+: urgent - "Call compress NOW" (unchanged).
+                      The cadence is unchanged (one nudge per ~30k tokens of
+                      new growth, plus the pressure-ratio trigger). The two
+                      boundaries are configurable on the context-fold row:
+                      nudgeAdviseRatio / nudgeDemandRatio.
+
+  No automatic engine compaction (2.4.10)
+                      Upstream's automatic context compaction (step-pressure,
+                      model-switch, and context-overflow triggers) summarized
+                      history with the CURRENTLY ROUTED model. Its model-switch
+                      trigger was the worst offender: switching to a model
+                      with a smaller context window force-compacted through
+                      the OLD model first - the one being switched away from.
+                      When that model no longer existed on the runtime, every
+                      attempt 404'd and the switch was refused
+                      (MODEL_SWITCH_COMPACTION_FAILED), permanently bricking
+                      the session - even when the context fit the new window
+                      comfortably: the threshold math uses a fixed 65,536
+                      headroom plus the request's reserved completion tokens,
+                      so a 262k -> 128k switch tripped compaction at only
+                      ~30k tokens of history. All automatic triggers are now
+                      off; sessions compact through Context Fold (the model's
+                      own reversible compress) or manual /compact, which stay
+                      mounted. Side effect, accepted: a provider-confirmed
+                      context overflow now fails the turn with the provider's
+                      error instead of auto-summarizing - fold or /compact by
+                      hand. The per-result tool-output pruner is unaffected.
+                      A session bricked on an earlier version simply switches
+                      models normally after upgrading.
+
+  Quieter, steadier long-session context (2.4.9)
+                      Two context-plumbing fixes from a long local run:
+                      - Fold reminders: the "Consider calling compress now"
+                        nudge now repeats every ~30,000 tokens of new growth
+                        (previously 50,000), and it no longer stalls after the
+                        first reminder. The reminder logic treated ANY downward
+                        movement of the context-size estimate as a compaction
+                        event and reset its cadence baseline - but the
+                        tool-result pruner rewrites oversized results and
+                        token estimates drift between steps, so a long
+                        tool-heavy session could get exactly one reminder and
+                        then none (observed: one reminder at 28% usage, then
+                        none for the rest of a session ending at 56%). A
+                        shrink now counts only when it is large enough to be
+                        an event (at least 2,000 tokens AND 10%).
+                      - Time samples: the durable "Time sampled while
+                        preparing turn..." notice now repeats at most hourly
+                        (previously every 10 minutes - 22 of them in one
+                        observed session), and its "Browser time zone" line is
+                        omitted when the browser zone equals the request zone:
+                        anti-fingerprinting browsers report a fixed zone
+                        (LibreWolf freezes the timezone API), so on a host in
+                        that zone the line was constant noise. Set
+                        refreshIntervalMs on the time-context row in the
+                        profile patch to restore a tighter cadence.
+
+  Local-hardware stream timeout + settings fixes (2.4.8)
+                      The stream idle timeout - the harness aborts a model
+                      request when the provider sends nothing at all for this
+                      long - now defaults to TWO HOURS instead of upstream's
+                      five minutes, and every provider card on the Models
+                      settings page gains a "Stream idle timeout (ms)" field
+                      under its customized section. Background: a local
+                      runtime prefilling a large context (resuming a session
+                      with 100k+ tokens after a cache miss) sends no stream
+                      events until the first token; the five-minute default
+                      aborted such requests mid-prefill and every retry
+                      restarted the whole prefill, so the request could never
+                      complete. The new default bounds a genuinely dead
+                      provider without making big-context local resumes
+                      impossible; per-provider values still override (in the
+                      provider editor or streamIdleTimeoutMs in
+                      cordis.patch.yml). The DeepSeek official route (also
+                      usable against local gateways) got the same default.
+                      Also restored: the Shell settings tab (command timeout,
+                      output cap) had silently disappeared in 2.4.5 because
+                      it bound the removed sandbox executors' plugin names;
+                      it now edits the plain local executors that actually
+                      run.
+
+  Full package documentation (2.4.7)
+                      After the sandbox discovery, the whole shipped
+                      composition was audited from source and documented in
+                      a structured docs/ folder inside each bundle: what the
+                      harness is and how it boots; every tool, command, and
+                      skill the model gets; every process spawned, file
+                      written outside the bundle, and network endpoint
+                      (including exactly what feedback telemetry would send
+                      and what web_fetch does and does not guard); the
+                      dsh-home data and settings reference; and every
+                      deliberate difference from upstream. The README now
+                      stays operational and links into docs/.
+
+  ptc agent preset fixed (2.4.7)
+                      Creating a session with the "ptc" preset failed on
+                      2.4.5-2.4.6 ("agent-preset/invalid ... waiting for
+                      ptcRuntime") - a leftover from the sandbox removal:
+                      the preset's PTC executor row waited for the disabled
+                      runtime. The row is disabled like its base-bundle
+                      twin; ptc-preset sessions now run on the native
+                      executor (wire-verified: all four presets create
+                      sessions).
+
+  No command sandbox (2.4.5)
+                      Upstream confines the agent's shell commands behind
+                      permission presets (Read only / Workspace write /
+                      Full access). The Windows backend enforces this by
+                      rewriting the NTFS security descriptor of every
+                      chosen project folder: a capability-SID allow ACE
+                      (S-1-4-<sha256 of the folder path>), an Everyone
+                      delete-child deny, and a Low integrity label - all
+                      standing permanently, never revoked, surviving dsh
+                      by design. This package removes the sandbox
+                      entirely: commands run unconfined, project folders
+                      are never touched beyond the files the agent
+                      writes, the preset picker is gone from the composer
+                      (nothing to pick), and the "workflow" tool went
+                      with it (it executed model-written scripts through
+                      the sandboxed runtime). A test that genuinely needs
+                      isolation gets a VM, not folder ACLs. See the
+                      README section "Windows: folders locked by an
+                      earlier version" to clean up folders an older
+                      package locked.
+
+  Native Context Editor
+                      Every session gains a "Context" tab next to Chat and
+                      Trajectory: the exact model-visible context with per-
+                      row token estimates; rows can be edited in place,
+                      excluded from future requests, restored from their
+                      originals, batch-edited, and condensed selectively via
+                      the official compaction protocol. A Requests pane logs
+                      every request actually sent (full JSON payloads), and
+                      a Tools & params pane overrides this session's tools
+                      and generation parameters. Edits are durable session
+                      events: they survive restarts and forks and restore
+                      exactly. Verified end to end against SLR Runtime: an
+                      edit made in the tab changes the next request's
+                      payload on the wire.
+
+  Native Context Fold
+                      The model can compress consumed conversation into
+                      summaries it writes itself, through four tools it
+                      calls like any other tool: compress (fold a consumed
+                      range into a checkpoint summary), decompress (read
+                      the folded originals back, capped), search_context
+                      (keyword search over fold summaries, folded
+                      originals, and visible messages), and acp_status
+                      (context usage plus the fold ledger). Folds are
+                      model-driven compaction checkpoints on the session
+                      log: they take effect on the next model request,
+                      survive restarts, never destroy originals, and the
+                      first user message plus a protected recent tail are
+                      never folded. Growth nudges prompt the model to fold
+                      as context grows (one nudge per threshold crossing).
+                      Behavior adapted from billion-context (MIT +
+                      attribution term; see FORK.md); verified on the
+                      wire: a compress call changes the next request's
+                      payload and decompress restores the folded content.
+
+  Bundled Superpowers Skills + Auto Superpowers
+                      The fifteen superpowers workflow skills
+                      (brainstorming, test-driven development, systematic
+                      debugging, writing-plans, and friends) ship with the
+                      app and appear in every session's skill catalog; the
+                      launchers point DSH_BUNDLED_SKILL_DIR at them
+                      (project, custom, and user skill roots all outrank
+                      the bundled one, so any of them can be shadowed with
+                      your own copy). A new "Auto Superpowers" switch on
+                      Settings -> General (default ON) starts each session
+                      as if the user had typed /using-superpowers: the
+                      skill body is sent ONCE (no per-prompt bloat), stays
+                      visible across context folds (fold windows never
+                      cover skill invocations), and if the engine's own
+                      compaction ever drops it, the next prompt re-asserts
+                      it once. Turn it OFF to invoke skills manually; the
+                      skills themselves stay available either way. Skills
+                      are vendored from superpowers 7.0.1 by Jesse Vincent
+                      (MIT; attribution in FORK.md and the Fork additions
+                      tab).
+
+  SLR Runtime preset (shipped default)
+                      The Models settings page ships with an SLR Runtime
+                      provider preset as its top entry
+                      (http://127.0.0.1:1234/v1, OpenAI Chat Completions). The launchers ship
+                      the placeholder key slr-local (SLR Runtime ignores
+                      keys; dsh always sends one), the example model entry
+                      declares text+image input and off/low/medium/high
+                      reasoning, and the preset's editor opens on start until
+                      the model is adjusted - press "Fetch available models"
+                      on the row to pick up the GGUF SLR Runtime actually
+                      serves. The preset lives in
+                      dsh-home/profiles/web/cordis.patch.yml. The built-in
+                      DeepSeek route moved into the third-party provider
+                      catalog: it appears as a normal entry once you give it
+                      an API key or set DEEPSEEK_API_KEY.
+
+  Settings UI (local-test posture)
+                      The Models tab leads with what you actually use: the
+                      "Add model" card opens on "Custom model API" (point it
+                      at the SLR Runtime endpoint), user-added providers list
+                      above the built-in DeepSeek routes, and no provider
+                      card opens itself with a key warning anymore. The
+                      missing-env-var note is phrased as neutral guidance.
+                      The General tab's version row names both the dsh base
+                      version and the local fork package version, it gains
+                      an "Auto Superpowers" switch (see below), and the
+                      Built-in plugins page gains a "Fork additions" tab
+                      describing the built-in additions (Context Editor,
+                      Context Fold, the bundled superpowers skills, and the
+                      auto-superpowers toggle).
+
+  Quota-aware retry system
+                      Model-request retries now understand usage-window
+                      quotas. Provider errors carry their HTTP status and
+                      Retry-After hint through to the retry planner (the
+                      bundled pi-ai SDK patch no longer flattens them
+                      away), and a rate-limit/quota failure that names a
+                      reset moment - "please retry after 2026-11-01
+                      02:00:00", written in the provider's wall clock -
+                      is parsed and honored: the turn pauses and resumes
+                      exactly at the reset (hard cap six hours, a small
+                      clock-skew cushion, always abortable, and the
+                      ordinary retry counter still bounds it). Add
+                      GLM-style UTC+8 reset times convert correctly
+                      even WITHOUT configuration: many providers embed
+                      their wall clock in the request id, and the offset
+                      is inferred from it (quantized to 15 minutes);
+                      setting quotaResetTimezone: 'Asia/Shanghai' (or any
+                      IANA zone) in the provider's config in
+                      dsh-home/profiles/web/cordis.patch.yml still wins
+                      when present; with neither, times are read as UTC. The retry chip in the
+                      chat shows a live countdown, humanized for long
+                      waits, and the error row names the reset in your
+                      local time.
+
+  Local-test defaults (in the dsh-web-app bundle patch,
+  app/node_modules/@deepseek-ai/dsh-web-app/cordis.patch.yml - search
+  for "Local-test fork defaults"):
+
+  ui-theme            preference: dark
+                      Web UI starts in dark mode. Upstream default is
+                      "system", which never resolves to dark inside the
+                      bundled LibreWolf (it always reports light as an
+                      anti-fingerprinting measure). The user can still
+                      switch themes in Settings -> General -> Appearance;
+                      that choice is stored per profile and wins.
+
+  ui-settings-general welcomeNoticeVersion: '2026-09-28.1'
+                      Pre-acknowledges the first-run "Preview Notice"
+                      dialog so it does not appear.
+
+  session-log upload  enabled: false (default)
+                      Upstream turns "Upload Session Log when using the
+                      official model API" ON by default; this package
+                      ships no-telemetry by default, so the General ->
+                      "Upload Session Log when using the official model
+                      API" switch starts OFF. Turning it ON still works
+                      and persists as usual.
+
+  ui-settings-models  credentialOnboarding: false
+                      The first-run "Get started" (DeepSeek sign-in /
+                      API key) dialog does not open automatically. The
+                      DeepSeek provider itself is untouched and remains
+                      usable via Settings -> Models.
+
+Upstream's command sandbox is the one subsystem this fork removes
+deliberately (see "No command sandbox" above). The fork's full change
+inventory lives in FORK.md in the fork repository (dsh-fork, branch
+context-editor); upstream updates can be merged following its runbook.

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# DeepSeek Harness (dsh) - self-contained offline launcher for Linux x64.
+#
+# Usage:
+#   ./dsh                     start the Web UI (default; http://127.0.0.1:3080)
+#   ./dsh web                 start the Web UI explicitly
+#   ./dsh web --no-open       start without opening a browser
+#   ./dsh --version           print the dsh version
+#   ./dsh --help              full CLI help
+#
+# Any other arguments are forwarded to dsh unchanged.
+#
+# Environment:
+#   DSH_HOME                 where profiles/settings/sessions are stored
+#                            (default: ./dsh-home next to this script)
+#   DSH_TELEMETRY_DISABLED   set to 1 (default here) to keep the harness offline
+set -e
+HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+export DSH_HOME="${DSH_HOME:-$HERE/dsh-home}"
+export DSH_TELEMETRY_DISABLED="${DSH_TELEMETRY_DISABLED:-1}"
+# SLR Runtime ignores API keys, but dsh requires one on every provider:
+# ship a harmless placeholder so the preset works out of the box.
+export SLR_RUNTIME_API_KEY="${SLR_RUNTIME_API_KEY:-slr-local}"
+# The bundled superpowers workflow skills ride the app's node_modules;
+# point the skill-filesystem bundled root at them.
+export DSH_BUNDLED_SKILL_DIR="${DSH_BUNDLED_SKILL_DIR:-$HERE/app/node_modules/@deepseek-ai/dsh-superpowers-skills/skills}"
+# MCP servers configured with a bare `npx`/`npm` command resolve against the
+# bundled Node.js (fork local-test): without this, an npx-based stdio server
+# fails to spawn on machines without their own Node install.
+export PATH="$HERE/node/bin:$PATH"
+if [ $# -eq 0 ]; then
+  exec "$HERE/node/bin/node" "$HERE/app/lib/bin.js" web
+fi
+exec "$HERE/node/bin/node" "$HERE/app/lib/bin.js" "$@"

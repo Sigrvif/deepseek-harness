@@ -1,0 +1,37 @@
+# Your patch layer for this dsh profile, applied after every bundle layer:
+# a top-level YAML array of loader patch entries (id-targeted config
+# overrides, disables, and insert lists; `!!js` expressions allowed).
+# Shipped default: the SLR Runtime local server as the primary provider.
+# Adjust the model id (the GGUF file name SLR Runtime serves) and the port in
+# the entry below, or simply pick another model in the chat composer after
+# SLR Runtime is running. DeepSeek remains available under
+# Settings → Models → Add model provider → Third-party model provider.
+# Shipped default: the SLR Runtime local server as the primary provider.
+# Adjust the model entry below to the GGUF SLR Runtime actually serves (its
+# id is the model file's path or file name; "Fetch available models" on the
+# row lists them), and the port if you changed it. Reasoning is offered as
+# off/low/medium/high (SLR Runtime maps anything above off to "on"), and the
+# example declares text+image input. DeepSeek remains available under
+# Settings → Models → Add model provider → Third-party model provider.
+- id: llm-pi-ai
+  config:
+    providers:
+      slr-runtime:
+        api: openai-completions
+        baseURL: http://127.0.0.1:1234/v1
+        apiKeyEnv: SLR_RUNTIME_API_KEY
+        models:
+          - id: Qwen3.6-35B-A3B.APEX-I-MiniPlus-V2.1-Abliterated.gguf
+            name: Qwen3.6-35B-A3B APEX-I MiniPlus V2.1 (test shelf)
+            contextWindow: 262144
+            maxTokens: 32768
+            input: [text, image]
+            reasoningEfforts:
+              off:
+              low: low
+              medium: medium
+              high: high
+- id: agent-default-model
+  config:
+    provider: slr-runtime
+    model: Qwen3.6-35B-A3B.APEX-I-MiniPlus-V2.1-Abliterated.gguf

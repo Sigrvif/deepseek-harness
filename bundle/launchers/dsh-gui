@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# DeepSeek Harness (dsh) - offline GUI launcher for Linux x64.
+#
+# Starts the bundled dsh web server and opens its UI in the bundle's own
+# LibreWolf browser (browser/librewolf, from the official AppImage). No
+# installed browser is used or required, and the -no-remote profile keeps
+# it fully separate from any running browser. Closing the LibreWolf window
+# stops the server.
+#
+# Usage:
+#   ./dsh-gui                     open the dsh Web UI in a window
+#   ./dsh-gui --port 8080         serve on another port
+#
+# Environment: same as ./dsh (DSH_HOME, DSH_TELEMETRY_DISABLED), plus
+# DSH_GUI_BROWSER to substitute the browser executable (testing).
+set -e
+HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# SLR Runtime ignores API keys, but dsh requires one on every provider:
+# ship a harmless placeholder so the preset works out of the box.
+export SLR_RUNTIME_API_KEY="${SLR_RUNTIME_API_KEY:-slr-local}"
+# The bundled superpowers workflow skills ride the app's node_modules;
+# point the skill-filesystem bundled root at them.
+export DSH_BUNDLED_SKILL_DIR="${DSH_BUNDLED_SKILL_DIR:-$HERE/app/node_modules/@deepseek-ai/dsh-superpowers-skills/skills}"
+# MCP servers configured with a bare `npx`/`npm` command resolve against the
+# bundled Node.js (fork local-test).
+export PATH="$HERE/node/bin:$PATH"
+exec "$HERE/node/bin/node" "$HERE/browser/gui-launcher.js" "$@"
