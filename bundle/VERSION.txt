@@ -1,8 +1,17 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.17 (2026-11-09)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.18 (2026-11-10)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
+
+  License paperwork rides every bundle (2.4.18)
+                      The package root now carries upstream's LICENSE (MIT)
+                      and THIRD_PARTY_NOTICES.md beside the README, so the
+                      archives state their own terms up front. The notice
+                      file is upstream's generated dependency disclosure and
+                      every bundled npm package keeps shipping its own
+                      license file inside app/node_modules. No behavior
+                      change.
 
   First-use default without xdg-user-dirs (2.4.17)
                       Upstream resolves the default workspace folder for

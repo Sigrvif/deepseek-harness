@@ -46,6 +46,8 @@ checkout alone can reproduce a bundle; the trees are downstream copies:
   harness mints both at first boot, so no secrets enter version control.
 - `bundle/README.md` and `bundle/VERSION.txt` → tree root (edit the repo
   copy and re-copy into both trees together, as before).
+- `LICENSE` and `THIRD_PARTY_NOTICES.md` (repo root, upstream files) → tree
+  root, so every archive states its own terms (since 2.4.18).
 
 After editing a launcher or the SLR preset patch, update the repo copy and
 the two trees together.

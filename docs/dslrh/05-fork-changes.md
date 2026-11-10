@@ -58,4 +58,6 @@ made npx-based MCP servers spawn out of the box; 2.4.15 added MCP broker
 mode (three indirection tools instead of every server tool); 2.4.16 made
 the workspace picker degrade gracefully when the host chooser cannot start;
 2.4.17 gave hosts without xdg-user-dirs a first-use default via a
-`~/Documents`/home fallback.
+`~/Documents`/home fallback; 2.4.18 put upstream's `LICENSE` and
+`THIRD_PARTY_NOTICES.md` into the bundle roots so the archives carry their
+own terms.

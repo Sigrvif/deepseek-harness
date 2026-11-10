@@ -122,6 +122,10 @@ list with rationale is in [docs/05-fork-changes.md](docs/05-fork-changes.md).
   names both the dsh base and the fork package version; the Built-in plugins
   page has a "Fork additions" tab describing what this package carries
   beyond upstream.
+- **License paperwork rides every bundle** (2.4.18). The package root
+  carries upstream's `LICENSE` (MIT) and `THIRD_PARTY_NOTICES.md` beside
+  this README, so the archives state their own terms; every bundled npm
+  package keeps its own license file inside `app/node_modules`.
 
 The theme and dialog defaults live in one file,
 `app/node_modules/@deepseek-ai/dsh-web-app/cordis.patch.yml` (search for
