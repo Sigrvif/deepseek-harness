@@ -165,7 +165,8 @@ to Copy. It turns the bubble into an editable box; **Save & resend** removes
 that message and everything after it from the model's context (one confirm;
 restorable here in the Context tab) and sends the corrected text as a new
 prompt. Stopped a broken prompt? Fix the typo and go — no exclusion walk
-required. The editor edits text only (attachments are not carried over), and
+required. Exclusions and edits fold out of the live transcript immediately
+(2.4.21) — no reload needed to see them take effect. The editor edits text only (attachments are not carried over), and
 injections tied to the original send (session references, skill loads) stay
 in context. In the Context tab, **Exclude to end** does the same truncation
 with one confirm, and an excluded range now shows *what* it removed —

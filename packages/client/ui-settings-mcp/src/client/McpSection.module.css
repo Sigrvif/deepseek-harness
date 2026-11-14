@@ -141,6 +141,12 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+/* The 240px flex basis is a WIDTH share inside the wrapping row; full-width
+   fields sit in the column-direction .form, where the same basis would
+   reserve 240px of height. */
+.fieldRow .field {
   flex: 1 1 240px;
 }
 

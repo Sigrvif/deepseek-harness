@@ -14,7 +14,11 @@ Refresh flow (identical for both platforms):
 2. `python3 hoist-parity.py` — the deploy misses a few vendor packages and
    the src/ trees of ./src-exporting packages; this copies them from the
    current verified bundle (which is why the previous bundle folders must
-   still exist when refreshing).
+   still exist when refreshing). Verify the deploy is actually fresh before
+   continuing (a silently skipped deploy step once shipped stale archives):
+   check the mtime of a just-built file, e.g.
+   `ls -la .deploy-hoisted/node_modules/@deepseek-ai/dsh-client-ui-context-editor/lib/client.js`
+   against the workspace `lib/` copy.
 3. Linux: copy `.deploy-hoisted/.` into `DSLRH-Linux/app/`, reset
    `dsh-home` to pristine (profiles/web only), boot-check
    (`./node/bin/node app/lib/bin.js web --no-open`), pack

@@ -11,8 +11,8 @@ import type {
   ConversationViewSnapshotStore,
 } from '../contract/conversation.ts'
 import { conversationContextKey } from '../contract/conversation.ts'
-// fork(context-editor): shadow-set intake filter.
-import { contextEditShadowedSeqs } from '@deepseek-ai/dsh-session/surface'
+// fork(context-editor): shadow-set intake filter + replacement detection.
+import { contextEditShadowedSeqs, isContextEditReplacement } from '@deepseek-ai/dsh-session/surface'
 import type {
   ConversationGroupData, ConversationGroupDefinition, ConversationGroupedView,
 } from '../contract/groups.ts'
@@ -264,6 +264,15 @@ export class ConversationNodeAssembler implements ConversationViewSnapshotStore 
     if (this.inputs.has(event.seq)) return 'none'
     if (this.revised.size > 0) this.revised.clear()
     this.inputs.set(event.seq, record)
+    // fork(context-editor): a context-edit replacement must retire the
+    // already-projected originals it shadows. A full window replace is the
+    // one path that folds them (identical semantics to a reload), and
+    // replacements are rare, user-initiated events.
+    if (isContextEditReplacement(event)) {
+      return this.replaceWindow(
+        [...this.inputs.values()].filter(entry => entry.type !== 'transient'),
+        this.hasMore)
+    }
     let publication: ConversationPublication = 'none'
     if (event.type !== 'assistant/live-chunk' && isLocationBoundary(event.type)) {
       const previousTimeline = this.locationIndex.snapshot()

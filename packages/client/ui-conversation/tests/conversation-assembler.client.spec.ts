@@ -6,6 +6,8 @@ import { LlmAttemptId, ToolCallId } from '@deepseek-ai/dsh-llm/brand'
 import type { StreamChunk } from '@deepseek-ai/dsh-llm'
 import { SessionSeq } from '@deepseek-ai/dsh-session/types'
 import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
+// fork(context-editor): the live-refold test exercises the replacement intake.
+import { isContextEditReplacement } from '@deepseek-ai/dsh-session/surface'
 import {
   ConversationLocationIndex,
   ConversationNodeAssembler as RuntimeConversationNodeAssembler,
@@ -2014,5 +2016,41 @@ describe('ConversationNodeAssembler', () => {
     assembler.flush()
     expect(start).toHaveBeenCalledTimes(2)
     expect([...testSnapshot(assembler)?.nodes.values() ?? []][0]?.data).toEqual([0, 1, 2])
+  })
+
+  // fork(context-editor): a live context-edit replacement retires the
+  // already-projected originals it shadows — the same fold a reload produces.
+  it('folds shadowed originals when a context-edit replacement appends live', () => {
+    const definitions: ConversationNodeDefinition<{ text: string }>[] = [{
+      kind: 'msg',
+      target: 'test',
+      match: event => isContextEditReplacement(event) ? null : { id: String(event.seq), role: 'start' },
+      start: (_context, match) => ({ text: String((match.event.data as { text?: string }).text ?? '') }),
+      update: context => context.state,
+      buildViewNode: context => node(context, context.state),
+    }]
+    const assembler = new ConversationNodeAssembler(
+      new TestEventDefinitions(definitions), new TestViewDefinitions([testView()]),
+    )
+    assembler.replaceWindow([
+      input(at(SessionSeq(1), 'user/message', { text: 'with a typo' })),
+      input(at(SessionSeq(2), 'assistant/message', { text: 'the answer' })),
+    ], false)
+    assembler.flush()
+    expect([...testSnapshot(assembler)!.nodes.keys()]).toEqual(['3:msg1', '3:msg2'])
+
+    const replacement = {
+      seq: 3,
+      time: 1_700_000_000_003,
+      type: 'user/message',
+      data: { text: '', contextEdit: { mode: 'excluded' } },
+      surfaceOp: { op: 'replace', startSeq: 1, endSeq: 2 },
+      sourceEventSeqs: [1, 2],
+    } as unknown as SessionEvent
+    assembler.append(input(replacement))
+    assembler.flush()
+    // The whole shadowed range leaves the projection; the excluded replacement itself folds.
+    expect(testSnapshot(assembler)!.order).toEqual([])
+    expect(testSnapshot(assembler)!.nodes.size).toBe(0)
   })
 })
