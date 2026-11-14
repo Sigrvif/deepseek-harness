@@ -1,0 +1,89 @@
+/* fork(context-editor): the chat prompt edit-and-resend. The pencil mirrors
+   the MessageIconActions glyph chrome; the editor replaces the bubble inline. */
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(28px + var(--dsh-content-font-delta, 0px));
+  height: calc(28px + var(--dsh-content-font-delta, 0px));
+  padding: 6px;
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+
+.action svg {
+  width: calc(15px + var(--dsh-content-font-delta, 0px));
+  height: calc(15px + var(--dsh-content-font-delta, 0px));
+}
+
+@media (hover: hover) {
+  .action:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+    color: var(--dsw-alias-label-secondary);
+  }
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-left: auto;
+  width: min(100%, 44rem);
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+
+.text {
+  width: 100%;
+  min-height: 7em;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  resize: vertical;
+}
+
+.text:focus {
+  outline: none;
+  border-color: color-mix(in srgb, currentColor 34%, transparent);
+}
+
+.editorActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.button {
+  padding: 5px 12px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.primary {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.error {
+  margin: 0;
+  color: light-dark(#b3261e, #f2b8b5);
+  font-size: 0.85em;
+}

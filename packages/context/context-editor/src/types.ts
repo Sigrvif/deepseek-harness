@@ -73,6 +73,8 @@ export interface ContextRow {
   editedFrom?: number[]
   /** Source sequences an excluded replacement shadows. */
   excludes?: number[]
+  /** Concatenated text the exclusion shadows, so the stub can show what it removed. */
+  excludesText?: string
   estimateTokens: number
 }
 

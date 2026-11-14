@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { createAssistantMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import * as JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import Storage from '@deepseek-ai/dsh-storage'
@@ -125,6 +125,32 @@ describe('ContextEditorService', () => {
     const preview = await reader.service.preview({ sessionId: SessionId('svc-cold') })
     await writeHandle.close()
     expect(preview.rows.map(row => row.text)).toEqual(['cold question'])
+  })
+
+  it('excludes from a sequence through the remote and returns the fresh preview', async () => {
+    const { ctx, service } = await mounted()
+    const session = ctx.sessions.create(SessionId('svc-exclude-from'))
+    session.append('turn/start', { turn: 1 })
+    session.append('user/message', createUserMessage({
+      content: [{ type: 'text', text: 'ask' }],
+      source: { kind: 'user' },
+    }), { surfaceOp: 'append' })
+    session.append('assistant/message', {
+      turn: 1,
+      step: 1,
+      stream: [],
+      message: createAssistantMessage({
+        content: [{ type: 'text', text: 'reply' }],
+        source: { kind: 'model', provider: 'llm-pi-ai', model: 'm.gguf' },
+      } as never),
+    }, { surfaceOp: 'append' })
+    session.append('turn/end', { turn: 1, reason: { kind: 'stop' } as never })
+    const userSeq = session.surface.nodes[0]!
+    const end = session.surface.nodes[1]!
+    const preview = await service.excludeFrom({ sessionId: SessionId('svc-exclude-from'), startSeq: userSeq })
+    expect(preview.rows).toHaveLength(1)
+    expect(preview.rows[0]?.excluded).toBe(true)
+    expect(preview.rows[0]?.excludes).toEqual([userSeq, end])
   })
 
   it('rejects preview of an unknown session', async () => {

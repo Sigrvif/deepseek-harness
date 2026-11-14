@@ -37,6 +37,7 @@ function mockApi(preview: Promise<ContextPreview>): ContextEditorApi {
     preview: () => preview,
     editMessage: () => { throw new Error('unused') },
     excludeRange: () => { throw new Error('unused') },
+    excludeFrom: () => { throw new Error('unused') },
     restoreRange: () => { throw new Error('unused') },
     expandCheckpoint: () => { throw new Error('unused') },
     createRecoveryBranch: () => { throw new Error('unused') },
@@ -105,6 +106,45 @@ describe('ContextView', () => {
     fireEvent.click(screen.getAllByText('Exclude')[0]!)
     await waitFor(() => { expect(calls).toHaveLength(1) })
     expect((calls[0] as { startSeq: number }).startSeq).toBe(1)
+    confirm.mockRestore()
+  })
+
+  it('renders an excluded stub with its coverage and restore affordance', async () => {
+    rendered = true
+    const preview = fixturePreview()
+    const rows = [{
+      seq: 6, role: 'user' as const, text: '', blocks: [], excluded: true,
+      excludes: [1, 4], excludesText: 'the question\nthe answer', estimateTokens: 0,
+    }]
+    const api = {
+      ...mockApi(Promise.resolve({ ...preview, rows })),
+      restoreRange: () => Promise.resolve(preview),
+      listRequests: () => Promise.resolve({ entries: [], hasMore: false, captureDegraded: false }),
+      getOverrides: () => Promise.resolve({ record: null, inheritedByForks: false }),
+    } as never as ContextEditorApi
+    render(<ContextView sessionId="ctx-view" api={api} labels={labelsOf(en)} />)
+    await waitFor(() => { expect(screen.getByTestId('excluded-6')).toBeDefined() })
+    expect(screen.getByTestId('excluded-6').textContent).toContain('Excludes #1–#4')
+    expect(screen.getByTestId('excluded-6').textContent).toContain('the question')
+    expect(screen.getByTestId('restore-6')).toBeDefined()
+  })
+
+  it('excludes a row and its tail through one confirm', async () => {
+    rendered = true
+    const calls: unknown[] = []
+    const api = {
+      ...mockApi(Promise.resolve(fixturePreview())),
+      excludeFrom: (args: { startSeq: number }) => { calls.push(args); return Promise.resolve(fixturePreview()) },
+      listRequests: () => Promise.resolve({ entries: [], hasMore: false, captureDegraded: false }),
+      getOverrides: () => Promise.resolve({ record: null, inheritedByForks: false }),
+    } as never as ContextEditorApi
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<ContextView sessionId="ctx-view" api={api} labels={labelsOf(en)} />)
+    await waitFor(() => { expect(screen.getAllByTestId('context-rows')).toHaveLength(1) })
+    fireEvent.click(screen.getByTestId('exclude-to-end-1'))
+    await waitFor(() => { expect(calls).toHaveLength(1) })
+    expect((calls[0] as { startSeq: number }).startSeq).toBe(1)
+    expect(confirm).toHaveBeenCalledTimes(1)
     confirm.mockRestore()
   })
 

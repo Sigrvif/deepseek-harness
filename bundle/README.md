@@ -160,6 +160,18 @@ forks, and restore exactly. Selective condensation (summarize a chosen range
 through the official compaction protocol) is available from the row
 selection.
 
+**Edit & resend in Chat (2.4.19)** — every sent message gains a pencil next
+to Copy. It turns the bubble into an editable box; **Save & resend** removes
+that message and everything after it from the model's context (one confirm;
+restorable here in the Context tab) and sends the corrected text as a new
+prompt. Stopped a broken prompt? Fix the typo and go — no exclusion walk
+required. The editor edits text only (attachments are not carried over), and
+injections tied to the original send (session references, skill loads) stay
+in context. In the Context tab, **Exclude to end** does the same truncation
+with one confirm, and an excluded range now shows *what* it removed —
+`Excludes #5–#12` plus the original text — instead of a bare `(excluded)`
+row.
+
 Alongside the tab, **Context Fold** lets the model itself compress consumed
 conversation into summaries it writes, through four ordinary tools:
 `compress` (fold a consumed range), `decompress` (read the originals back),

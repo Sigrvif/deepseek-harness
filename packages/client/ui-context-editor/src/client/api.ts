@@ -8,6 +8,7 @@ export interface ContextEditorApi {
   preview(args: { sessionId: SessionId }): Promise<ContextPreview>
   editMessage(args: { sessionId: SessionId; targetSeq: number; text: string; blockIndex?: number }): Promise<ContextPreview>
   excludeRange(args: { sessionId: SessionId; startSeq: number; endSeq: number }): Promise<ContextPreview>
+  excludeFrom(args: { sessionId: SessionId; startSeq: number }): Promise<ContextPreview>
   restoreRange(args: { sessionId: SessionId; startSeq: number; endSeq: number }): Promise<ContextPreview>
   expandCheckpoint(args: { sessionId: SessionId; checkpointSeq: number }): Promise<ContextPreview>
   createRecoveryBranch(args: { sessionId: SessionId; boundarySeq: number }): Promise<{ sessionId: SessionId }>

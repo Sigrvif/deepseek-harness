@@ -19,11 +19,13 @@ import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { ContextView } from './ContextView.tsx'
 import type { ContextEditorApi } from './api.ts'
+import { ContextEditUserNodeView, provideChatEditFace } from './chat-edit.tsx'
 import { mountContextEditorRemote } from './remote.ts'
 import { en, zh } from './locales.ts'
 
 export type { ContextEditorApi } from './api.ts'
 export { ContextView } from './ContextView.tsx'
+export { ContextEditUserNodeView, provideChatEditFace } from './chat-edit.tsx'
 
 /** Dictionary namespace owned by this plugin. */
 const NS = 'contextEditor'
@@ -57,6 +59,7 @@ function contextEditorApi(namespace: unknown): ContextEditorApi {
     preview: args => call('preview', args),
     editMessage: args => call('edit-message', args),
     excludeRange: args => call('exclude-range', args),
+    excludeFrom: args => call('exclude-from', args),
     restoreRange: args => call('restore-range', args),
     expandCheckpoint: args => call('expand-checkpoint', args),
     createRecoveryBranch: args => call('create-recovery-branch', args),
@@ -83,6 +86,29 @@ export async function apply(ctx: ClientContext): Promise<void> {
 
   ctx.inject(['remote.contextEditor', 'slots', 'locale'], (scoped: ClientContext) => {
     const scopedLocale = scoped.locale.bind(NS) as (key: string) => string
+    const api = contextEditorApi((scoped.remote as unknown as { contextEditor: unknown }).contextEditor)
+
+    // fork(context-editor): the chat prompt edit-and-resend. The replacement
+    // entries shadow the standard user/steering renderers (same key, lower
+    // priority = lower renders) and own the user row's seat declaration —
+    // child declarations are globally unique per slot, so the standard user
+    // entry's registration dropped it in the same change.
+    provideChatEditFace(api, scopedLocale)
+    scoped.slots.inject('conversation.chat.node', () => scoped.slots.register({
+      name: 'conversation.chat.node',
+      key: 'user',
+      priority: -10,
+      locale: 'chat',
+      children: { 'conversation.chat.user.before': { kind: 'chain', scope: 'session' } },
+    }, ContextEditUserNodeView))
+    scoped.slots.inject('conversation.chat.node', () => scoped.slots.register({
+      name: 'conversation.chat.node',
+      key: 'steering',
+      priority: -10,
+      locale: 'chat',
+      inject: () => ({ renderSlotChain: () => null }),
+    }, ContextEditUserNodeView))
+
     scoped.slots.inject('conversation.view', () => {
       // The runtime shape matches ConvViewOwnerProps + the injected face below; the
       // generic slot contract typing cannot express per-entry inject faces, so the
@@ -102,7 +128,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
           const t = scoped.locale.bind(NS) as (key: string) => string
           return {
             sessionId,
-            api: contextEditorApi((scoped.remote as unknown as { contextEditor: unknown }).contextEditor),
+            api,
             labels: t,
           }
         },

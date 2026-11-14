@@ -73,6 +73,13 @@ function ContextPane({ sessionId, api, labels, preview, reload }: {
     run(() => api.excludeRange({ sessionId: sessionId as never, startSeq, endSeq }))
   }
 
+  // One confirm covers the whole tail: the "fix a stopped prompt" path needs
+  // no confirm-per-row walk.
+  const excludeToEnd = (startSeq: number): void => {
+    if (!window.confirm(labels('confirm.excludeToEnd'))) return
+    run(() => api.excludeFrom({ sessionId: sessionId as never, startSeq }))
+  }
+
   const restore = (row: ContextRow): void => {
     const cited = row.editedFrom ?? row.excludes ?? [row.seq]
     const startSeq = cited[0] ?? row.seq
@@ -190,14 +197,26 @@ function ContextPane({ sessionId, api, labels, preview, reload }: {
               <span className={styles.editing}>
                 <textarea
                   value={draft}
+                  rows={4}
                   data-testid={`edit-${String(row.seq)}`}
                   onChange={(event) => { setDraft(event.target.value) }}
                 />
                 <button type="button" disabled={busy} onClick={() => { saveEdit(row) }}>{labels('action.save')}</button>
                 <button type="button" onClick={() => { setEditingSeq(undefined) }}>{labels('action.cancel')}</button>
               </span>
+            ) : row.excluded ? (
+              // The stub names its coverage so an exclusion is readable at a
+              // glance: the shadowed seq range plus the removed text.
+              <span className={styles.text} data-testid={`excluded-${String(row.seq)}`}>
+                <span className={styles.stubRange}>
+                  {(labels('stub.range') ?? 'Excludes #{start}–#{end}')
+                    .replace('{start}', String(row.excludes?.[0] ?? row.seq))
+                    .replace('{end}', String(row.excludes?.at(-1) ?? row.seq))}
+                </span>
+                {row.excludesText !== undefined ? <span className={styles.stubText}>{clip(row.excludesText)}</span> : null}
+              </span>
             ) : (
-              <span className={styles.text}>{row.excluded ? `(${labels('badge.excluded')})` : clip(row.text)}</span>
+              <span className={styles.text}>{clip(row.text)}</span>
             )}
             {row.editedFrom !== undefined ? <span className={styles.badge}>{labels('badge.edited')}</span> : null}
             {row.excluded ? <span className={styles.badge}>{labels('badge.excluded')}</span> : null}
@@ -208,7 +227,12 @@ function ContextPane({ sessionId, api, labels, preview, reload }: {
                 : null}
               {row.excluded || row.editedFrom !== undefined
                 ? <button type="button" disabled={busy} data-testid={`restore-${String(row.seq)}`} onClick={() => { restore(row) }}>{labels('action.restore')}</button>
-                : <button type="button" disabled={busy} onClick={() => { exclude(row.seq, row.seq) }}>{labels('action.exclude')}</button>}
+                : (
+                  <>
+                    <button type="button" disabled={busy} onClick={() => { exclude(row.seq, row.seq) }}>{labels('action.exclude')}</button>
+                    <button type="button" disabled={busy} data-testid={`exclude-to-end-${String(row.seq)}`} onClick={() => { excludeToEnd(row.seq) }}>{labels('action.excludeToEnd')}</button>
+                  </>
+                )}
             </span>
           </li>
         ))}

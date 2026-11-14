@@ -81,5 +81,8 @@ describe('previewFromEvents', () => {
     expect(preview.rows).toHaveLength(1)
     expect(preview.rows[0]?.excluded).toBe(true)
     expect(preview.rows[0]?.excludes).toEqual([userSeq, assistantSeq])
+    // The stub carries the shadowed text so the tab can show what was removed.
+    expect(preview.rows[0]?.excludesText).toContain('hello world')
+    expect(preview.rows[0]?.excludesText).toContain('the answer')
   })
 })

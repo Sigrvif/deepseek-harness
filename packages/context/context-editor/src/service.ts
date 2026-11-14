@@ -10,7 +10,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session'
 import { keyFor, installRequestCapture } from './capture.ts'
 import type { RequestCapture } from './capture.ts'
 import { condenseRange } from './condense.ts'
-import { editMessage as editMessageOp, excludeRange as excludeRangeOp } from './edits.ts'
+import { editMessage as editMessageOp, excludeFrom as excludeFromOp, excludeRange as excludeRangeOp } from './edits.ts'
 import { createRecoveryBranch, expandCheckpoint, restoreRange } from './restore.ts'
 import { buildOverrides, validateParams } from './overrides.ts'
 import { contextEditorDomain } from './domain.ts'
@@ -167,6 +167,13 @@ export class ContextEditorService extends TypertRemoteService {
   @Remote('exclude-range')
   async excludeRange(request: { sessionId: SessionId; startSeq: number; endSeq: number }): Promise<ContextPreview> {
     await excludeRangeOp(this.ctx, request.sessionId, request.startSeq, request.endSeq)
+    return this.preview({ sessionId: request.sessionId })
+  }
+
+  /** Exclude one message and the whole tail after it (the chat's edit-and-resend). */
+  @Remote('exclude-from')
+  async excludeFrom(request: { sessionId: SessionId; startSeq: number }): Promise<ContextPreview> {
+    await excludeFromOp(this.ctx, request.sessionId, request.startSeq)
     return this.preview({ sessionId: request.sessionId })
   }
 

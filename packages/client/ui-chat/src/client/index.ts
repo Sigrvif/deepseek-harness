@@ -56,6 +56,10 @@ export type {
 
 export { isRunningTool, isSettledTool } from './contract/chat-nodes.ts'
 export { EMPTY_CHAT_SNAPSHOT } from './contract/snapshot.ts'
+// fork(context-editor): the standard user-message renderer and its locale
+// namespace, so the context editor's replacement renderer can wrap them.
+export { UserMessageNodeView } from './chat/MessageItem.tsx'
+export { NS } from './locale.ts'
 
 /** Public merge surface for Chat renderer payloads contributed by other plugins. */
 export interface ChatNodeDataMap {}

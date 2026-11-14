@@ -11,7 +11,7 @@ import { SessionId, SessionSeq } from '@deepseek-ai/dsh-session'
 import Storage from '@deepseek-ai/dsh-storage'
 import * as StorageDomain from '@deepseek-ai/dsh-storage-domain'
 import * as StorageJson from '@deepseek-ai/dsh-storage-json'
-import { editMessage, excludeRange } from '../src/edits.ts'
+import { editMessage, excludeFrom, excludeRange } from '../src/edits.ts'
 import { previewFromEvents } from '../src/projection.ts'
 
 const roots: string[] = []
@@ -173,6 +173,78 @@ describe('editMessage', () => {
     expect(blocks).toHaveLength(3)
     expect(blocks[0]).toEqual({ type: 'reasoning' })
     expect(blocks[1]).toEqual({ type: 'text' })
+  })
+})
+
+describe('excludeFrom', () => {
+  it('shadows one message and the whole tail with one excluded replacement', async () => {
+    const { ctx } = await mounted()
+    const session = ctx.sessions.create(SessionId('exclude-from'))
+    toolConversation(session)
+    const start = session.surface.nodes[1]!
+    const end = session.surface.nodes[2]!
+    await excludeFrom(ctx, SessionId('exclude-from'), start)
+    const preview = previewFromEvents('exclude-from', session.snapshotEvents())
+    expect(preview.rows).toHaveLength(2)
+    expect(preview.rows[0]?.excluded).toBe(false)
+    expect(preview.rows[1]?.excluded).toBe(true)
+    expect(preview.rows[1]?.excludes).toEqual([start, end])
+    expect(preview.rows[1]?.excludesText).toContain('model answer')
+    expect(preview.rows[1]?.excludesText).toContain('tool output')
+    // Only the untouched prefix reaches the model.
+    expect(session.deriveMessages()).toHaveLength(1)
+  })
+
+  it('keeps non-surface closers outside the replacement range', async () => {
+    const { ctx } = await mounted()
+    const session = ctx.sessions.create(SessionId('exclude-from-tail'))
+    toolConversation(session)
+    const start = session.surface.nodes[0]!
+    await excludeFrom(ctx, SessionId('exclude-from-tail'), start)
+    const events = session.snapshotEvents()
+    // The trailing turn/end log event survives beside the appended replacement;
+    // the model sees nothing.
+    expect(events.filter(event => event.type === 'turn/end')).toHaveLength(1)
+    expect(session.deriveMessages()).toHaveLength(0)
+  })
+
+  it('refuses a start beyond the last message and an open turn', async () => {
+    const { ctx } = await mounted()
+    const session = ctx.sessions.create(SessionId('exclude-from-bad'))
+    toolConversation(session)
+    await expect(excludeFrom(ctx, SessionId('exclude-from-bad'), 99)).rejects.toThrow(/bad-range|no message/u)
+    session.append('turn/start', { turn: 2 })
+    const nextSeq = session.surface.nodes.at(-1)!
+    await expect(excludeFrom(ctx, SessionId('exclude-from-bad'), nextSeq)).rejects.toThrow(/open turn/u)
+  })
+
+  it('survives a restart: the exclusion reaches a cold reader', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-context-editor-exclude-cold-'))
+    roots.push(root)
+    const persistRoot = join(root, 'persist')
+    const writer = await mounted(persistRoot)
+    const session = writer.ctx.sessions.create(SessionId('exclude-cold'), { meta: { cwd: root } })
+    const writeHandle = await writer.ctx.sessionPersistence.create(session.header)
+    toolConversation(session)
+    await writer.ctx.sessions.flush(session)
+    const start = session.surface.nodes[0]!
+    const end = session.surface.nodes[2]!
+    await excludeFrom(writer.ctx, SessionId('exclude-cold'), start)
+    const reader = await mounted(persistRoot)
+    const handle = await reader.ctx.sessionPersistence.open(SessionId('exclude-cold'), 'read')
+    try {
+      const { events } = await handle.read()
+      const preview = previewFromEvents('exclude-cold', events)
+      expect(preview.rows).toHaveLength(1)
+      expect(preview.rows[0]?.excluded).toBe(true)
+      // Cold storage keeps the surfaceOp range, not the live citation list, so
+      // the stub's provenance re-derives: every shadowed message event, in order.
+      expect(preview.rows[0]?.excludes).toContain(start)
+      expect(preview.rows[0]?.excludes).toContain(end)
+    } finally {
+      await handle.close()
+      void writeHandle
+    }
   })
 })
 

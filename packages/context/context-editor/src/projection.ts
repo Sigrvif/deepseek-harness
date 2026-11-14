@@ -80,6 +80,16 @@ export function previewFromEvents(sessionId: string, events: readonly SessionEve
     const chainsIntoRestore = sources !== undefined
       && sources.some(candidate => isReplacement(events[candidate] ?? { type: 'turn/start', data: {} } as never))
     const rowProvenance = sources !== undefined && sources.length > 0 && !chainsIntoRestore ? sources : undefined
+    // The excluded stub shows what it removed: the cited originals' text, read
+    // straight from the raw log (they are no longer surface nodes themselves).
+    const excludesText = excluded && rowProvenance !== undefined
+      ? rowProvenance
+        .map(candidate => messageOf(events[candidate] ?? { type: 'turn/start', data: {} } as never))
+        .filter((cited): cited is Message => cited !== undefined)
+        .map(cited => textOf(cited.content))
+        .filter(text => text !== '')
+        .join('\n')
+      : undefined
     rows.push({
       seq,
       role: ROLES[event.type] ?? 'user',
@@ -89,6 +99,7 @@ export function previewFromEvents(sessionId: string, events: readonly SessionEve
       ...(replaced && rowProvenance !== undefined
         ? excluded ? { excludes: rowProvenance } : { editedFrom: rowProvenance }
         : {}),
+      ...(excludesText !== undefined && excludesText !== '' ? { excludesText } : {}),
       estimateTokens: estimateMessage(message),
     })
   }

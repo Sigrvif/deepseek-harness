@@ -37,10 +37,13 @@ export function registerChatNodeRenderers(
     name: 'conversation.chat.reasoning.body',
     priority: 100,
   }, DefaultReasoningBody))
+  // fork(context-editor): the seat declaration moved to the fork's replacement
+  // entry (child declarations are globally unique per slot; lowest priority
+  // renders). The fallback registration keeps the component; its renderer seat
+  // resolves only through the replacement, so the face check is erased here.
   ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
     name: 'conversation.chat.node', key: 'user', locale: NS,
-    children: { 'conversation.chat.user.before': { kind: 'chain', scope: 'session' } },
-  }, UserMessageNodeView))
+  } as never, UserMessageNodeView))
   // Steering rows share the renderer without owning the message-source seat.
   ctx.slots.inject('conversation.chat.node', () => ctx.slots.register({
     name: 'conversation.chat.node', key: 'steering', locale: NS,

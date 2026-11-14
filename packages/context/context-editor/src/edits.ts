@@ -243,3 +243,22 @@ export async function excludeRange(
     append(rangeReplacement(startSeq, endSeq))
   })
 }
+
+/** Exclude one message and everything after it, computed atomically against the
+ * same snapshot the replacement validates over (the chat's edit-and-resend). */
+export async function excludeFrom(
+  ctx: Context,
+  sessionId: SessionId,
+  startSeq: number,
+): Promise<void> {
+  await applyOperations(ctx, sessionId, (events, append) => {
+    let endSeq = -1
+    for (let seq = Math.max(startSeq, 0); seq < events.length; seq += 1) {
+      if (messageOf(events[seq] ?? { type: 'turn/start', data: {} } as never) !== undefined) endSeq = seq
+    }
+    if (endSeq < startSeq) {
+      throw new RemoteError('context-editor/bad-range', `no message at or after seq ${String(startSeq)}`, { sessionId, startSeq, endSeq: startSeq })
+    }
+    append(rangeReplacement(startSeq, endSeq))
+  })
+}

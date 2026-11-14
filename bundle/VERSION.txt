@@ -1,4 +1,26 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.18 (2026-11-10)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.19 (2026-11-14)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+      + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
+
+Fork changes on top of upstream 0.2.2-alpha.2:
+
+  Prompt edit & resend (2.4.19)
+                      A pencil on every sent message opens an inline editor;
+                      Save & resend removes that message and everything after
+                      it from the model's context (one confirm, restorable in
+                      the Context tab) and sends the corrected text as a new
+                      prompt. Stopping a broken prompt no longer means walking
+                      the Context tab excluding rows one by one. The Context
+                      tab itself gains an "Exclude to end" action (one confirm
+                      for a prompt and its whole tail), exclusion stubs that
+                      name their coverage ("Excludes #5-#12" plus the removed
+                      text, with Restore in place), a properly sized edit box,
+                      and styling for the toolbar, batch bar, and JSON panes.
+                      The editor edits text only; attachments are not carried
+                      over, and injections tied to the original send (session
+                      references, skill loads) stay in context.
+
+  License paperwork rides every bundle (2.4.18)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
