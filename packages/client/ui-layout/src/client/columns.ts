@@ -25,8 +25,11 @@ export const SIDEBAR_AUTO_COLLAPSE = 1024
 export const RIGHTBAR_MIN = 300
 /** Maximum normal right panel width as a fraction of the frame. */
 export const RIGHTBAR_MAX_RATIO = 0.7
-/** First-open right panel preference as a fraction of the frame. */
-export const RIGHTBAR_DEFAULT_RATIO = 0.45
+/** First-open right panel preference as a fraction of the frame.
+ * fork(context-editor): 0.3 puts the opened panel at roughly half the
+ * conversation's width on desktop frames (upstream: 0.45, which fills half
+ * the viewport and starves the conversation). */
+export const RIGHTBAR_DEFAULT_RATIO = 0.3
 
 /**
  * Clamp a panel width into its contract range.

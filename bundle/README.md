@@ -186,8 +186,9 @@ natively on dsh's session log — no proxy involved.
 ## The right Sidebar's Files tab (2.4.22)
 
 Every session's right Sidebar carries a **Files** tab — the session
-workspace's file tree — and it opens by default (a deliberate collapse is
-remembered per session). Right-clicking a file or folder opens a real
+workspace's file tree — and it opens by default at about half the
+conversation's width (a deliberate collapse is remembered per session, and
+the panel drag-resizes if you want it wider or narrower). Right-clicking a file or folder opens a real
 context menu: **Open** (files, into the reading pane), **Copy absolute
 path**, **Copy relative path**, and **Reference in chat**, which drops an
 `@relative/path` mention into the composer so the next prompt can point at
