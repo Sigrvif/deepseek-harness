@@ -75,7 +75,7 @@ describe('ChatPromptEditor', () => {
     const editor = await waitFor(() => view.container.querySelector('[data-testid="prompt-editor"]')!)
     expect(editor.querySelector('textarea')!.value).toBe('typo text')
     fireEvent.click(screen.getByText('Cancel'))
-    await waitFor(() => { expect(view.container.querySelector('[data-testid="standard-user-view"]')).toBeDefined() })
+    await waitFor(() => { expect(view.container.querySelector('[data-testid="standard-user-view"]')).not.toBeNull() })
     expect(api.excludeFrom).not.toHaveBeenCalled()
     expect(standard.inputActions.setDraft).not.toHaveBeenCalled()
   })
@@ -89,14 +89,14 @@ describe('ChatPromptEditor', () => {
     const view = render(createElement(ContextEditUserNodeView, {
       node: userNode(), ...standard,
     } as never))
-    await waitFor(() => { expect(view.container.querySelector('[data-testid="prompt-editor"]')).toBeDefined() })
+    await waitFor(() => { expect(view.container.querySelector('[data-testid="prompt-editor"]')).not.toBeNull() })
     fireEvent.change(view.container.querySelector('[data-testid="prompt-editor"] textarea')!, { target: { value: 'fixed text' } })
     fireEvent.click(screen.getByText('Save & resend'))
     await waitFor(() => { expect(api.excludeFrom).toHaveBeenCalledTimes(1) })
     expect(api.excludeFrom).toHaveBeenCalledWith({ sessionId: 's-1', startSeq: 5 })
     expect(standard.inputActions.setDraft).toHaveBeenCalledWith('fixed text')
     expect(standard.inputActions.submit).toHaveBeenCalledTimes(1)
-    await waitFor(() => { expect(view.container.querySelector('[data-testid="standard-user-view"]')).toBeDefined() })
+    await waitFor(() => { expect(view.container.querySelector('[data-testid="standard-user-view"]')).not.toBeNull() })
     confirm.mockRestore()
   })
 
@@ -110,10 +110,10 @@ describe('ChatPromptEditor', () => {
     const view = render(createElement(ContextEditUserNodeView, {
       node: userNode(), ...standard,
     } as never))
-    await waitFor(() => { expect(view.container.querySelector('[data-testid="prompt-editor"]')).toBeDefined() })
+    await waitFor(() => { expect(view.container.querySelector('[data-testid="prompt-editor"]')).not.toBeNull() })
     fireEvent.click(screen.getByText('Save & resend'))
-    await waitFor(() => { expect(screen.getByText('session has an open turn')).toBeDefined() })
-    expect(view.container.querySelector('[data-testid="prompt-editor"]')).toBeDefined()
+    await waitFor(() => { expect(screen.getByText('session has an open turn')).not.toBeNull() })
+    expect(view.container.querySelector('[data-testid="prompt-editor"]')).not.toBeNull()
     expect(standard.inputActions.submit).not.toHaveBeenCalled()
     confirm.mockRestore()
   })
@@ -145,11 +145,11 @@ describe('ChatPromptEditAction', () => {
     const view = render(createElement(ContextEditUserNodeView, {
       node: userNode(), ...freshStandard(),
     } as never))
-    expect(view.container.querySelector('[data-testid="standard-user-view"]')).toBeDefined()
+    expect(view.container.querySelector('[data-testid="standard-user-view"]')).not.toBeNull()
     const action = render(createElement(ChatPromptEditAction, {
       ...base, useSession: session(false), useAccess: access(true),
     } as never))
     fireEvent.click(action.container.querySelector('button')!)
-    return waitFor(() => { expect(view.container.querySelector('[data-testid="prompt-editor"]')).toBeDefined() })
+    return waitFor(() => { expect(view.container.querySelector('[data-testid="prompt-editor"]')).not.toBeNull() })
   })
 })

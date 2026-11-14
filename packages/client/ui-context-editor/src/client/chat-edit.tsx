@@ -24,7 +24,14 @@ const editing = createSnapshotStore<string[]>([])
 /** Open/close the inline editor for one message. */
 export const chatEdit = {
   open: (messageId: string): void => { editing.update((draft) => { if (!draft.includes(messageId)) draft.push(messageId) }) },
-  close: (messageId: string): void => { editing.update(draft => draft.filter(id => id !== messageId)) },
+  // In-place splice: the snapshot store's update discards the mutator's
+  // return value, so a filter-return would silently keep the editor open.
+  close: (messageId: string): void => {
+    editing.update((draft) => {
+      const index = draft.indexOf(messageId)
+      if (index >= 0) draft.splice(index, 1)
+    })
+  },
 }
 
 /** The shared remote face and copy seat, provisioned once at plugin apply. */
@@ -163,9 +170,16 @@ const ChatPromptEditor = memo(function ChatPromptEditor({
     setError(undefined)
     api.excludeFrom({ sessionId, startSeq: node.data.seq }).then(
       () => {
-        inputActions.setDraft(draft)
-        inputActions.submit()
+        // Close first: the editor must leave the transcript even if the
+        // composer handoff below misbehaves.
         chatEdit.close(messageId)
+        inputActions.setDraft(draft)
+        try {
+          inputActions.submit()
+        } catch {
+          // The composer surfaces admission failures itself; the edited text
+          // stays in the composer for a manual Enter.
+        }
       },
       (failure: unknown) => {
         setBusy(false)

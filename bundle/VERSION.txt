@@ -1,4 +1,21 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.19 (2026-11-14)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.20 (2026-11-14)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+      + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
+
+Fork changes on top of upstream 0.2.2-alpha.2:
+
+  Edit & resend: editor no longer sticks open (2.4.20)
+                      2.4.19's editor stayed open after Save & resend and
+                      Cancel appeared dead: the close ran against the
+                      fork-internal snapshot store through a filter-return,
+                      which that store's update contract discards (only
+                      in-place draft mutation counts), so the close was a
+                      silent no-op. The close now splices in place, runs
+                      before the composer handoff, and the handoff guards
+                      the submit call. Found in the first real-world test
+                      of 2.4.19.
+
+  Prompt edit & resend (2.4.19)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 

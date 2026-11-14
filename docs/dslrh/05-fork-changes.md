@@ -63,4 +63,6 @@ the workspace picker degrade gracefully when the host chooser cannot start;
 `THIRD_PARTY_NOTICES.md` into the bundle roots so the archives carry their
 own terms; 2.4.19 added the chat-side prompt edit & resend, the
 Exclude-to-end row action, readable exclusion stubs, and the Context tab's
-missing edit-box styling.
+missing edit-box styling; 2.4.20 fixed the editor staying open after
+Save & resend (the close was a silent no-op against the snapshot store's
+update contract) and hardened the composer handoff.
