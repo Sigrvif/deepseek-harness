@@ -1,4 +1,21 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.21 (2026-11-14)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.22 (2026-11-14)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+      + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
+
+Fork changes on top of upstream 0.2.2-alpha.2:
+
+  Workspace Files sidebar (2.4.22)
+                      Right-clicking a file or folder opens a real context
+                      menu: Open (files), Copy absolute path, Copy relative
+                      path, and Reference in chat, which drops an
+                      @relative/path mention into the composer. Upstream
+                      showed the browser's native page menu there. The Files
+                      tab also opens by default in every session - the space
+                      next to the session view holds the file tree instead of
+                      a collapsed strip - while a deliberate collapse
+                      persists per session as before.
+
+  Live fold of edited/excluded context (2.4.21)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 

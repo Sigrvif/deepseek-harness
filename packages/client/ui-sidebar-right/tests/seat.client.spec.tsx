@@ -10,14 +10,15 @@ import type { ShortcutCatalogEntry, ShortcutCommandId } from '@deepseek-ai/dsh-c
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client'
 import type { PaneId, SplitId, TabId } from '@deepseek-ai/dsh-client-ui-dockkit'
-import { dockPaneIds, getPane } from '@deepseek-ai/dsh-client-ui-dockkit'
+import { dockPaneIds, getPane, EMPTY_HISTORY } from '@deepseek-ai/dsh-client-ui-dockkit'
+import { writeSidebarLayout } from '../src/client/persistence.ts'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { apply, inject } from '../src/client/index.ts'
 import { intentsFor } from '../src/client/shell/SidebarRight.tsx'
 import { registerSidebarShortcuts } from '../src/client/shortcuts.ts'
 import { ShortcutRegistry } from '@deepseek-ai/dsh-client-shortcuts/src/client/registry.ts'
 import type { SidebarRightTabInfo, SidebarRightTabMenuOwnerProps } from '../src/client/contract/slots.ts'
-import type { createSidebarRightStore } from '../src/client/stores.ts'
+import { createSidebarRightStore, createSurface } from '../src/client/stores.ts'
 
 declare module '../src/client/contract/params.ts' {
   interface SidebarRightResourceParamsMap {
@@ -33,6 +34,12 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 const SESSION = 's-test' as SessionId
+// fork(context-editor): the persisted-layout opt-out for default-open tests.
+function persistCollapsedLayout(sessionId: SessionId = SESSION): void {
+  const emptySurface = createSurface()
+  const layout = { ...emptySurface.layout, expanded: false }
+  writeSidebarLayout(sessionId, { layout, history: EMPTY_HISTORY, minted: emptySurface.minted })
+}
 const OTHER = 's-other' as SessionId
 const runtimes: SlotTestRuntime[] = []
 let getAnimationsDescriptor: PropertyDescriptor | undefined
@@ -68,7 +75,13 @@ function transition(property = 'transform') {
   }
 }
 
-async function mountSeat(viewportWidth = 1440, canShow = true, entryCount = 0, opener = false, keepMounted = false) {
+async function mountSeat(
+  viewportWidth = 1440, canShow = true, entryCount = 0, opener = false, keepMounted = false,
+  pages: readonly string[] = [], filesDefault = false,
+) {
+  // fork(context-editor): upstream tests pin the collapsed-by-default surface;
+  // persisting it here keeps them exact. The Files-by-default tests opt in.
+  if (!filesDefault) persistCollapsedLayout()
   const runtime = await SlotTestRuntime.create()
   runtimes.push(runtime)
   const frame = { openRightbar: vi.fn(), closeRightbar: vi.fn(), panelInfo: runtime.panelInfo }
@@ -144,6 +157,11 @@ async function mountSeat(viewportWidth = 1440, canShow = true, entryCount = 0, o
     runtime.slots.register({ name: 'sidebar.right.pane.tab', key: 'test/text' }, Body)
     runtime.slots.register({ name: 'sidebar.right.pane.tab.title', key: 'test/text' }, Title)
   })
+  // Registered before the mount so the default-page seed resolves at expansion.
+  for (const kind of pages) {
+    runtime.ctx.sidebarRightTabs.register({ id: `test/${kind}`, kind, multiple: true, title: () => kind })
+    runtime.slots.register({ name: 'sidebar.right.pane.tab', key: `test/${kind}` }, Body)
+  }
   const view = runtime.renderSlot('rightbar', { width: 420, viewportWidth, canShow })
   const registerPage = (kind: string, multiple = false): void => {
     runtime.ctx.sidebarRightTabs.register({ id: `test/${kind}`, kind, multiple, title: () => kind })
@@ -314,6 +332,21 @@ describe('RightbarSeat presentation', () => {
     expect(editor.textContent).toBe('unsent draft')
   })
 
+  // fork(context-editor): a fresh session opens expanded with the Files page.
+  it('opens a fresh session expanded with the Files page seeded', async () => {
+    localStorage.removeItem(`dsh.sidebar-right.v2.${SESSION}`)
+    const h = await mountSeat(1440, true, 0, false, false, ['files'], true)
+    expect(h.layout().expanded).toBe(true)
+    expect(Object.values(h.layout().tabs).map(tab => tab.kind)).toEqual(['files'])
+    // A session with a saved layout keeps it: collapse persists, no re-open.
+    h.controller.toggleExpanded()
+    expect(h.layout().expanded).toBe(false)
+    expect(JSON.parse(localStorage.getItem(`dsh.sidebar-right.v2.${SESSION}`) ?? '{}').bySession[SESSION].layout.expanded).toBe(false)
+    persistCollapsedLayout()
+    const reopened = await mountSeat()
+    expect(reopened.layout().expanded).toBe(false)
+  })
+
   it.each(['macos', 'windows'] as const)('keeps %s close commands on newly opened, revealed and replaced pages', async (platform) => {
     const h = await mountSeat()
     act(() => { h.registerPage('browser', true); h.registerPage('files'); h.registerPage('terminal', true) })
@@ -338,7 +371,8 @@ describe('RightbarSeat presentation', () => {
     expect(closeWindow).not.toHaveBeenCalled()
     act(() => { h.controller.toggleExpanded() })
     act(() => { h.controller.openTabFromTarget('browser', h.controller.commandTarget()!) })
-    expect(Object.values(h.layout().tabs).map(tab => tab.kind)).toEqual(['browser'])
+    // fork(context-editor): the empty-pane expansion seeds the Files page.
+    expect(Object.values(h.layout().tabs).map(tab => tab.kind)).toEqual(['files', 'browser'])
     expect(focusedPane()).toBe(h.layout().activePaneId)
     const input = document.createElement('input')
     element(h.view.container, '[data-tab-body]').append(input)
@@ -347,7 +381,8 @@ describe('RightbarSeat presentation', () => {
     expect(input.isConnected).toBe(false)
     expect(focusedPane()).toBe(h.layout().activePaneId)
     close()
-    expect(Object.values(h.layout().tabs).map(tab => tab.kind)).toEqual(['browser'])
+    // The multiple browser page mints a second browser tab; the close takes it.
+    expect(Object.values(h.layout().tabs).map(tab => tab.kind)).toEqual(['files', 'browser'])
     act(() => { h.controller.openTabFromTarget('files', h.controller.commandTarget()!) })
     const files = h.controller.active()!
     act(() => { h.controller.openTabFromTarget('browser', h.controller.commandTarget()!) })
@@ -830,6 +865,8 @@ describe('slot-owned useTabInfo', () => {
     await h.runtime.sessions.add({ id: OTHER })
     expect(h.instance.getSnapshot()).toBe(stored)
     expect(info.tab.signal.aborted).toBe(false)
+    // fork(context-editor): keep the other session on the untouched tab-id flow.
+    persistCollapsedLayout(OTHER)
     act(() => { h.selectSession(OTHER) })
     act(() => { h.controller.openResource('dsh-resource://file/session/s-other/other.txt', { params: { line: 9 } }) })
     const otherTab = h.controller.active()!

@@ -24,6 +24,11 @@ export interface SidebarRightSeed {
  * @returns the sole entry, or the guide when there are zero or multiple entries.
  */
 export function defaultSeed(tabs: SidebarRightTabRegistry): SidebarRightSeed {
+  // fork(context-editor): the workspace Files page is the useful default for a
+  // fresh pane; upstream falls through to the guide directory. The kind string
+  // is the plugin contract (ui-sidebar-files registers the page type).
+  const files = tabs.get('files')
+  if (files !== undefined) return { kind: 'files', title: files.title(pageAddress('files')) }
   const [only, ...others] = tabs.guide()
   const single = only !== undefined && others.length === 0
   const kind = single ? only.kind : GUIDE_KIND

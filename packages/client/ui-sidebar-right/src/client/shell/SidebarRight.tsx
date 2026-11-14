@@ -42,6 +42,7 @@ import { canSplit, dockPaneIds, DockLayout, findPaneContentTab } from '@deepseek
 import type { HalvesFit, LayoutState, PaneId } from '@deepseek-ai/dsh-client-ui-dockkit'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { GUIDE_KIND, pageAddress } from '../contract/seed.ts'
+import { readSidebarLayout } from '../persistence.ts'
 import { dockLabels } from '../labels.ts'
 import type { SidebarRightOpenTabOptions } from '../service.ts'
 import type { SidebarRightTabDefinition } from '../tab-registry.ts'
@@ -382,7 +383,21 @@ export function RightbarSeat({
   const track = shown && !autoFullscreen
 
   useEffect(() => {
-    if (active && surface === undefined) actions.open(sessionId)
+    if (active && surface !== undefined) return
+    // fork(context-editor): a session with no saved layout opens expanded, and
+    // the settle rule seeds the default workspace Files page, so the space next
+    // to the session view holds the file tree instead of nothing. The storage
+    // read precedes the lazy open's own first persistence write; a saved layout
+    // (including a deliberate collapse) always wins.
+    const defaultOpen = readSidebarLayout(sessionId) === undefined
+    actions.open(sessionId)
+    if (defaultOpen) {
+      try { actions.setExpanded(sessionId, true) }
+      catch (_noSeedablePage) {
+        // A registry with no defaultable page (upstream throws there too)
+        // stays collapsed instead of killing the mount effect.
+      }
+    }
   }, [actions, sessionId, surface, active])
 
   useLayoutEffect(() => {

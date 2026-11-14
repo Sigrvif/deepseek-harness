@@ -33,6 +33,19 @@ describe('SidebarRightTabRegistry — recognition', () => {
       .toThrow('default tab kind "guide" is not registered')
   })
 
+  // fork(context-editor): the workspace Files page is the fresh-pane default.
+  it('prefers the registered files page over the guide for a fresh pane', () => {
+    const registry = new SidebarRightTabRegistry(new Context())
+    registry.register(typeFor('guide', ['sidebar://guide']))
+    registry.register(typeFor('files', ['sidebar://files']))
+    registry.register(typeFor('text', ['dsh-resource://file/**']))
+    expect(defaultSeed(registry).kind).toBe('files')
+    const withoutFiles = new SidebarRightTabRegistry(new Context())
+    withoutFiles.register(typeFor('guide', ['sidebar://guide']))
+    withoutFiles.register(typeFor('text', ['dsh-resource://file/**']))
+    expect(defaultSeed(withoutFiles).kind).toBe('guide')
+  })
+
   it('matches a pattern containing ":" against the whole address', () => {
     const registry = new SidebarRightTabRegistry(new Context())
     registry.register(typeFor('guide', ['sidebar://guide']))

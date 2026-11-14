@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /** File-tree presentation over controlled directory watches and deferred listings. */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { makeTranslate, RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
 import type { RemoteFailure } from '@deepseek-ai/dsh-api-remotes/client'
 import { fileAddressFor } from '@deepseek-ai/dsh-util-workspace-path'
@@ -65,6 +65,37 @@ describe('FilesBody', () => {
     const path = view.container.querySelector('[data-files-path]')
     expect([...path?.firstElementChild?.children ?? []].map(span => span.textContent)).toEqual(['/'])
     expect(names(view.container)).toEqual(['/src', '/.env', '/pipe', '/README.md'])
+  })
+
+  // fork(context-editor): the row context menu.
+  it('opens a row context menu with open, path copies and a chat reference', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    const insertText = vi.fn()
+    const inputActions = { captureInsertion: vi.fn(() => ({ start: 0, end: 0 })), insertText }
+    const { view, script } = mountBody(ROOT, undefined, { inputActions } as never)
+    await act(() => script.watches.ready(ROOT))
+    await act(() => script.settle({ ok: true, value: ROOT_LEVEL }))
+
+    // A file row: Open + both copies + the chat reference.
+    fireEvent.contextMenu(view.container.querySelector(`[data-files-path="${ROOT}/README.md"] button`)!)
+    const fileItems = screen.getAllByRole('menuitem').map(item => item.textContent)
+    expect(fileItems).toEqual([zh['action.open'], zh['action.copyAbsolute'], zh['action.copyRelative'], zh['action.reference']])
+    fireEvent.click(screen.getByRole('menuitem', { name: zh['action.copyAbsolute'] }))
+    await vi.waitFor(() => { expect(writeText).toHaveBeenCalledWith(`${ROOT}/README.md`) })
+
+    // A directory row: no Open, and the relative form drops the workspace root.
+    fireEvent.contextMenu(view.container.querySelector(`[data-files-path="${ROOT}/src"] button`)!)
+    const directoryItems = screen.getAllByRole('menuitem').map(item => item.textContent)
+    expect(directoryItems).toEqual([zh['action.copyAbsolute'], zh['action.copyRelative'], zh['action.reference']])
+    fireEvent.click(screen.getByRole('menuitem', { name: zh['action.copyRelative'] }))
+    await vi.waitFor(() => { expect(writeText).toHaveBeenCalledWith('src') })
+
+    // Reference in chat drops an @-mention through the input face.
+    fireEvent.contextMenu(view.container.querySelector(`[data-files-path="${ROOT}/README.md"] button`)!)
+    fireEvent.click(screen.getByRole('menuitem', { name: zh['action.reference'] }))
+    expect(inputActions.captureInsertion).toHaveBeenCalledOnce()
+    expect(insertText).toHaveBeenCalledWith('@README.md ', { start: 0, end: 0 })
   })
 
   it('marks the root path clipped while its text is wider than its box, re-reading on resize', async () => {

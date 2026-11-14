@@ -4,7 +4,9 @@ import { EMPTY_HISTORY, type LayoutState } from '@deepseek-ai/dsh-client-ui-dock
 import type { SurfaceState } from './stores.ts'
 
 /** Persistence namespace shared by scoped stores and startup discovery. */
-export const sidebarPersistence = 'dsh.sidebar-right.v1'
+// fork(context-editor): v2 — the one-time discard of v1 layouts lets every
+// existing session pick up the Files-by-default opening state.
+export const sidebarPersistence = 'dsh.sidebar-right.v2'
 
 const paneId = z.string().regex(/^(?:pane|float)[1-9][0-9]*$/u)
 const splitId = z.string().regex(/^split[1-9][0-9]*$/u)

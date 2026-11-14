@@ -103,8 +103,8 @@ function harness(cwd: string | null, refreshShortcut?: ReturnType<FilesBodyProps
  * @param cwd - the session's working directory as `useSessions` reports it; `null` for a session without one.
  * @param refreshShortcut - effective binding advertised by the tab owner.
  */
-export function mountBody(cwd: string | null = ROOT, refreshShortcut?: ReturnType<FilesBodyProps['useTabInfo']>['tab']['refreshShortcut']): Mounted {
+export function mountBody(cwd: string | null = ROOT, refreshShortcut?: ReturnType<FilesBodyProps['useTabInfo']>['tab']['refreshShortcut'], extra?: Partial<FilesBodyProps>): Mounted {
   const { shared, ...hands } = harness(cwd, refreshShortcut)
-  const view = render(<FilesBody {...shared as unknown as FilesBodyProps} />)
-  return { ...hands, view, remount: () => render(<FilesBody {...shared as unknown as FilesBodyProps} />) }
+  const view = render(<FilesBody {...shared as unknown as FilesBodyProps} {...extra} />)
+  return { ...hands, view, remount: () => render(<FilesBody {...shared as unknown as FilesBodyProps} {...extra} />) }
 }

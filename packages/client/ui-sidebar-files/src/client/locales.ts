@@ -37,6 +37,10 @@ export const zh = {
   'error.outsideWorkspace': '这个目录在工作区之外，侧栏不会读取它。',
   'error.notDirectory': '这不是一个目录。',
   'error.unavailable': '读取失败：{message}',
+  'action.open': '打开',
+  'action.copyAbsolute': '复制绝对路径',
+  'action.copyRelative': '复制相对路径',
+  'action.reference': '在对话中引用',
 } satisfies Record<string, string>
 
 /** Files dictionary key union. */
@@ -61,6 +65,10 @@ export const en = {
   'error.outsideWorkspace': 'That directory is outside the workspace, so the sidebar will not read it.',
   'error.notDirectory': 'That is not a directory.',
   'error.unavailable': 'Read failed: {message}',
+  'action.open': 'Open',
+  'action.copyAbsolute': 'Copy absolute path',
+  'action.copyRelative': 'Copy relative path',
+  'action.reference': 'Reference in chat',
 } satisfies Record<SidebarFilesKey, string>
 
 /** Japanese copy, checked against the English keys. */
@@ -82,6 +90,10 @@ export const ja = {
   'error.outsideWorkspace': 'そのディレクトリはワークスペース外のため、サイドバーでは読み取りません。',
   'error.notDirectory': 'それはディレクトリではありません。',
   'error.unavailable': '読み取りに失敗しました: {message}',
+  'action.open': '開く',
+  'action.copyAbsolute': '絶対パスをコピー',
+  'action.copyRelative': '相対パスをコピー',
+  'action.reference': 'チャットで参照',
 } satisfies Record<keyof typeof en, string>
 
 /** Spanish dictionary, checked against the English keys. */
@@ -103,6 +115,10 @@ export const es = {
   'error.outsideWorkspace': 'Ese directorio está fuera del espacio de trabajo, por lo que la barra lateral no lo leerá.',
   'error.notDirectory': 'Eso no es un directorio.',
   'error.unavailable': 'Error de lectura: {message}',
+  'action.open': 'Abrir',
+  'action.copyAbsolute': 'Copiar ruta absoluta',
+  'action.copyRelative': 'Copiar ruta relativa',
+  'action.reference': 'Referenciar en el chat',
 } satisfies Record<keyof typeof en, string>
 
 /** French dictionary, checked against the English keys. */
@@ -124,6 +140,10 @@ export const fr = {
   'error.outsideWorkspace': 'Ce répertoire se trouve en dehors de l’espace de travail, donc la barre latérale ne le lira pas.',
   'error.notDirectory': "Ce n'est pas un répertoire.",
   'error.unavailable': 'Échec de lecture : {message}',
+  'action.open': 'Ouvrir',
+  'action.copyAbsolute': 'Copier le chemin absolu',
+  'action.copyRelative': 'Copier le chemin relatif',
+  'action.reference': 'Référencer dans le chat',
 } satisfies Record<keyof typeof en, string>
 
 /** German dictionary, checked against the English keys. */
@@ -145,6 +165,10 @@ export const de = {
   'error.outsideWorkspace': 'Dieses Verzeichnis liegt außerhalb des Arbeitsbereichs und wird daher von der Seitenleiste nicht gelesen.',
   'error.notDirectory': 'Das ist kein Verzeichnis.',
   'error.unavailable': 'Lesen fehlgeschlagen: {message}',
+  'action.open': 'Öffnen',
+  'action.copyAbsolute': 'Absoluten Pfad kopieren',
+  'action.copyRelative': 'Relativen Pfad kopieren',
+  'action.reference': 'Im Chat referenzieren',
 } satisfies Record<keyof typeof en, string>
 
 /** Russian dictionary, checked against the English keys. */
@@ -166,6 +190,10 @@ export const ru = {
   'error.outsideWorkspace': 'Этот каталог находится за пределами рабочей области, поэтому боковая панель его не читает.',
   'error.notDirectory': 'Это не каталог.',
   'error.unavailable': 'Не удалось прочитать: {message}.',
+  'action.open': 'Открыть',
+  'action.copyAbsolute': 'Копировать абсолютный путь',
+  'action.copyRelative': 'Копировать относительный путь',
+  'action.reference': 'Ссылка в чате',
 } satisfies Record<keyof typeof en, string>
 
 /** Portuguese dictionary, checked against the English keys. */
@@ -187,4 +215,8 @@ export const pt = {
   'error.outsideWorkspace': 'Esse diretório está fora da área de trabalho, portanto a barra lateral não o lerá.',
   'error.notDirectory': 'Isso não é um diretório.',
   'error.unavailable': 'Falha na leitura: {message}',
+  'action.open': 'Abrir',
+  'action.copyAbsolute': 'Copiar caminho absoluto',
+  'action.copyRelative': 'Copiar caminho relativo',
+  'action.reference': 'Referenciar no chat',
 } satisfies Record<keyof typeof en, string>
