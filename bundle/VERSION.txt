@@ -1,4 +1,17 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.23 (2026-11-14)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.24 (2026-11-15)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+      + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
+
+Fork changes on top of upstream 0.2.2-alpha.2:
+
+  DSLRH branding (2.4.24)
+                      The blank-session greeting (whale icon, "Into the
+                      Unknown", preview badge) is gone, and the sidebar's
+                      logo row shows the DSLRH mark with the name plate
+                      "DSLRH" + fork version (click copies the version).
+                      The window title reads DSLRH too.
+
+  Right sidebar opening width (2.4.23)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 

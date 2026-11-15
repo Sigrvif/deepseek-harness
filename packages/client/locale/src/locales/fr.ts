@@ -34,7 +34,8 @@ export const fr = {
   'collapse': 'Réduire',
   'expand': 'Développer',
   'back': 'Retour',
-  'brand.localBuild': 'Version locale de DSH',
+  // fork(local-test): the product title carries the fork brand in every language.
+  'brand.localBuild': 'DSLRH',
   'workspace.defaultName': 'Espace de travail par défaut',
   'unknown': 'Inconnu',
   'none': 'Aucun',

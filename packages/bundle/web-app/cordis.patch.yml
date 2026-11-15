@@ -461,6 +461,12 @@
     - id: ui-fork-info
       name: '@deepseek-ai/dsh-client-ui-fork-info'
 
+    # fork(local-test): the DSLRH sidebar brand — logo mark and name plate
+    # (DSLRH + fork version) over the upstream local-build fallbacks.
+    - id: ui-fork-brand
+      name: '@deepseek-ai/dsh-client-ui-fork-brand'
+
+
     # fork(superpowers): the auto-superpowers toggle on the General settings page.
     - id: ui-fork-auto-skills
       name: '@deepseek-ai/dsh-client-ui-fork-auto-skills'

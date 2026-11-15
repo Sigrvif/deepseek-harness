@@ -1,0 +1,36 @@
+/* fork(context-editor): the DSLRH sidebar brand. Geometry mirrors the
+   upstream local-build fallbacks (24px mark, stacked title + version). */
+
+.mark {
+  display: block;
+  width: auto;
+  border-radius: var(--dsw-radius-sm);
+}
+
+.plate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.title {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--dsw-alias-label-primary);
+  white-space: nowrap;
+}
+
+.version {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--dsw-alias-label-tertiary);
+}

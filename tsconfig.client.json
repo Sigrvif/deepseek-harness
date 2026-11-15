@@ -141,6 +141,7 @@
     { "path": "./packages/client/ui-message-feedback" },
     { "path": "./packages/client/ui-context-editor" },
     // fork(local-test): the Fork additions plugins tab.
+    { "path": "./packages/client/ui-fork-brand" },
     { "path": "./packages/client/ui-fork-info" },
     // fork(local-test): the auto-superpowers General settings row.
     { "path": "./packages/client/ui-fork-auto-skills" },

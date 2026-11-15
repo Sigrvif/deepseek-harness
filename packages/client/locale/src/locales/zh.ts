@@ -31,7 +31,8 @@ export const zh = {
   'collapse': '收起',
   'expand': '展开',
   'back': '返回',
-  'brand.localBuild': 'DSH 本地构建',
+  // fork(local-test): the product title carries the fork brand in every language.
+  'brand.localBuild': 'DSLRH',
   'workspace.defaultName': '默认工作区',
   'unknown': '未知',
   'none': '无',
