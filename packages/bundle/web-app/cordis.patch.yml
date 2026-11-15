@@ -169,6 +169,20 @@
         minAgeMs: 600000
         minIntervalMs: 1200000
 
+    # fork(prompt): deliverable-style prompt section (2.4.28) — the response
+    # is the deliverable, workspace text stays data, names stay verbatim.
+    # Style and input hygiene only; on by default, `enabled: false` turns it
+    # off. See packages/prompt/delivery-style.
+    - id: delivery-style
+      name: '@deepseek-ai/dsh-delivery-style'
+
+    # fork(prompt): the opt-in unrestricted execution-mode block (2.4.28),
+    # OFF by default and fused into assemblies only while the volatile
+    # `enabled` toggle (General settings page, ui-fork-unrestricted) is on.
+    # See packages/prompt/unrestricted-mode.
+    - id: unrestricted-mode
+      name: '@deepseek-ai/dsh-unrestricted-mode'
+
     # fork(superpowers): automatic superpowers bootstrap — loads the bundled
     # `using-superpowers` skill on every fresh user prompt, as if the user had
     # typed /using-superpowers. The volatile `autoUsingSuperpowers` toggle is
@@ -483,6 +497,10 @@
     # fork(superpowers): the auto-superpowers toggle on the General settings page.
     - id: ui-fork-auto-skills
       name: '@deepseek-ai/dsh-client-ui-fork-auto-skills'
+
+    # fork(prompt): the unrestricted-mode toggle on the General settings page.
+    - id: ui-fork-unrestricted
+      name: '@deepseek-ai/dsh-client-ui-fork-unrestricted'
 
     # fork(mcp-ui): the MCP Servers settings page over the mcpManager remote.
     - id: ui-settings-mcp

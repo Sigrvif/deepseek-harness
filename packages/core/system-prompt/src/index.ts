@@ -136,6 +136,8 @@ export interface PromptAssembly extends PromptPresentation {
 const SECTION_ORDERS = {
   HARNESS_IDENTITY: -1000,
   DEPLOYMENT_PERSONA_PREFIX: 0,
+  // fork(context-editor): delivery-style guidance sits directly behind the persona (2.4.28).
+  DELIVERY_STYLE: 250,
   PLAN_POLICY: 500,
   TEAM_POLICY: 600,
   PTC_ONLY: 800,
@@ -457,7 +459,8 @@ export class SystemPrompt extends Service {
       this.section({
         name: 'harness:identity',
         order: this.getSectionOrder('HARNESS_IDENTITY'),
-        text: 'You are an AI agent powered by DeepSeek Harness.',
+        // fork(context-editor): the model-facing identity names the fork (2.4.28).
+        text: 'You are an AI agent powered by DSLRH.',
       })
     }
     this.section({

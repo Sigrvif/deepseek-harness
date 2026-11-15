@@ -57,6 +57,7 @@ Main namespaces the UI writes:
 | `subagent-model-selection-settings` | Allowed child models |
 | `session-log-deepseek` | Session-log upload (default **off**) |
 | `superpowers-bootstrap` | Auto Superpowers toggle |
+| `unrestricted-mode` | Unrestricted mode toggle (default **off**) |
 | `ui-theme`, `locale`, `ui-chat`, … | Appearance and behavior preferences |
 | `agent-preset-registry` | Default agent preset |
 

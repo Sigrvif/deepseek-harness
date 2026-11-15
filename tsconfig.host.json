@@ -381,6 +381,9 @@
     { "path": "./packages/context/context-fold" },
     // fork(job-sentinel): still-running job reports.
     { "path": "./packages/jobs/job-sentinel" },
+    // fork(prompt): delivery-style + unrestricted-mode prompt content (2.4.28).
+    { "path": "./packages/prompt/delivery-style" },
+    { "path": "./packages/prompt/unrestricted-mode" },
     { "path": "./packages/session/session-log-deepseek" },
     { "path": "./packages/session/session-persistence-jsonl" },
     { "path": "./packages/session/session-projection" },

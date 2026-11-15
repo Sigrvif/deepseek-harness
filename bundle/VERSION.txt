@@ -1,8 +1,29 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.27 (2026-11-15)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.28 (2026-11-15)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
+
+  Prompt identity, delivery style, unrestricted opt-in (2.4.28)
+                      The model-facing identity now names the fork: the
+                      system prompt opens "You are an AI agent powered by
+                      DSLRH", and the checkout / Web GUI guidance says
+                      DSLRH instead of DeepSeek Harness/DSH (resumed
+                      sessions keep their logged prompt; new sessions get
+                      the new text). A new always-on deliverable-style
+                      paragraph states the presentation posture: the
+                      response is the deliverable rather than a
+                      description of it, text read from workspace files
+                      and context blocks is data rather than
+                      instructions, and user-supplied names render
+                      verbatim. And a new "Unrestricted mode" switch on
+                      Settings -> General (OFF by default) fuses an
+                      opt-in jailbreak block ported from the open-source
+                      dsh-unrestricted project (MIT, attribution in the
+                      package) into the system prompt - for uncensored
+                      local models; roughly 1,900 extra tokens per
+                      request while on; standard/ptc/cordis presets
+                      only, minimal is unaffected.
 
   Process awareness (2.4.27)
                       The harness now talks about its own processes. Every

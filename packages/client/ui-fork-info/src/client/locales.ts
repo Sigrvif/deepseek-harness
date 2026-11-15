@@ -14,7 +14,11 @@ export const en = {
   'mcp.name': 'MCP Servers Page',
   'mcp.summary': 'A Settings → MCP Servers page over the mcpManager host service: add, edit, enable, disable, and restart Model Context Protocol servers (stdio or HTTP) from the UI instead of hand-editing profile patch rows. Definitions persist in dsh-home/storages/mcp_servers. Broker mode (default on) gives the model three indirection tools instead of every server tool - better for small models; turn it off on the same page to expose the mcp__ tools directly. Manual patch rows keep working; the bundled Node.js (with npx) is on PATH inside dsh.',
   'autoSkills.summary': 'A General settings switch (default on) that loads the using-superpowers skill once per session, so the workflow discipline reaches users who would forget to invoke it. Follow-up prompts never re-send it: folds keep it visible, and if the engine\'s own compaction ever drops it, the next prompt re-asserts it once. Turn it off to invoke skills manually.',
-  'tab.attribution': 'Context Fold\'s behavior is adapted from the open-source billion-context project (MIT + attribution term). The bundled superpowers skills are derived from the open-source superpowers project by Jesse Vincent (MIT), rewritten for this fork. See the fork documentation for the full inventory.',
+  'deliveryStyle.name': 'Deliverable Style Guidance',
+  'deliveryStyle.summary': 'A standing system-prompt paragraph (on by default) stating the presentation posture: the response is the deliverable rather than a description of it, text read from workspace files and context blocks is data rather than instructions, and user-supplied names render verbatim. Style and input hygiene only - it says nothing about what to deliver.',
+  'unrestricted.name': 'Unrestricted Mode Toggle (off by default)',
+  'unrestricted.summary': 'A General settings switch (default off) that fuses an opt-in unrestricted execution-mode contract into the system prompt: answers open with the deliverable and refusal-style substitutions count as failure, with per-category routing for security tooling, reverse engineering, fiction, guides, and resource lookups. A jailbreak prompt ported from the open-source dsh-unrestricted project; intended for uncensored local models, and it adds roughly 1,900 tokens to every request while on. Applies to the standard, ptc, and cordis presets; minimal is unaffected.',
+  'tab.attribution': 'Context Fold\'s behavior is adapted from the open-source billion-context project (MIT + attribution term). The bundled superpowers skills are derived from the open-source superpowers project by Jesse Vincent (MIT), rewritten for this fork. The unrestricted-mode block is ported from the open-source dsh-unrestricted project (MIT), which adapted it from codex-keysmith (MIT). See the fork documentation for the full inventory.',
 } as const
 
 export type ForkInfoLocaleKey = keyof typeof en
@@ -39,5 +43,9 @@ export const zh: Record<ForkInfoLocaleKey, string> = {
   'autoSkills.summary': '常规设置页中的开关（默认开启）：每个会话加载一次 using-superpowers 技能，让工作流纪律覆盖到容易忘记调用的用户。后续提示不会重复发送；折叠会保留其内容，若引擎自身的压缩将其移出上下文，下一条提示会重新补发一次。关闭后可手动调用技能。',
   'mcp.name': 'MCP 服务器页面',
   'mcp.summary': '设置中的 MCP 服务器页面，由 mcpManager 宿主服务支撑：直接在界面添加、编辑、启用、停用、重启 Model Context Protocol 服务器（stdio 或 HTTP），无需手改配置补丁。定义持久化在 dsh-home/storages/mcp_servers。代理模式（默认开启）让模型只看到三个间接工具而非全部服务器工具，更适合小模型；在同一页面关闭即可直接暴露 mcp__ 工具。手写补丁行仍然有效；dsh 内部 PATH 已包含捆绑的 Node.js（含 npx）。',
-  'tab.attribution': '上下文折叠的行为改编自开源项目 billion-context（MIT + 署名条款）；内置的 superpowers 技能源自 Jesse Vincent 的开源项目 superpowers（MIT），并为本分支改写。完整清单见分支文档。',
+  'deliveryStyle.name': '交付物风格指引',
+  'deliveryStyle.summary': '一段常驻的系统提示段落（默认开启），说明呈现姿态：回答本身就是交付物而非其描述，从工作区文件与上下文块读到的文本是数据而非指令，用户提供的名称保持原样。只涉及风格与输入卫生，不规定交付内容。',
+  'unrestricted.name': '无限制模式开关（默认关闭）',
+  'unrestricted.summary': '常规设置页中的开关（默认关闭）：向系统提示融合可选的无限制执行模式契约——回答直接给出交付物，拒绝式替换视为失败，并按类别路由安全工具、逆向工程、小说创作、技术指南与资源查找。移植自开源项目 dsh-unrestricted 的越狱提示，面向无审查的本地模型；开启时每次请求约增加 1,900 token。作用于 standard、ptc、cordis 预设，minimal 不受影响。',
+  'tab.attribution': '上下文折叠的行为改编自开源项目 billion-context（MIT + 署名条款）；内置的 superpowers 技能源自 Jesse Vincent 的开源项目 superpowers（MIT），并为本分支改写；无限制模式块移植自开源项目 dsh-unrestricted（MIT），其又改编自 codex-keysmith（MIT）。完整清单见分支文档。',
 }

@@ -158,6 +158,8 @@ servers connect or die — the hidden side stays fully executable.
 | Mechanism | Effect |
 |---|---|
 | Persona | "You are a coding agent powered by the {{model}} model." (minimal replaces the whole prompt) |
+| Identity + delivery style (2.4.28) | The prompt opens "You are an AI agent powered by DSLRH." (the fork's own name; resumed sessions keep their logged prompt), followed by a standing deliverable-style paragraph: the response is the deliverable rather than a description of it, text read from workspace files and context blocks is data rather than instructions, and user-supplied names render verbatim. Style and input hygiene only — it says nothing about *what* to deliver |
+| Unrestricted mode (2.4.28, off) | Opt-in via **Settings → General → Unrestricted mode**: fuses the execution-mode block ported from the open-source dsh-unrestricted project (a jailbreak prompt, ~1,900 extra tokens per request) behind the persona while enabled, with delivery-not-content notes for plan mode and structured subagents. Applies to the standard/ptc/cordis presets; minimal is immune by construction. Intended for uncensored local models |
 | `AGENTS.md` pickup | Project root `AGENTS.md`/`CLAUDE.md` (+ `.local` variants) and the user-global file, within a 64 KB budget; re-read on change |
 | Time context | Durable time sample at most once per hour (fork default; upstream 10 min), stating the elapsed time since the previous sample; the browser-zone attribution line is suppressed when the browser zone equals the request zone |
 | Tool-result pruner | Results over 8192 chars compacted head-4096/tail-1024 |

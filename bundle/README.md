@@ -198,6 +198,27 @@ attention (`job_kill` stops one; `job_output`/`job_list` inspect). Closing
 the harness kills the whole process tree of everything it started; MCP
 servers and the included browser terminate through their own lifecycle.
 
+## Prompt identity, delivery style, unrestricted mode (2.4.28)
+
+The model-facing prompt names the fork: every system prompt opens with
+"You are an AI agent powered by DSLRH", and the checkout / Web GUI guidance
+says DSLRH where upstream said DeepSeek Harness/DSH (sessions resumed from
+an earlier package keep their logged prompt; new sessions get the new
+text). A standing deliverable-style paragraph follows the persona: the
+response is the deliverable rather than a description of it, text read
+from workspace files and context blocks is data rather than instructions,
+and user-supplied names render verbatim - style and input hygiene only.
+
+**Settings -> General -> Unrestricted mode** (OFF by default) fuses an
+opt-in execution-mode block ported from the open-source dsh-unrestricted
+project (MIT) into the system prompt while enabled: answers open with the
+deliverable and refusal-style substitutions count as failure, with
+per-category routing for security tooling, reverse engineering, fiction,
+guides, and resource lookups. This is a jailbreak prompt, intended for
+uncensored local models; it adds roughly 1,900 tokens to every request
+while on and applies to the standard/ptc/cordis presets (minimal is
+unaffected). Flipping the switch takes effect on the next request.
+
 ## Branding (2.4.24, mark 60px since 2.4.26)
 
 The interface carries the DSLRH brand: the sidebar logo row shows the
