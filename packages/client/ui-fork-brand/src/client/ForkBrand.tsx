@@ -9,7 +9,7 @@
 import type { ReactNode } from 'react'
 import { useClipboardCopy } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SidebarBrandMarkOwnerProps } from '@deepseek-ai/dsh-client-ui-sidebar/client'
-import dslrhMark from './assets/dslrh-smol.png'
+import dslrhMark from './assets/dslrh-mark.png'
 import css from './ForkBrand.module.css'
 
 /** The fork title as the name plate renders it. */

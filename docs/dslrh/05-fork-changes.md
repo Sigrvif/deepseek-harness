@@ -77,4 +77,7 @@ context menu (path copying, chat references) and made the Files tab open
 by default in every session; 2.4.23 narrowed that sidebar's opening width
 to 30% of the frame — roughly half the conversation — on wide screens;
 2.4.24 replaced the DeepSeek branding (hero greeting, sidebar logo and
-version plate, window title) with the DSLRH mark and fork version.
+version plate, window title) with the DSLRH mark and fork version; 2.4.25
+sized that mark up to 40px (upstream geometry capped it at 24, where the
+artwork read as a blur) and let the brand rows grow so the plate's version
+line shows in full instead of clipping.

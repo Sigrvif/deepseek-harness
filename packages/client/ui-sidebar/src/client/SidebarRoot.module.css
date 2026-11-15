@@ -272,11 +272,15 @@
 
 /* Mark and name are independent slots; the shell owns their shared baseline,
    spacing, and height so either occupant can vary in width. */
+/* fork(context-editor): the rows grow with their occupants (min-height) — the
+   DSLRH mark renders at 40 and the name plate stacks two lines; the fixed
+   24px boxes clipped both under the .brand button's overflow guard. Upstream
+   fallbacks fill exactly 24px and are unaffected. */
 .brandIdentity {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 24px;
+  min-height: 24px;
   min-width: 0;
 }
 
@@ -292,7 +296,8 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-  height: 24px;
+  /* fork(context-editor): min-height — see the .brandIdentity hunk above. */
+  min-height: 24px;
   font-size: 18px;
   font-weight: 600;
   line-height: 24px;

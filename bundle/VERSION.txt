@@ -1,4 +1,19 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.24 (2026-11-15)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.25 (2026-11-15)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+      + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
+
+Fork changes on top of upstream 0.2.2-alpha.2:
+
+  Brand plate legibility (2.4.25)
+                      The sidebar's DSLRH mark renders at 40px - upstream
+                      geometry capped it at 24px, where the detailed
+                      artwork read as a blur - and the brand rows grow
+                      with their contents, so the name plate's version
+                      line shows in full instead of being clipped in
+                      half. The plate also switches to the higher-
+                      resolution artwork file.
+
+  DSLRH branding (2.4.24)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 

@@ -291,10 +291,13 @@ export function SidebarRoot({
           const identity = (
             <span className={css.brandIdentity} aria-hidden="true">
               <span className={css.brandMark}>
-                {renderSlot('sidebar.brand.mark', { size: 24 }, {
+                {/* fork(context-editor): the expanded row requests a 40px mark so
+                    the DSLRH artwork reads at its intended size (the rail's 28px
+                    toggle keeps 24). */}
+                {renderSlot('sidebar.brand.mark', { size: 40 }, {
                   fallback: buildVersion === undefined
-                    ? <FishLogo size={24} />
-                    : <span className={css.copyVersion} data-copy-version onClick={copyVersion(buildVersion)}><FishLogo size={24} /></span>,
+                    ? <FishLogo size={40} />
+                    : <span className={css.copyVersion} data-copy-version onClick={copyVersion(buildVersion)}><FishLogo size={40} /></span>,
                 })}
               </span>
               <span className={css.brandName}>
