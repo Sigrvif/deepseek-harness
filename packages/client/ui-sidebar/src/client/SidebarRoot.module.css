@@ -230,7 +230,10 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  height: 60px;
+  /* fork(context-editor): 60px → 76px so the expanded row's 60px mark fits
+     inside the 8px vertical padding instead of clipping against the row's
+     overflow guard (the collapsed rail keeps its own 36px height). */
+  height: 76px;
   padding: 8px 0 8px 8px;
   margin-bottom: 0;
   box-sizing: border-box;

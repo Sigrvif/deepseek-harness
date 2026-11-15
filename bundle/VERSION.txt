@@ -1,4 +1,18 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.25 (2026-11-15)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.26 (2026-11-15)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+      + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
+
+Fork changes on top of upstream 0.2.2-alpha.2:
+
+  Mark size to 60px (2.4.26)
+                      The sidebar's DSLRH mark renders at 60px - 2.4.25's
+                      40px still read too small to identify the character
+                      at normal zoom (the whale tail was lost). The logo
+                      row grows to 76px so the mark fits inside its
+                      padding instead of clipping; the collapsed rail
+                      keeps its small mark.
+
+  Brand plate legibility (2.4.25)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 

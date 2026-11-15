@@ -183,10 +183,10 @@ messages. Gentle nudges prompt the model as context grows. Adapted from the
 open-source billion-context project (MIT + attribution) and re-built
 natively on dsh's session log — no proxy involved.
 
-## Branding (2.4.24, plate enlarged 2.4.25)
+## Branding (2.4.24, mark 60px since 2.4.26)
 
 The interface carries the DSLRH brand: the sidebar logo row shows the
-DSLRH mark at 40px with the name plate **DSLRH** + fork version in full
+DSLRH mark at 60px with the name plate **DSLRH** + fork version in full
 (click copies the version), the window title reads **DSLRH**, and the
 blank-session greeting upstream renders in the middle of the screen is
 removed.

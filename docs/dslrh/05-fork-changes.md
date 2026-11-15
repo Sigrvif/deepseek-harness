@@ -78,6 +78,7 @@ by default in every session; 2.4.23 narrowed that sidebar's opening width
 to 30% of the frame — roughly half the conversation — on wide screens;
 2.4.24 replaced the DeepSeek branding (hero greeting, sidebar logo and
 version plate, window title) with the DSLRH mark and fork version; 2.4.25
-sized that mark up to 40px (upstream geometry capped it at 24, where the
-artwork read as a blur) and let the brand rows grow so the plate's version
-line shows in full instead of clipping.
+let the brand rows grow so the plate's version line shows in full instead
+of clipping, and sized the mark up from the upstream 24px cap (to 40px,
+then 60px in 2.4.26 with the logo row grown to fit — the artwork only
+reads as the character at that size).

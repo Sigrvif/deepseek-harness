@@ -86,8 +86,10 @@ describe('SidebarRoot.module.css', () => {
 
   it('keeps full-size brand artwork with a compact mark-to-name gap', () => {
     expect(declarations('.brandIdentity')?.get('gap')).toBe('5px')
-    // fork(context-editor): the rows grow with their occupants (the 40px mark,
-    // the two-line plate) instead of clipping under the brand button's guard.
+    // fork(context-editor): the rows grow with their occupants (the 60px mark,
+    // the two-line plate) instead of clipping under the brand button's guard;
+    // the logo row is tall enough for the 60px mark inside its 8px padding.
+    expect(declarations('.logoRow')?.get('height')).toBe('76px')
     expect(declarations('.brandIdentity')?.get('min-height')).toBe('24px')
     expect(declarations('.brandName')?.get('min-height')).toBe('24px')
     expect(declarations('.brandName')?.get('line-height')).toBe('24px')

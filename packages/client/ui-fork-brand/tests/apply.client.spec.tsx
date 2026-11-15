@@ -45,13 +45,13 @@ describe('ui-fork-brand browser plugin', () => {
   })
 
   it('renders the DSLRH mark and name plate with the fork version', async () => {
-    // 40 mirrors the expanded row's request (the rail still asks for 24).
-    const { container } = render(<ForkBrandMark size={40} />)
+    // 60 mirrors the expanded row's request (the rail still asks for 24).
+    const { container } = render(<ForkBrandMark size={60} />)
     const mark = container.querySelector('img')
     expect(mark).not.toBeNull()
     expect(mark!.getAttribute('alt')).toBe('')
-    expect(mark!.getAttribute('width')).toBe('40')
-    expect(mark!.getAttribute('height')).toBe('40')
+    expect(mark!.getAttribute('width')).toBe('60')
+    expect(mark!.getAttribute('height')).toBe('60')
     cleanup()
 
     const writeText = vi.fn().mockResolvedValue(undefined)
