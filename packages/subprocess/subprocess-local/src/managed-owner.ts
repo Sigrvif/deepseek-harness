@@ -28,6 +28,8 @@ export interface ManagedProcessLaunch {
   control?: Duplex | undefined
   direct: Promise<SubprocessOutcome>
   owner: BoundProcessOwner
+  /** fork(context-editor): the spawned command's OS pid, when known. */
+  directPid?: number | undefined
 }
 
 /**

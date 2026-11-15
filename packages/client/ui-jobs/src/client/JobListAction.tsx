@@ -398,6 +398,30 @@ export function JobListAction({ sessionId, useJobs, watchRows, observe, killJob,
     if (visibleCount === 0 && open) setOpen(false)
   }, [visibleCount, open])
 
+  // fork(context-editor): the popover opens itself while live work exists —
+  // when the roster first shows a live row (including at mount, where the
+  // roster arrives asynchronously) and on every live count rise from zero, so
+  // a freshly started background command is visible without hunting for the
+  // trigger. Closing it while work is live (trigger, outside pointer, Escape)
+  // suppresses that rise's auto-open until everything has settled once,
+  // which re-arms it.
+  const hadLive = useRef(false)
+  const autoOpenArmed = useRef(true)
+  const wasOpen = useRef(false)
+  const liveNow = liveRows.length > 0
+  useEffect(() => {
+    if (!liveNow) {
+      autoOpenArmed.current = true
+    } else if (!hadLive.current && autoOpenArmed.current) {
+      setOpen(true)
+    }
+    hadLive.current = liveNow
+  }, [liveNow])
+  useEffect(() => {
+    if (!open && wasOpen.current && liveNow) autoOpenArmed.current = false
+    wasOpen.current = open
+  }, [open, liveNow])
+
   // An expanded row that left the list (owner disposal) folds its panel.
   useEffect(() => {
     if (expandedKey !== undefined && !rows.some(job => String(job.id) === expandedKey)) {

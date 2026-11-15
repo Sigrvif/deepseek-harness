@@ -183,6 +183,21 @@ messages. Gentle nudges prompt the model as context grows. Adapted from the
 open-source billion-context project (MIT + attribution) and re-built
 natively on dsh's session log — no proxy involved.
 
+## Background jobs (2.4.27)
+
+Every shell command the model runs is registered as a **job** and shows in
+the session header's **Jobs** button — a popover with a live count badge,
+per-job status, the command, its OS pid, the elapsed runtime, and a
+two-press stop button per running row. While anything is live the popover
+opens itself; closing it keeps it closed until the work settles and
+something new starts. The model also hears about its own survivors: a
+periodic report (at most once per twenty minutes, and only when the model
+is already working — never waking an idle session) lists still-running
+background jobs so a forgotten `sleep` or dev server comes back to its
+attention (`job_kill` stops one; `job_output`/`job_list` inspect). Closing
+the harness kills the whole process tree of everything it started; MCP
+servers and the included browser terminate through their own lifecycle.
+
 ## Branding (2.4.24, mark 60px since 2.4.26)
 
 The interface carries the DSLRH brand: the sidebar logo row shows the

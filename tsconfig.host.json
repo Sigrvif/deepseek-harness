@@ -379,6 +379,8 @@
     { "path": "./packages/context/context-editor" },
     // fork(context-fold): model-driven context folds.
     { "path": "./packages/context/context-fold" },
+    // fork(job-sentinel): still-running job reports.
+    { "path": "./packages/jobs/job-sentinel" },
     { "path": "./packages/session/session-log-deepseek" },
     { "path": "./packages/session/session-persistence-jsonl" },
     { "path": "./packages/session/session-projection" },

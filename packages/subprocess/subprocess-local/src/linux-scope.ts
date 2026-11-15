@@ -720,5 +720,7 @@ export function launchLinuxScope(
     control: controlPipe(child, spec.stdio.control),
     direct,
     owner,
+    // fork(context-editor): publish the spawned command's pid on the launch.
+    directPid: child.pid,
   }
 }

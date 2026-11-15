@@ -193,6 +193,12 @@ export interface ShellProcess {
   /** Terminating signal name, when signal-killed. */
   signal: NodeJS.Signals | null
   /**
+   * fork(context-editor): the spawned command's OS pid, when the runtime
+   * published one. Informational (reports and the jobs UI); termination
+   * still rides {@link ShellProcess.kill}.
+   */
+  readonly pid?: number | undefined
+  /**
    * Resolves when the underlying process settles (never rejects — provider
    * rejection settles as `killed` with a stage-neutral error on stderr).
    */

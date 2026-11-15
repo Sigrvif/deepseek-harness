@@ -1,4 +1,27 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.26 (2026-11-15)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.27 (2026-11-15)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+      + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
+
+Fork changes on top of upstream 0.2.2-alpha.2:
+
+  Process awareness (2.4.27)
+                      The harness now talks about its own processes. Every
+                      shell command the model runs was already registered
+                      as a job and killable from the session header's Jobs
+                      popover, and closing the harness killed the whole
+                      process tree - both upstream behaviors, now verified.
+                      New in this package: job rows carry the OS pid (live
+                      in the popover), the popover opens itself while work
+                      is live, and a new job-sentinel plugin gives the
+                      model a periodic report of its still-running
+                      background jobs (kind, command, pid, runtime, job id)
+                      - one line at most per twenty minutes, only when the
+                      model is already working, never waking an idle
+                      session. A forgotten sleep or dev server now comes
+                      back to the model's attention instead of leaking
+                      silently.
+
+  Mark size to 60px (2.4.26)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 

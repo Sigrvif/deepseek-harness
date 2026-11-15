@@ -141,6 +141,7 @@
     "@deepseek-ai/dsh-compaction-tool-result-pruner": "workspace:*",
     "@deepseek-ai/dsh-context-editor": "workspace:*",
     "@deepseek-ai/dsh-context-fold": "workspace:*",
+    "@deepseek-ai/dsh-job-sentinel": "workspace:*",
     "@deepseek-ai/dsh-mcp-manager": "workspace:*",
     "@deepseek-ai/dsh-superpowers-bootstrap": "workspace:*",
     "@deepseek-ai/dsh-superpowers-skills": "workspace:*",

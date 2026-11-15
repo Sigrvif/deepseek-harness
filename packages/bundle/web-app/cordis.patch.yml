@@ -156,6 +156,19 @@
     - id: context-fold
       name: '@deepseek-ai/dsh-context-fold'
 
+    # fork(job-sentinel): still-running job reports — when the agent steps
+    # anyway and one of its background jobs has been running for a while,
+    # one compact notice lists the survivors (kind, command, pid, runtime,
+    # job id). Never wakes an idle session; the cadence re-reports at most
+    # every minIntervalMs. See packages/jobs/job-sentinel and FORK.md.
+    - id: job-sentinel
+      name: '@deepseek-ai/dsh-job-sentinel'
+      config:
+        # Slow local models and slow same-machine processes (2.4.27): a first
+        # look after ten minutes, repeats every twenty.
+        minAgeMs: 600000
+        minIntervalMs: 1200000
+
     # fork(superpowers): automatic superpowers bootstrap — loads the bundled
     # `using-superpowers` skill on every fresh user prompt, as if the user had
     # typed /using-superpowers. The volatile `autoUsingSuperpowers` toggle is

@@ -438,6 +438,8 @@ export function bindManagedProcess(
       ...stdoutCollector !== undefined ? { stdout: stdoutCollector } : {},
       ...stderrCollector !== undefined ? { stderr: stderrCollector } : {},
     },
+    // fork(context-editor): the handle carries the spawned command's pid.
+    pid: launch.directPid,
     done,
     terminate,
     terminateForHostExit,
@@ -488,5 +490,7 @@ export function spawnSubprocess(spec: SubprocessSpawnSpec, internals: SpawnInter
     control: controlPipe(child, spec.stdio.control),
     direct,
     owner,
+    // fork(context-editor): publish the direct child's pid on the handle.
+    directPid: pid,
   }, binding)
 }

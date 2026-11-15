@@ -81,4 +81,9 @@ version plate, window title) with the DSLRH mark and fork version; 2.4.25
 let the brand rows grow so the plate's version line shows in full instead
 of clipping, and sized the mark up from the upstream 24px cap (to 40px,
 then 60px in 2.4.26 with the logo row grown to fit — the artwork only
-reads as the character at that size).
+reads as the character at that size); 2.4.27 taught the harness to talk
+about its own processes — jobs carry their OS pid (shown live in the jobs
+popover), the popover opens itself while work is live, and a new
+job-sentinel plugin gives the model a periodic, non-waking report of its
+still-running background jobs so a forgotten `sleep` or dev server comes
+back to its attention.

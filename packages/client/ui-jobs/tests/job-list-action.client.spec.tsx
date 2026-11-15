@@ -49,8 +49,11 @@ function props(
   return { sessionId: SESSION, useJobs, watchRows, observe, killJob, t } as JobListActionProps
 }
 
+/** Open the list unless the fork's live auto-open already did. */
 function openList(): void {
-  fireEvent.click(screen.getAllByRole('button')[0]!)
+  if (screen.queryByRole('list', { name: zh['list.aria'] }) === null) {
+    fireEvent.click(screen.getAllByRole('button')[0]!)
+  }
 }
 
 describe('JobListAction visibility', () => {
@@ -292,7 +295,9 @@ describe('JobListAction observation', () => {
     const trigger = screen.getByRole('button', { name: '1 个后台任务运行中' })
     const anchor = vi.spyOn(trigger.parentElement!, 'getBoundingClientRect')
       .mockReturnValue(new DOMRect(344, 40, 180, 28))
-    fireEvent.click(trigger)
+    // fork(context-editor): the live list is already open at mount; the anchor
+    // spy lands after that first positioning, so re-fire the resize listener.
+    fireEvent(window, new Event('resize'))
     const list = screen.getByRole('list', { name: zh['list.aria'] })
     const menu = list.closest<HTMLElement>('[data-menu-material]')
     expect(menu?.parentElement).toBe(document.body)
@@ -317,7 +322,9 @@ describe('JobListAction observation', () => {
     render(<JobListAction {...props([outputJob()])} />)
     const trigger = screen.getByRole('button', { name: '1 个后台任务运行中' })
     vi.spyOn(trigger.parentElement!, 'getBoundingClientRect').mockReturnValue(new DOMRect(4, 540, 180, 28))
-    fireEvent.click(trigger)
+    // fork(context-editor): the live list is already open at mount; re-fire
+    // the resize listener after the anchor spy lands (see the test above).
+    fireEvent(window, new Event('resize'))
     const menu = screen.getByRole('list', { name: zh['list.aria'] })
       .closest<HTMLElement>('[data-menu-material]')
     expect(menu?.style.left).toBe('12px')
@@ -330,7 +337,7 @@ describe('JobListAction observation', () => {
     const { container, unmount } = render(<JobListAction {...props([outputJob()], observe)} />)
     const trigger = screen.getByRole('button', { name: '1 个后台任务运行中' })
     trigger.focus()
-    fireEvent.click(trigger)
+    openList()
     const list = screen.getByRole('list', { name: zh['list.aria'] })
     expect(container.contains(list)).toBe(false)
     const row = screen.getByRole('button', {
@@ -598,4 +605,49 @@ it.each([1, 2, 5, 21])('renders count-independent Russian labels for %i jobs', (
   expect(screen.getByRole('button', { name: `Фоновые задачи выполняются: ${count}` })).toBeDefined()
   view.rerender(<JobListAction {...props(jobs.map(item => ({ ...item, status: 'completed', finishedAt: 1_700_000_003_000 })))} t={translate} />)
   expect(screen.getByRole('button', { name: `Фоновые задачи: ${count}` })).toBeDefined()
+})
+
+describe('JobListAction live auto-open (fork)', () => {
+  it('opens at mount when the session already has live work', () => {
+    render(<JobListAction {...props([job()])} />)
+    expect(screen.getByRole('list', { name: zh['list.aria'] })).toBeDefined()
+  })
+
+  it('stays closed for a settled-only roster and opens on click', () => {
+    render(<JobListAction {...props([
+      job({ status: 'completed', finishedAt: 1_700_000_003_000 }),
+    ])} />)
+    expect(screen.queryByRole('list', { name: zh['list.aria'] })).toBeNull()
+    openList()
+    expect(screen.getByRole('list', { name: zh['list.aria'] })).toBeDefined()
+  })
+
+  it('opens when the live count rises from zero after mount', () => {
+    const { rerender } = render(<JobListAction {...props([])} />)
+    expect(screen.queryByRole('list', { name: zh['list.aria'] })).toBeNull()
+    rerender(<JobListAction {...props([job()])} />)
+    expect(screen.getByRole('list', { name: zh['list.aria'] })).toBeDefined()
+  })
+
+  it('a user dismissal suppresses the next rise until everything settled once', () => {
+    const { rerender } = render(<JobListAction {...props([job()])} />)
+    // Auto-opened at mount; the user closes it while work is still live.
+    fireEvent.click(screen.getAllByRole('button')[0]!)
+    expect(screen.queryByRole('list', { name: zh['list.aria'] })).toBeNull()
+    // Another job starting does not fight the dismissal.
+    rerender(<JobListAction {...props([
+      job(),
+      job({ id: 'bash-2' as JobView['id'], label: 'second' }),
+    ])} />)
+    expect(screen.queryByRole('list', { name: zh['list.aria'] })).toBeNull()
+    // Everything settles (the control stays for the settled tail), which re-arms.
+    rerender(<JobListAction {...props([
+      job({ status: 'completed', finishedAt: 1_700_000_003_000 }),
+      job({ id: 'bash-2' as JobView['id'], label: 'second', status: 'completed', finishedAt: 1_700_000_004_000 }),
+    ])} />)
+    expect(screen.queryByRole('list', { name: zh['list.aria'] })).toBeNull()
+    // The next live rise opens again.
+    rerender(<JobListAction {...props([job({ id: 'bash-3' as JobView['id'], label: 'third' })])} />)
+    expect(screen.getByRole('list', { name: zh['list.aria'] })).toBeDefined()
+  })
 })

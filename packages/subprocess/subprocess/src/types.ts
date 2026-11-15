@@ -169,6 +169,13 @@ export interface SubprocessCollectedOutputs {
 export interface SubprocessHandle {
   /** The child's stdin, present iff spawned with `stdin: 'pipe'`. */
   readonly stdin: Writable | undefined
+  /**
+   * fork(context-editor): the spawned command's OS pid, when the provider
+   * published one (absent for a spawn that failed before a process existed).
+   * Informational only — termination still rides {@link terminate} so the
+   * containment range stays authoritative.
+   */
+  readonly pid?: number | undefined
   /** The child's raw stdout, present iff spawned with `stdout: 'pipe'`. */
   readonly stdout: Readable | undefined
   /** The child's raw stderr, present iff spawned with `stderr: 'pipe'`. */

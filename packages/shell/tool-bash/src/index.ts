@@ -272,10 +272,14 @@ export function apply(ctx: Context, config: Config = {}): void {
         toolCall: { callId: exec.callId, rootCallId: exec.rootCallId },
         ...exec.agent ? { owner: exec.agent.id } : {},
         output: processSources(() => proc),
-        run: () => {
+        run: (job) => {
           const hooks = processJob(
             async (signal) => {
               proc = await ctx.shell.execute({ ...spec, signal })
+              // fork(context-editor): publish the OS pid as the job's live
+              // progress line — it renders in the jobs popover and feeds the
+              // job-sentinel still-running notices.
+              if (proc.pid !== undefined) job.updateProgress(`pid ${proc.pid}`)
               return proc
             },
             started => processOutcome(started, escalationModes),

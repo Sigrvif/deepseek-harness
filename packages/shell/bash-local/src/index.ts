@@ -303,6 +303,8 @@ export class LocalBashExecutor extends ShellExecutor {
       status: 'running',
       exitCode: null,
       signal: null,
+      // fork(context-editor): surface the spawned command's OS pid.
+      pid: running?.pid,
       observed: { stdout: collected.stdout, stderr: observedStderr },
       done: spawned.then((outcome) => {
         // Any signal termination is killed, including a command signaling itself.
