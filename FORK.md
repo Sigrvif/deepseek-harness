@@ -169,11 +169,17 @@ real-filesystem probe, non-ENOENT propagation, no fallback tier on darwin). New 
   keep their inherited route) and are NOT inherited by session forks.
 - Re-installing the old third-party "Agent Context Editor" plugin alongside
   this feature is unsupported (two editors would fight over the same sessions).
-- `pnpm run doc-sync` is NOT green in this fork and is not part of its
-  baseline (the 10 build gates + per-package suites are). The fork packages
-  lack several upstream documentation-standard artifacts (package README
-  Summaries / model-experience sections, persistence catalog entries,
-  export-JSDoc audits, design docs with bilingual counterparts beyond the
-  recorded exclusions in `scripts/translation-pairing.manifest.json`).
-  Closing that debt is optional future work; upstream doc gates may also
-  flag fork packages after a merge.
+- The bilingual-pairing gate IS green in this fork: every fork-authored
+  English-only document (fork package READMEs, `docs/dslrh/`, the fork
+  design docs, `bundle/` + `bundle-tools/` READMEs) is recorded as an
+  explicit exclusion in `scripts/translation-pairing.manifest.json` — the
+  fork is maintained by a single English-only author, so no reviewed
+  Chinese counterpart exists for its additions. A contributor who
+  translates one of them removes the exclusion and records the pair.
+  The rest of `pnpm run doc-sync` is NOT green and is not part of the
+  fork's baseline (the 10 build gates + per-package suites are): fork
+  packages still lack several upstream documentation-standard artifacts
+  (package README Summaries / model-experience sections, persistence
+  catalog entries, export-JSDoc audits). Closing that debt is optional
+  future work; upstream doc gates may also flag fork packages after a
+  merge.
