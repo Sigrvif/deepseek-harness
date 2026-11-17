@@ -344,7 +344,8 @@ describe('workspace-changes without a repository', () => {
     await settle(ctx, session)
     await mutate(ctx, session, 1, 'write', { file_path: 'existing.txt', content: 'after\nmore\n' }, 'existing.txt', () => writeFile(join(cwd, 'existing.txt'), 'after\nmore\n'))
     await mutate(ctx, session, 1, 'edit', { file_path: 'existing.txt', old_string: 'more', new_string: 'more\nagain' }, 'existing.txt', () => writeFile(join(cwd, 'existing.txt'), 'after\nmore\nagain\n'))
-    // Shell edits and scratch files under a temporary root stay out; a file elsewhere outside the workspace counts.
+    // fork(workspace-changes): the shell-edited file is listed by the turn's watcher; scratch files
+    // under a temporary root stay out, and a file elsewhere outside the workspace counts (2.4.29).
     await writeFile(join(cwd, 'shell.txt'), 'shell\nedited\n')
     toolCall(session, 1, 'bash', { command: 'x' })
     await mutate(ctx, session, 1, 'write', { file_path: join(tmpdir(), 'scratch.txt'), content: 'scratch\n' }, join(tmpdir(), 'scratch.txt'), () => Promise.resolve())
@@ -354,13 +355,15 @@ describe('workspace-changes without a repository', () => {
     await mutate(ctx, session, 1, 'write', { file_path: 'mixed.txt', content: 'tool\n' }, 'mixed.txt', () => writeFile(join(cwd, 'mixed.txt'), 'tool\n'))
     await writeFile(join(cwd, 'mixed.txt'), 'tool\nshell\n')
     toolCall(session, 1, 'bash', { command: 'x' })
+    await new Promise((resolve) => { setTimeout(resolve, 300) })
     endTurn(session, 1)
     await settle(ctx, session)
     expect(changes(ctx, session)).toEqual([{
-      turn: 1, cwd, total: 3, added: 7, deleted: 1,
+      turn: 1, cwd, total: 4, added: 7, deleted: 1,
       files: [
         { path: 'existing.txt', display: 'existing.txt', added: 3, deleted: 1 },
         { path: 'mixed.txt', display: 'mixed.txt', added: 2, deleted: 0 },
+        { path: 'shell.txt', display: 'shell.txt', added: 0, deleted: 0, observed: true },
         { path: join(await realpath(outside), 'note.txt'), display: `~/${outside.slice(homedir().length + 1)}/note.txt`, added: 2, deleted: 0 },
       ],
     }])
@@ -482,7 +485,7 @@ describe('workspace-changes without a repository', () => {
 })
 
 describe('workspace-changes without git', () => {
-  it('summarizes file-tool edits only, even inside a repository, and reports the absence once', async () => {
+  it('summarizes file-tool edits and watcher-observed shell writes, even inside a repository, and reports the absence once', async () => {
     const cwd = await repository()
     const { ctx } = await boot()
     vi.spyOn(ctx.subprocess, 'resolveExecutable').mockRejectedValue(new Error('git: not found'))
@@ -494,11 +497,21 @@ describe('workspace-changes without git', () => {
       await writeFile(join(cwd, `${turn}.txt`), 'x\n')
       toolCall(session, turn, 'bash', { command: 'x' })
       if (turn === 2) await mutate(ctx, session, turn, 'write', { file_path: 'w.txt', content: 'w\n' }, 'w.txt', () => writeFile(join(cwd, 'w.txt'), 'w\n'))
+      await new Promise((resolve) => { setTimeout(resolve, 300) })
       endTurn(session, turn)
       await settle(ctx, session)
     }
-    expect(changes(ctx, session)).toEqual([{ turn: 2, cwd, total: 1, added: 1, deleted: 0, files: [{ path: 'w.txt', display: 'w.txt', added: 1, deleted: 0 }] }])
-    expect(await ctx.workspaceChanges.diff(session.id, announcedSeq(session), 0, signal)).toMatchObject({ kind: 'text', before: false, after: true, hunks: [{ lines: ['+w'] }] })
+    // fork(workspace-changes): the shell writes are the watcher's, listed without counts (2.4.29).
+    expect(changes(ctx, session)).toEqual([
+      { turn: 1, cwd, total: 1, added: 0, deleted: 0, files: [{ path: '1.txt', display: '1.txt', added: 0, deleted: 0, observed: true }] },
+      {
+        turn: 2, cwd, total: 2, added: 1, deleted: 0, files: [
+          { path: '2.txt', display: '2.txt', added: 0, deleted: 0, observed: true },
+          { path: 'w.txt', display: 'w.txt', added: 1, deleted: 0 },
+        ],
+      },
+    ])
+    expect(await ctx.workspaceChanges.diff(session.id, announcedSeq(session), 1, signal)).toMatchObject({ kind: 'text', before: false, after: true, hunks: [{ lines: ['+w'] }] })
     expect(info).toHaveBeenCalledTimes(1)
     expect(info.mock.calls[0]![0]).toContain('git is unavailable')
   })
@@ -530,5 +543,78 @@ describe('workspace-changes without git', () => {
       expect(info).toHaveBeenCalledTimes(probe.available ? 0 : 1)
       await ctx.fiber.dispose()
     }
+  })
+})
+
+// fork(workspace-changes): the turn watcher covers writes the snapshots cannot see (2.4.29).
+describe('workspace-changes turn watcher', () => {
+  it('lists repository-free shell writes — created, changed, removed — without counts and serves no comparison', async () => {
+    const cwd = await scratchDir('dsh-workspace-changes-watch-', cleanups)
+    await writeFile(join(cwd, 'note.txt'), 'before\n')
+    await writeFile(join(cwd, 'gone.txt'), 'gone\n')
+    const { ctx } = await boot()
+    const session = ctx.sessions.create(SessionId('watch'), { meta: { cwd } })
+    startTurn(session, 1)
+    await settle(ctx, session)
+    await writeFile(join(cwd, 'made.txt'), 'made\n')
+    await writeFile(join(cwd, 'note.txt'), 'before\nafter\n')
+    await rm(join(cwd, 'gone.txt'))
+    await new Promise((resolve) => { setTimeout(resolve, 300) })
+    toolCall(session, 1, 'bash', { command: 'x' })
+    endTurn(session, 1)
+    await settle(ctx, session)
+    const [recorded] = changes(ctx, session)
+    expect(recorded).toMatchObject({ turn: 1, cwd, total: 3, added: 0, deleted: 0 })
+    expect(recorded!.files).toEqual([
+      { path: 'gone.txt', display: 'gone.txt', added: 0, deleted: 0, observed: true },
+      { path: 'made.txt', display: 'made.txt', added: 0, deleted: 0, observed: true },
+      { path: 'note.txt', display: 'note.txt', added: 0, deleted: 0, observed: true },
+    ])
+    const seq = announcedSeq(session)
+    expect(await ctx.workspaceChanges.diff(session.id, seq, 2, signal)).toEqual({ kind: 'observed', path: 'note.txt', display: 'note.txt' })
+  })
+
+  it('lists ignored-path shell writes inside a repository, skips noise and profile-excluded directories', async () => {
+    const cwd = await repository()
+    // Ignored directories keep the snapshots and the watcher alike away from dependency churn.
+    await writeFile(join(cwd, '.gitignore'), '.env*\nnode_modules\nsecrets\n')
+    git(cwd, 'add', '-A')
+    git(cwd, 'commit', '-q', '-m', 'ignore noise')
+    const { ctx } = await boot({ watchExclusions: ['secrets'] })
+    const session = ctx.sessions.create(SessionId('watched-repo'), { meta: { cwd } })
+    startTurn(session, 1)
+    await settle(ctx, session)
+    await mkdir(join(cwd, 'node_modules'), { recursive: true })
+    await writeFile(join(cwd, 'node_modules', 'pkg.txt'), 'dep\n')
+    await mkdir(join(cwd, 'secrets'))
+    await writeFile(join(cwd, 'secrets', 'key.txt'), 'key\n')
+    await writeFile(join(cwd, '.env'), 'A=1\n')
+    await writeFile(join(cwd, 'tracked.txt'), 't\n')
+    await new Promise((resolve) => { setTimeout(resolve, 300) })
+    toolCall(session, 1, 'bash', { command: 'x' })
+    endTurn(session, 1)
+    await settle(ctx, session)
+    const [recorded] = changes(ctx, session)
+    expect(recorded!.files).toEqual([
+      { path: '.env', display: '.env', added: 0, deleted: 0, observed: true },
+      { path: 'tracked.txt', display: 'tracked.txt', added: 1, deleted: 0 },
+    ])
+    const seq = announcedSeq(session)
+    expect(await ctx.workspaceChanges.diff(session.id, seq, 0, signal)).toEqual({ kind: 'observed', path: '.env', display: '.env' })
+    expect(await ctx.workspaceChanges.diff(session.id, seq, 1, signal)).toMatchObject({ kind: 'text', hunks: [{ lines: ['+t'] }] })
+  })
+
+  it('watches nothing when disabled', async () => {
+    const cwd = await scratchDir('dsh-workspace-changes-unwatched-', cleanups)
+    const { ctx } = await boot({ watchEnabled: false })
+    const session = ctx.sessions.create(SessionId('unwatched'), { meta: { cwd } })
+    startTurn(session, 1)
+    await settle(ctx, session)
+    await writeFile(join(cwd, 'raw.txt'), 'raw\n')
+    await new Promise((resolve) => { setTimeout(resolve, 300) })
+    toolCall(session, 1, 'bash', { command: 'x' })
+    endTurn(session, 1)
+    await settle(ctx, session)
+    expect(changes(ctx, session)).toEqual([])
   })
 })

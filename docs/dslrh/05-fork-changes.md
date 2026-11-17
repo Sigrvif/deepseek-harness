@@ -94,4 +94,14 @@ user-supplied names stay verbatim) plus the opt-in, off-by-default
 "Unrestricted mode" General-settings switch that fuses the execution-mode
 block ported from the open-source dsh-unrestricted project (a jailbreak
 prompt, ~1,900 extra tokens per request while on) for uncensored local
-models.
+models. 2.4.29 made the per-turn files-changed summary actually earn its
+keep — the changed-files card was gated behind the developer-tools
+preference (default off), so a finished task silently showed no summary at
+all; the card now always renders when a turn changed files. The summary's
+blind spot closed too: a new turn watcher records command-line writes the
+git snapshots cannot see (edited ignored paths, and any shell write in a
+working directory outside a repository) and lists them without counts as
+"detected", with dependency/build directories never scanned. And the model
+now sees the same data: a new change-report plugin appends a compact
+files-changed notice to the conversation at the session's next step (on by
+default; a General-settings switch turns it off for small models).

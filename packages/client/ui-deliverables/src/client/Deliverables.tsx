@@ -23,7 +23,6 @@ const COLLAPSED_PRESENTED_COUNT = 4
 export interface DeliverablesInjected {
   hooks: {
     changesDiff: ObservableSnapshot<ReturnType<ChangesDiffStore['state']['getSnapshot']>>
-    showCodeDiff: ObservableSnapshot<boolean>
     presentedOpen: ObservableSnapshot<ReturnType<PresentedOpenController['state']['getSnapshot']>>
     presentedHost: ObservableSnapshot<ReturnType<PresentedOpenController['host']['getSnapshot']>>
     changesSummary: ObservableSnapshot<ReturnType<ChangesSummaryStore['state']['getSnapshot']>>
@@ -67,16 +66,17 @@ export function DeliverablesTail(props: PropsRuntime<'conversation.chat.turnTail
  */
 export function Deliverables({
   matched, openFile, t, sessionId, useSessions, openPresented, openChangesReview, usePresentedOpen, usePresentedHost,
-  useChangesDiff, loadChangesDiff, useChangesSummary, reloadPresentedHost, loadChangesSummary, useShowCodeDiff, renderSlot,
+  useChangesDiff, loadChangesDiff, useChangesSummary, reloadPresentedHost, loadChangesSummary, renderSlot,
 }: Pick<TurnTailOwnerProps, 'openFile'> & {
   matched: DeliverablesMatch
 } & PropsLocale<typeof NS> & Pick<SessionStandardProps, 'sessionId'> & Pick<GlobalStandardProps, 'useSessions'> & InjectFace<DeliverablesInjected> & PropsRenderSlots<'deliverables.file.actions'>) {
   const [expanded, setExpanded] = useState(false)
-  const showCodeDiff = useShowCodeDiff(value => value)
   const cwd = useSessions(state => state.byId[sessionId]?.cwd)
   const states = usePresentedOpen(value => value)
   const host = usePresentedHost(value => value)
-  const announced = showCodeDiff ? matched.changes : null
+  // fork(deliverables): the summary card renders whenever the Host announced changes —
+  // the developer-tools preference must not hide it (2.4.29).
+  const announced = matched.changes
   const summary = useChangesSummary(value => announced === null ? undefined : value[changesSummaryUrl(sessionId, announced.seq)])
   useEffect(() => {
     if (announced !== null && summary === undefined) void loadChangesSummary(sessionId, announced.seq)

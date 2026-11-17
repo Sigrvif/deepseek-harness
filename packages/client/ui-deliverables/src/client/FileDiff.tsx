@@ -151,6 +151,8 @@ export function FileDiff({ state, split, wrap, retry, t }: {
   }
   if (state.kind === 'binary') return <p className={css.status}>{t('diff.binary')}</p>
   if (state.kind === 'oversized') return <p className={css.status}>{t('diff.oversized')}</p>
+  // fork(deliverables): a watcher-observed file has no earlier copy to compare (2.4.29).
+  if (state.kind === 'observed') return <p className={css.status}>{t('diff.observed')}</p>
   const hasAdditions = state.hunks.some(hunk => hunk.lines.some(line => line.startsWith('+')))
   const hasDeletions = state.hunks.some(hunk => hunk.lines.some(line => line.startsWith('-')))
   const oneSided = hasAdditions !== hasDeletions

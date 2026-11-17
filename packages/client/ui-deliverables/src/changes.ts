@@ -51,10 +51,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  */
 export function isChangedFile(value: unknown): value is WorkspaceChangedFile {
   if (!isRecord(value)) return false
-  const { path, display, added, deleted, binary, oversized } = value
+  // fork(deliverables): an observed file carries no counts — the watcher saw the write (2.4.29).
+  const { path, display, added, deleted, binary, oversized, observed } = value
   return typeof path === 'string' && path.length > 0 && typeof display === 'string' && display.length > 0
     && Number.isSafeInteger(added) && Number.isSafeInteger(deleted)
     && (binary === undefined || binary === true) && (oversized === undefined || oversized === true)
+    && (observed === undefined || observed === true)
 }
 
 /**

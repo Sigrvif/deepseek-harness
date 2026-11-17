@@ -147,6 +147,8 @@
     { "path": "./packages/client/ui-fork-auto-skills" },
     // fork(prompt): the unrestricted-mode General settings row.
     { "path": "./packages/client/ui-fork-unrestricted" },
+    // fork(deliverables): the change-report toggle row (2.4.29).
+    { "path": "./packages/client/ui-fork-change-report" },
     { "path": "./packages/client/ui-model-selection" },
     { "path": "./packages/client/ui-agent-preset" },
     { "path": "./packages/client/ui-permission-presets" },

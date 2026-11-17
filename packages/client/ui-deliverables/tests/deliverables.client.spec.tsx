@@ -48,7 +48,6 @@ function openProps(controller = new PresentedOpenController(), summaries = new C
     renderSlot: renderFileActions,
     useChangesDiff: <T,>(select: (state: ReturnType<typeof diffs.state.getSnapshot>) => T): T => select(diffs.state.getSnapshot()),
     loadChangesDiff: vi.fn((...args: Parameters<ChangesDiffStore['load']>) => diffs.load(...args)),
-    useShowCodeDiff: <T,>(select: (value: boolean) => T): T => select(true),
     useSessions: <T,>(select: (state: SessionListState) => T): T => select(sessions),
     reloadPresentedHost: vi.fn(() => controller.loadHost()),
     useChangesSummary: <T,>(select: (state: ReturnType<typeof summaries.state.getSnapshot>) => T): T =>
@@ -515,11 +514,13 @@ describe('produced-file Turn data', () => {
   })
 })
 
-const changedFile = (display: string, added = 1, deleted = 0, extra: { binary?: true; oversized?: true; path?: string } = {}) =>
+const changedFile = (display: string, added = 1, deleted = 0,
+  extra: { binary?: true; oversized?: true; observed?: true; path?: string } = {}) =>
   ({
     path: extra.path ?? display, display, added, deleted,
     ...extra.binary === true ? { binary: true as const } : {},
     ...extra.oversized === true ? { oversized: true as const } : {},
+    ...extra.observed === true ? { observed: true as const } : {},
   })
 
 const changesEvent = (seq: number, turn = 1) => at(seq, 'workspace/changes', { turn })
@@ -600,17 +601,25 @@ describe('ChangedFiles card', () => {
     expect(view.queryByRole('list')).toBeNull()
   })
 
-  it('hides changed files and avoids summary reads when developer tools are off', () => {
+  // fork(deliverables): a watcher-observed file lists 'detected' without counts (2.4.29).
+  it('keeps the observed status in a header and a row without counts', () => {
+    const multi = servedStore({
+      turn: 1,
+      files: [changedFile('.env', 0, 0, { observed: true }), changedFile('src/a.ts', 2, 1)],
+      total: 2, added: 2, deleted: 1,
+    })
+    const { view } = renderCard(new PresentedOpenController(), en, { changes, presented: [] }, multi)
+    expect(view.getByText(en['changes.observed'])).toBeTruthy()
+    expect(view.getAllByText('+2').length).toBeGreaterThan(0)
+    const rows = view.container.querySelectorAll('[class*="counts"]')
+    expect([...rows].some(row => row.textContent === en['changes.observed'])).toBe(true)
+  })
+
+  // fork(deliverables): the card no longer answers to the developer-tools preference (2.4.29).
+  it('renders changed files with no developer-tools input at all', () => {
     const props = openProps(new PresentedOpenController(), servedStore())
-    const base = { ...props, matched: { changes, presented: [] }, openFile: vi.fn(), sessionId: SessionId('child-session'), t: makeTranslate(en) }
-    const off = { useShowCodeDiff: <T,>(select: (enabled: boolean) => T): T => select(false) }
-    const view = render(<Deliverables {...base} {...off} />)
-    expect(view.container.querySelector('[data-changed-files]')).toBeNull()
-    expect(props.loadChangesSummary).not.toHaveBeenCalled()
-    view.rerender(<Deliverables {...base} />)
+    const view = render(<Deliverables {...props} matched={{ changes, presented: [] }} openFile={vi.fn()} sessionId={SessionId('child-session')} t={makeTranslate(en)} />)
     expect(view.container.querySelector('[data-changed-files]')).not.toBeNull()
-    view.rerender(<Deliverables {...base} {...off} />)
-    expect(view.container.querySelector('[data-changed-files]')).toBeNull()
   })
 
   it('reads the announced summary once and renders nothing while it loads, when it is gone, or when it lists no file', async () => {

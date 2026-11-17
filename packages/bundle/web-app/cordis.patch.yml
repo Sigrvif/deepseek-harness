@@ -429,6 +429,13 @@
     - id: workspace-changes
       name: '@deepseek-ai/dsh-workspace-changes'
 
+    # fork(deliverables): reports each announced turn's changed files to the
+    # model at its next step (never waking an idle session). ON by default;
+    # flippable while running via the volatile `enabled` toggle on the General
+    # settings page (ui-fork-change-report). See packages/deliverables/change-report.
+    - id: change-report
+      name: '@deepseek-ai/dsh-change-report'
+
 
     - id: ui-workspace
       name: '@deepseek-ai/dsh-client-ui-workspace'
@@ -501,6 +508,10 @@
     # fork(prompt): the unrestricted-mode toggle on the General settings page.
     - id: ui-fork-unrestricted
       name: '@deepseek-ai/dsh-client-ui-fork-unrestricted'
+
+    # fork(deliverables): the change-report toggle on the General settings page.
+    - id: ui-fork-change-report
+      name: '@deepseek-ai/dsh-client-ui-fork-change-report'
 
     # fork(mcp-ui): the MCP Servers settings page over the mcpManager remote.
     - id: ui-settings-mcp

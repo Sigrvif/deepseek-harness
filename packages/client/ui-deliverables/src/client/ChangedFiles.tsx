@@ -59,9 +59,11 @@ export function ChangedFiles({ changes, cwd, openReview, t, sessionId, useChange
         ? t('changes.title', { count: String(changes.total) })
         : t('changes.singleTitle', { name: basename(singleFile.path) })}</span>
       <span className={css.stat}>
-        <span className={css.statCounts}>{singleFile?.binary === true ? t('changes.binary')
-          : singleFile?.oversized === true ? t('changes.oversized')
-            : <Counts t={t} added={changes.added} deleted={changes.deleted} />}</span>
+        {/* fork(deliverables): an observed file lists 'detected' where its counts would be (2.4.29). */}
+        <span className={css.statCounts}>{singleFile?.observed === true ? t('changes.observed')
+          : singleFile?.binary === true ? t('changes.binary')
+            : singleFile?.oversized === true ? t('changes.oversized')
+              : <Counts t={t} added={changes.added} deleted={changes.deleted} />}</span>
         <span className={css.previewHint}>{t('presented.preview')}</span>
       </span>
     </span>
@@ -86,9 +88,10 @@ export function ChangedFiles({ changes, cwd, openReview, t, sessionId, useChange
               onClick={() => { openReview(index) }}>
               <span className={css.path}>{file.display}</span>
               <span className={css.counts}>
-                {file.binary === true ? t('changes.binary')
-                  : file.oversized === true ? t('changes.oversized')
-                    : <Counts t={t} added={file.added} deleted={file.deleted} />}
+                {file.observed === true ? t('changes.observed')
+                  : file.binary === true ? t('changes.binary')
+                    : file.oversized === true ? t('changes.oversized')
+                      : <Counts t={t} added={file.added} deleted={file.deleted} />}
               </span>
             </button>} />
           <span id={`${pathDescriptionId}-${index}`} hidden>{resolveWorkspacePath(cwd, file.path)}</span>

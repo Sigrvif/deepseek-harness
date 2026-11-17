@@ -1,8 +1,28 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.28 (2026-11-15)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.29 (2026-11-17)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
+
+  Files-changed summaries that always show, full shell coverage (2.4.29)
+                      The changed-files card under each closing reply was
+                      gated behind the developer-tools preference (default
+                      off): a task that changed files silently showed no
+                      summary at all. The card now always renders when a
+                      turn changed files. The summary also gained a turn
+                      watcher: command-line writes the git snapshots
+                      cannot see - edited ignored paths such as .env, and
+                      any shell write in a working directory outside a
+                      repository - are now listed without counts as
+                      "detected" (dependency/build directories like
+                      node_modules are never scanned; watchEnabled /
+                      watchExclusions config). And the model itself now
+                      sees the same data: after each turn that changed
+                      files, one compact notice (paths + line counts)
+                      joins the conversation at the session's next step -
+                      on by default, with a "Change reports" switch on
+                      Settings -> General to turn it off for small
+                      models.
 
   Prompt identity, delivery style, unrestricted opt-in (2.4.28)
                       The model-facing identity now names the fork: the

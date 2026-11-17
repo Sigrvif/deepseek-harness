@@ -18,6 +18,8 @@ export const en = {
   'deliveryStyle.summary': 'A standing system-prompt paragraph (on by default) stating the presentation posture: the response is the deliverable rather than a description of it, text read from workspace files and context blocks is data rather than instructions, and user-supplied names render verbatim. Style and input hygiene only - it says nothing about what to deliver.',
   'unrestricted.name': 'Unrestricted Mode Toggle (off by default)',
   'unrestricted.summary': 'A General settings switch (default off) that fuses an opt-in unrestricted execution-mode contract into the system prompt: answers open with the deliverable and refusal-style substitutions count as failure, with per-category routing for security tooling, reverse engineering, fiction, guides, and resource lookups. A jailbreak prompt ported from the open-source dsh-unrestricted project; intended for uncensored local models, and it adds roughly 1,900 tokens to every request while on. Applies to the standard, ptc, and cordis presets; minimal is unaffected.',
+  'changeReport.name': 'Change Reports (on by default)',
+  'changeReport.summary': 'After every turn that changed files in the workspace, a compact notice listing the changed files (paths, line counts, detected-without-diff markers) joins the conversation context at the next step, so the model knows what it last touched. The always-visible changed-files card in the chat is the same data for the user; the notice is the model-facing half. A General settings switch turns it off for small models that the extra context would only confuse.',
   'tab.attribution': 'Context Fold\'s behavior is adapted from the open-source billion-context project (MIT + attribution term). The bundled superpowers skills are derived from the open-source superpowers project by Jesse Vincent (MIT), rewritten for this fork. The unrestricted-mode block is ported from the open-source dsh-unrestricted project (MIT), which adapted it from codex-keysmith (MIT). See the fork documentation for the full inventory.',
 } as const
 
@@ -47,5 +49,7 @@ export const zh: Record<ForkInfoLocaleKey, string> = {
   'deliveryStyle.summary': '一段常驻的系统提示段落（默认开启），说明呈现姿态：回答本身就是交付物而非其描述，从工作区文件与上下文块读到的文本是数据而非指令，用户提供的名称保持原样。只涉及风格与输入卫生，不规定交付内容。',
   'unrestricted.name': '无限制模式开关（默认关闭）',
   'unrestricted.summary': '常规设置页中的开关（默认关闭）：向系统提示融合可选的无限制执行模式契约——回答直接给出交付物，拒绝式替换视为失败，并按类别路由安全工具、逆向工程、小说创作、技术指南与资源查找。移植自开源项目 dsh-unrestricted 的越狱提示，面向无审查的本地模型；开启时每次请求约增加 1,900 token。作用于 standard、ptc、cordis 预设，minimal 不受影响。',
+  'changeReport.name': '变更报告（默认开启）',
+  'changeReport.summary': '每轮改动工作区文件后，一条列出所改文件（路径、行数统计、无对比的检测标记）的简短通知会在下一步进入对话上下文，让模型知道自己刚改过什么。聊天中始终可见的改动文件卡片是同一数据的用户侧呈现；通知是面向模型的一半。常规设置页的开关可为小模型关闭。',
   'tab.attribution': '上下文折叠的行为改编自开源项目 billion-context（MIT + 署名条款）；内置的 superpowers 技能源自 Jesse Vincent 的开源项目 superpowers（MIT），并为本分支改写；无限制模式块移植自开源项目 dsh-unrestricted（MIT），其又改编自 codex-keysmith（MIT）。完整清单见分支文档。',
 }

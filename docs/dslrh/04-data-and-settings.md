@@ -58,6 +58,7 @@ Main namespaces the UI writes:
 | `session-log-deepseek` | Session-log upload (default **off**) |
 | `superpowers-bootstrap` | Auto Superpowers toggle |
 | `unrestricted-mode` | Unrestricted mode toggle (default **off**) |
+| `change-report` | Change reports toggle — per-turn files-changed notices to the model (default **on**) |
 | `ui-theme`, `locale`, `ui-chat`, … | Appearance and behavior preferences |
 | `agent-preset-registry` | Default agent preset |
 

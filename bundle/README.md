@@ -198,6 +198,19 @@ attention (`job_kill` stops one; `job_output`/`job_list` inspect). Closing
 the harness kills the whole process tree of everything it started; MCP
 servers and the included browser terminate through their own lifecycle.
 
+## Files-changed summaries: always visible, shell-covered, model-reported (2.4.29)
+
+The changed-files card under each closing reply was gated behind the
+developer-tools preference (default off) — a finished task silently showed
+no summary at all. The card now always renders when a turn changed files.
+A per-turn watcher closes the summary's blind spot: command-line writes the
+git snapshots cannot see (ignored paths like `.env`, any shell write in a
+working directory outside a repository) are listed without counts as
+"detected"; dependency/build directories are never scanned. And a new
+change-report plugin tells the model what it just touched: one compact
+files-changed notice per changed turn, injected at the session's next step
+(on by default; **Settings → General → Change reports** turns it off).
+
 ## Prompt identity, delivery style, unrestricted mode (2.4.28)
 
 The model-facing prompt names the fork: every system prompt opens with

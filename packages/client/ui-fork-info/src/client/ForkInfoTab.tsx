@@ -41,6 +41,10 @@ export function ForkInfoTab({ t }: PropsLocale<'forkInfo'>) {
         <h3 className={css.name}>{t('unrestricted.name')}</h3>
         <p className={css.summary}>{t('unrestricted.summary')}</p>
       </section>
+      <section className={css.entry}>
+        <h3 className={css.name}>{t('changeReport.name')}</h3>
+        <p className={css.summary}>{t('changeReport.summary')}</p>
+      </section>
       <p className={css.attribution}>{t('tab.attribution')}</p>
     </div>
   )

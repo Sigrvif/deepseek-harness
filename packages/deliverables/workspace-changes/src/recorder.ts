@@ -1,5 +1,5 @@
 /** Per-Session turn recorder: snapshots, captures around file-tool edits, the turn-end diff, and the records kept until disposal. */
-import { mkdtemp, readFile, realpath, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, realpath, rm, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, relative, resolve } from 'node:path'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
@@ -9,6 +9,8 @@ import {
   blobText, diffTrees, gitlinkPaths, ignoredPaths, locateGitWorkspace, snapshotTree, treeBlob, type GitRunner, type GitWorkspace,
 } from './git.ts'
 import { canonicalPath, compareDisplay, displayPathOf, durablePathOf, isInside, isTemporaryPath, temporaryRoots, toPosix } from './paths.ts'
+// fork(workspace-changes): the turn watcher lists writes the snapshots cannot see (2.4.29).
+import { TurnWatcher } from './watch.ts'
 import type { WorkspaceChangedFile, WorkspaceChangesSummary, WorkspaceFileDiff } from './types.ts'
 
 /** Facts shared by every recorder of one plugin instance. */
@@ -23,6 +25,8 @@ export interface RecorderEnvironment {
   maxFileBytes: number
   /** Milliseconds a line comparison may run before it degrades to whole-file replacement. */
   diffTimeoutMs: number
+  /** fork(workspace-changes): watching facts for the per-turn watcher (2.4.29). */
+  watch: { enabled: boolean; exclusions: readonly string[] }
   /** Failure reporter; a failed turn records nothing and the next turn retries. */
   warn: (message: string) => void
 }
@@ -57,7 +61,7 @@ type ContentSource =
  * turn was recorded, or the two sides to read and compare when asked for.
  */
 type FileSources =
-  | { refusal: 'binary' | 'oversized' }
+  | { refusal: 'binary' | 'oversized' | 'observed' }
   | { refusal?: undefined; before: ContentSource; after: ContentSource }
 
 /** A served summary with the content sources of its listed files, index-aligned with `summary.files`. */
@@ -76,6 +80,8 @@ interface TurnState {
   baseline: Baseline | null | 'failed'
   /** Content of each file-tool-mutated path before the turn's first mutation of it, by canonical absolute path. */
   readonly captures: Map<string, Capture>
+  /** fork(workspace-changes): the turn's watcher, ended by its record attempt or by disposal (2.4.29). */
+  watcher: TurnWatcher | undefined
   lastToolResultSeq: number
   /** Log length when the latest record attempt started; `end()` skips a turn already attempted after its last tool result. */
   attemptedAfterSeq: number
@@ -84,7 +90,10 @@ interface TurnState {
 }
 
 function freshState(turn: number): TurnState {
-  return { turn, baseline: null, captures: new Map(), lastToolResultSeq: -1, attemptedAfterSeq: -1, recordedAfterSeq: -1 }
+  return {
+    turn, baseline: null, captures: new Map(), watcher: undefined,
+    lastToolResultSeq: -1, attemptedAfterSeq: -1, recordedAfterSeq: -1,
+  }
 }
 
 /** A listed file with the sources of its two sides. */
@@ -102,7 +111,9 @@ const OVERSIZED = Symbol('oversized')
  * with the summaries. Tool execution waits for pending work so a snapshot or
  * capture never races a mutation. A working directory outside any repository,
  * or a Host without git, gets no snapshot; its summary lists the files the file
- * tools changed.
+ * tools changed. fork(workspace-changes): each turn also watches the working
+ * directory, so writes the snapshots cannot see — ignored paths, repository-free
+ * working directories — are listed without counts (2.4.29).
  */
 export class TurnRecorder {
   private chain: Promise<void> = Promise.resolve()
@@ -134,6 +145,14 @@ export class TurnRecorder {
     void this.enqueue(async (signal) => {
       try {
         this.paths ??= { cwd: await realpath(this.cwd), home: await canonicalPath(homedir()), temporaryRoots: await temporaryRoots() }
+        // fork(workspace-changes): watch the working directory for the turn, so ignored-path
+        // and repository-free writes reach the summary even without a baseline (2.4.29).
+        if (this.env.watch.enabled) {
+          state.watcher = await TurnWatcher.start(this.paths.cwd, {
+            exclusions: this.env.watch.exclusions,
+            excludedPaths: [await this.scratchDir()],
+          })
+        }
         const repository = await this.locate(this.paths.cwd, signal)
         if (repository === null) return
         const tree = await snapshotTree(repository.git, repository.workspace, signal)
@@ -244,6 +263,8 @@ export class TurnRecorder {
     this.lifetime.abort()
     this.records.clear()
     await this.chain
+    // fork(workspace-changes): a turn whose record never ran still has its watcher closed (2.4.29).
+    await this.state.watcher?.dispose()
     if (this.scratch !== undefined) await rm(await this.scratch, { recursive: true, force: true })
   }
 
@@ -300,6 +321,9 @@ export class TurnRecorder {
   private async record(state: TurnState, signal: AbortSignal): Promise<void> {
     const paths = this.paths
     const { baseline } = state
+    // fork(workspace-changes): the turn's watcher ends with its record attempt (2.4.29).
+    const watched: ReadonlyMap<string, 'add' | 'change' | 'unlink'> = state.watcher === undefined ? new Map() : await state.watcher.stop()
+    state.watcher = undefined
     if (paths === undefined || baseline === 'failed' || state.lastToolResultSeq < 0) return
     state.attemptedAfterSeq = state.lastToolResultSeq
     // Without a snapshot the working directory itself bounds the workspace.
@@ -325,10 +349,13 @@ export class TurnRecorder {
     const captured = [...state.captures.keys()].filter(absolute => !listed.has(absolute))
     const workTreePath = (absolute: string): string => toPosix(relative(root, absolute))
     let inWorkspace = captured.filter(absolute => isInside(root, absolute))
-    if (baseline !== null && inWorkspace.length > 0) {
+    // fork(workspace-changes): watcher paths the snapshots and captures do not cover (2.4.29).
+    let observed = [...watched].filter(([absolute]) => !listed.has(absolute) && !state.captures.has(absolute) && isInside(root, absolute))
+    if (baseline !== null && (inWorkspace.length > 0 || observed.length > 0)) {
       // Nested repositories and submodules are gitlinks: their contents never enter the summary.
       const gitlinks = await gitlinkPaths(baseline.git, baseline.workspace, signal)
       inWorkspace = inWorkspace.filter(absolute => ![...gitlinks].some(link => isInside(resolve(root, link), absolute)))
+      observed = observed.filter(([absolute]) => ![...gitlinks].some(link => isInside(resolve(root, link), absolute)))
     }
     // A snapshot covers every workspace file except the ignored ones; without one, every file-tool edit counts.
     const uncoveredInWorkspace = baseline === null
@@ -344,6 +371,23 @@ export class TurnRecorder {
       const after = await captureFile(absolute, join(await this.scratchDir(), 'captures'), this.env.maxFileBytes)
       if (after === undefined || sameCapture(before, after)) continue
       listed.set(absolute, await this.compared(paths, root, absolute, before, after))
+    }
+    // fork(workspace-changes): watcher-only writes — ignored paths or repository-free
+    // working directories — are listed without counts. A path the turn created that is
+    // gone again by the record is a write's transient companion (a rename's source
+    // name) or a created-then-removed file, and never a change (2.4.29).
+    for (const [absolute, firstEvent] of observed) {
+      if (firstEvent === 'add') {
+        try {
+          if ((await stat(absolute)).isFile() !== true) continue
+        } catch {
+          continue
+        }
+      }
+      listed.set(absolute, {
+        file: changedFile(paths, root, absolute, { added: 0, deleted: 0, binary: false, observed: true }),
+        sources: { refusal: 'observed' },
+      })
     }
     const sorted = [...listed.values()].sort((a, b) => compareDisplay(a.file, b.file))
     // An empty list after an earlier in-turn record supersedes that record.
@@ -387,7 +431,7 @@ function isBinary(capture: Capture): boolean {
   return capture.kind === 'file' && capture.binary
 }
 
-interface Counts { added: number; deleted: number; binary: boolean; oversized?: boolean }
+interface Counts { added: number; deleted: number; binary: boolean; oversized?: boolean; observed?: true }
 
 function changedFile({ cwd, home }: Paths, root: string, absolute: string, counts: Counts): WorkspaceChangedFile {
   return {
@@ -397,5 +441,6 @@ function changedFile({ cwd, home }: Paths, root: string, absolute: string, count
     deleted: counts.deleted,
     ...counts.binary ? { binary: true as const } : {},
     ...counts.oversized === true ? { oversized: true as const } : {},
+    ...counts.observed === true ? { observed: true as const } : {},
   }
 }

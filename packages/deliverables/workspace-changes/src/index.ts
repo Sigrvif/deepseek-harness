@@ -7,6 +7,10 @@
  * number; summaries and comparisons are served through the `workspaceChanges`
  * service until the Session is disposed. Outside a git repository, or without
  * git, the summary lists file-tool edits only.
+ * fork(workspace-changes): each turn also watches the working directory, so
+ * command-line writes the snapshots cannot see — ignored paths, repository-free
+ * working directories — are listed without counts, with dependency and build
+ * directories never scanned (2.4.29).
  */
 import { homedir, tmpdir } from 'node:os'
 import type { Context } from '@deepseek-ai/cordis'
@@ -18,6 +22,8 @@ import type {} from '@deepseek-ai/dsh-tools'
 import type { FsTarget } from '@deepseek-ai/dsh-fs'
 import { GitRunner } from './git.ts'
 import { TurnRecorder } from './recorder.ts'
+// fork(workspace-changes): the built-in noise directories the watcher skips (2.4.29).
+import { WATCH_NOISE_DIRECTORIES } from './watch.ts'
 import type { WorkspaceChanges } from './types.ts'
 
 export type {
@@ -45,6 +51,13 @@ export interface Config {
   maxFileBytes: number
   /** Milliseconds a line comparison may run before it degrades to whole-file replacement. */
   diffTimeoutMs: number
+  /** fork(workspace-changes): whether each turn watches the working directory for writes the snapshots cannot see. */
+  watchEnabled: boolean
+  /**
+   * fork(workspace-changes): directory names at any depth whose writes the
+   * watcher never lists, extending the built-in noise directories.
+   */
+  watchExclusions: string[]
 }
 
 /** Schemastery validation for {@link Config}. */
@@ -54,6 +67,8 @@ export const Config: z<Config> = z.object({
   maxFiles: z.number().default(500),
   maxFileBytes: z.number().default(2 * 1024 * 1024),
   diffTimeoutMs: z.number().default(100),
+  watchEnabled: z.boolean().default(true),
+  watchExclusions: z.array(z.string()).default([]),
 })
 
 function eligible(session: Session): string | undefined {
@@ -135,6 +150,11 @@ export function apply(ctx: Context, config: Config): void {
       recorder = new TurnRecorder(session, cwd, {
         git: gitRunner(), tempRoot: tmpdir(), maxFiles: config.maxFiles,
         maxFileBytes: config.maxFileBytes, diffTimeoutMs: config.diffTimeoutMs,
+        // fork(workspace-changes): the watcher skips the built-in noise directories plus the profile's (2.4.29).
+        watch: {
+          enabled: config.watchEnabled,
+          exclusions: [...WATCH_NOISE_DIRECTORIES, ...config.watchExclusions.filter(name => name !== '')],
+        },
         warn: (message) => { ctx.logger.warn(message) },
       })
       recorders.set(session, recorder)
