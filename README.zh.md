@@ -1,6 +1,10 @@
-# DeepSeek Harness
+# DSLRH（DeepSeek Harness 分支）
 
 [English](README.md) | 中文
+
+> **DSLRH** 是 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)（基线：v0.2.2-alpha.2）的**非官方分支**，由 Shisaye 维护。
+> 新增了原生 **Context Editor**、**Context Fold**、内置 superpowers 技能、MCP 服务器管理器等——分支改动的完整清单见 [FORK.md](FORK.md)，用户文档见 [docs/dslrh/](docs/dslrh/)。
+> 本仓库**不是**官方项目：分支相关的问题与功能请求请提交到[本仓库的 Issues](https://github.com/Sigrvif/deepseek-harness/issues)；下方"社区与支持"中的渠道属于**上游官方**。
 
 DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的开源 agent harness（智能体框架）。
 
@@ -18,7 +22,9 @@ DeepSeek Harness 处于 _开发者预览_ 阶段，正在快速迭代。**未来
 
 ## 运行
 
-### 通过 `npm` 运行
+### 通过 `npm` 运行（上游官方发行版）
+
+> `npx @deepseek-ai/dsh` 安装并运行的是**上游官方**发行版，而非本分支。要运行 DSLRH，请使用下方的源码方式。
 
 安装 `Node.js`，然后运行：
 
@@ -35,7 +41,7 @@ npx @deepseek-ai/dsh web
 如需从仓库源码运行：
 
 ```sh
-git clone https://github.com/deepseek-ai/deepseek-harness.git
+git clone https://github.com/Sigrvif/deepseek-harness.git
 cd deepseek-harness
 pnpm install
 pnpm run build
@@ -46,9 +52,8 @@ pnpm dsh web
 
 ## 社区与支持
 
-- 通过 [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions) 提交反馈或 bug 报告。
-- 为你的插件仓库添加 [`dsh-plugin`](https://github.com/topics/dsh-plugin) 话题，便于被发现。
-- 欢迎加入 DeepSeek Harness 企微群！扫描下方二维码填写入群问卷，小助手会定期发送入群邀请。
+- **DSLRH（本分支）**：分支相关的问题与功能请求请提交到[本仓库的 Issues](https://github.com/Sigrvif/deepseek-harness/issues)。
+- **上游官方**：通过 [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions) 提交反馈或 bug 报告；为你的插件仓库添加 [`dsh-plugin`](https://github.com/topics/dsh-plugin) 话题，便于被发现；欢迎加入上游 DeepSeek Harness 企微群——扫描下方二维码填写入群问卷，小助手会定期发送入群邀请。
 
 <table>
   <thead>

@@ -1,6 +1,10 @@
-# DeepSeek Harness
+# DSLRH (DeepSeek Harness fork)
 
 English | [中文](README.zh.md)
+
+> **DSLRH** is an **unofficial fork** of [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) (base: v0.2.2-alpha.2), maintained by Shisaye.
+> It adds a native **Context Editor**, **Context Fold**, bundled superpowers skills, an MCP server manager, and more — the complete inventory of fork additions lives in [FORK.md](FORK.md), user documentation in [docs/dslrh/](docs/dslrh/).
+> This is not the official project: issues and feature requests for the fork belong in [this repository's issues](https://github.com/Sigrvif/deepseek-harness/issues); the channels under "Community and support" below belong to **upstream**.
 
 DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).
 
@@ -16,7 +20,9 @@ Review the [safety notice](SAFETY.md) before running the project.
 
 ## Run
 
-### Run from `npm`
+### Run from `npm` (official upstream release)
+
+> `npx @deepseek-ai/dsh` installs and runs the **official upstream** release, not this fork. To run DSLRH, use the source instructions below.
 
 Install `Node.js`, then run:
 
@@ -31,7 +37,7 @@ The command starts the Web UI at `http://127.0.0.1:3080` by default and opens it
 To run from a repository checkout:
 
 ```sh
-git clone https://github.com/deepseek-ai/deepseek-harness.git
+git clone https://github.com/Sigrvif/deepseek-harness.git
 cd deepseek-harness
 pnpm install
 pnpm run build
@@ -42,9 +48,8 @@ pnpm dsh web
 
 ## Community and support
 
-- Submit feedback or bug reports through [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions).
-- Add the [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic to your plugin repository for discoverability.
-- Join <a href="https://discord.gg/4MrtZUhpxg">DeepSeek Harness Discord community</a>.
+- **DSLRH (this fork):** report issues and request fork features in [this repository's issues](https://github.com/Sigrvif/deepseek-harness/issues).
+- **Upstream** (official project): feedback and bug reports through [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions); plugin authors can add the [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic for discoverability; community chat on the <a href="https://discord.gg/4MrtZUhpxg">DeepSeek Harness Discord</a>.
 
 ## Contributing
 

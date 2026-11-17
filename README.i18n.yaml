@@ -2,33 +2,33 @@
 # section, a hash of its English and Chinese blocks outside code blocks and generated regions.
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write README.md
-/deepseek-harness:
-  en: f68c4f080ce55ff2
-  zh: 88a76d7f7f0b260e
-/deepseek-harness/developer-preview:
+/dslrh-deepseek-harness-fork:
+  en: 9d06805fc6ee5329
+  zh: 8ec168a8940dac03
+/dslrh-deepseek-harness-fork/developer-preview:
   en: 4ef4d8a71ac143f0
   zh: 1bfc3149ba8e5543
-/deepseek-harness/run:
+/dslrh-deepseek-harness-fork/run:
   en: 4e0248e4c6474fc6
   zh: eb2fb8d78c7d6bc0
-/deepseek-harness/run/run-from-npm:
-  en: e22005cd42e6cbad
-  zh: 0f536f4208df1d60
-/deepseek-harness/run/run-from-source:
+/dslrh-deepseek-harness-fork/run/run-from-npm-official-upstream-release:
+  en: 8cd4bea955b71b29
+  zh: d6abe3c14ec19cab
+/dslrh-deepseek-harness-fork/run/run-from-source:
   en: 819e3f7c144d0d64
   zh: de815f040975dba7
-/deepseek-harness/community-and-support:
-  en: 20acf6451fdc869b
-  zh: d06246dd019ecef7
-/deepseek-harness/contributing:
+/dslrh-deepseek-harness-fork/community-and-support:
+  en: d5b9618923448b5e
+  zh: 23f4bfa7e8aac903
+/dslrh-deepseek-harness-fork/contributing:
   en: cabc2d3e9f8898bd
   zh: 83b6d238bae29ce3
-/deepseek-harness/development:
+/dslrh-deepseek-harness-fork/development:
   en: 803ca2b11b497bed
   zh: 8b4071eb0e7783ef
-/deepseek-harness/citation:
+/dslrh-deepseek-harness-fork/citation:
   en: 6704e9e5a8d49a91
   zh: 85c9cdd8d56f8e9d
-/deepseek-harness/license:
+/dslrh-deepseek-harness-fork/license:
   en: 926995344fc1c72b
   zh: c92fab5abf85932f
