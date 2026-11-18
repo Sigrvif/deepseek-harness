@@ -36,7 +36,7 @@ import { ESCALATION_TARGETS, approveEscalation, sandboxPermissionsDescription, v
 import type { SandboxPolicyService } from '@deepseek-ai/dsh-sandbox-policy'
 import type { ShellExecRequest, ShellExecSpec, ShellExecution, ShellRunResult } from '@deepseek-ai/dsh-shell'
 import { parseExitStatus } from '@deepseek-ai/dsh-shell'
-import { processJob, processOutcome, processSources, ringDelta } from './background.ts'
+import { RANGE_SETTLE_WINDOW_MS, noteSurvivingProcesses, processJob, processOutcome, processSources, ringDelta } from './background.ts'
 import { renderPwshJobRead, renderPwshPromoted, renderPwshResult } from './render.ts'
 import type { RenderablePwshResult } from './render.ts'
 
@@ -198,6 +198,8 @@ interface StartedJob {
   readonly id: JobId
   readonly process: () => ShellExecution | undefined
   readonly stopped: () => string | undefined
+  /** fork(context-editor): settles when the command's own process settles — before the managed-range hold (2.4.30). */
+  readonly commandDone: Promise<void>
 }
 
 /** Canonical background-handle properties shared by the pwsh output union. */
@@ -281,6 +283,9 @@ export function apply(ctx: Context, config: Config = {}): void {
     const startJob = (registry: JobRegistry, args: PwshToolArgs, exec: ToolExecution, spec: ShellExecSpec): StartedJob => {
       let proc: ShellExecution | undefined
       let stopped: string | undefined
+      // fork(context-editor): assigned when the registry admits the job and runs
+      // its producer — before startJob returns (2.4.30).
+      let settledCommand!: Promise<void>
       const id = registry.start({
         kind: 'pwsh',
         label: args.command,
@@ -299,6 +304,10 @@ export function apply(ctx: Context, config: Config = {}): void {
             },
             started => processOutcome(started, escalationModes),
           )
+          // fork(context-editor): once the command settles, say so on the live
+          // row while its processes clearly outlive it (2.4.30).
+          noteSurvivingProcesses(job, () => proc, hooks.commandDone)
+          settledCommand = hooks.commandDone
           return {
             done: hooks.done,
             // A kill from outside this call (the human's, a parallel job_kill)
@@ -310,7 +319,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           }
         },
       })
-      return { id, process: () => proc, stopped: () => stopped }
+      return { id, process: () => proc, stopped: () => stopped, commandDone: settledCommand }
     }
     /** Wait on a registered foreground command until it settles or the timeout passes. */
     const waitOnJob = async (registry: JobRegistry, attached: StartedJob, exec: ToolExecution, spec: ShellExecSpec) => {
@@ -328,35 +337,45 @@ export function apply(ctx: Context, config: Config = {}): void {
         if (settled.status !== 'running' && settled.status !== 'stopping') registry.remove(attached.id, owner)
         return settled
       }
-      let view: JobView
-      try {
-        view = await registry.wait(attached.id, timeoutMs, owner, exec.signal)
-      } catch {
-        // A wait on the caller's own live job rejects only for the caller's
-        // abort: the model's call is over, so the command goes with it, as
-        // under the deadline kill.
+      // fork(context-editor): the registry settles when the command's whole
+      // managed range empties (2.4.30), so a foreground call cannot read job
+      // settlement as command settlement: the call races the command's own
+      // handle against the call deadline and the caller's abort, and keeps the
+      // record alive afterwards while processes of the command remain.
+      let commandSettled = false
+      void attached.commandDone.then(() => { commandSettled = true })
+      const deadline = new Promise<'deadline'>((resolve) => { setTimeout(() => resolve('deadline'), timeoutMs) })
+      const callerAborted = new Promise<'aborted'>((resolve) => {
+        if (exec.signal.aborted) { resolve('aborted'); return }
+        exec.signal.addEventListener('abort', () => resolve('aborted'), { once: true })
+      })
+      const why = await Promise.race([attached.commandDone.then(() => 'command' as const), deadline, callerAborted])
+      if (why === 'aborted') {
+        // A wait on the caller's own live job ends for the caller's abort: the
+        // model's call is over, so the command goes with it, as under the
+        // deadline kill.
         await stop('tool call aborted')
         throw toolAborted()
       }
-      if ((view.status === 'running' || view.status === 'stopping') && attached.process() === undefined) {
-        // The wait expired while preparation still ran: nothing is running
-        // to keep, so this is the deadline's preparation timeout, with the
-        // settled empty result the executor's own deadline would have given.
-        await stop('timed out during preparation')
-        return {
-          kind: 'foreground' as const,
-          cwd: spec.workdir,
-          exitCode: null,
-          signal: null,
-          timedOut: true,
-          aborted: false,
-          timeoutMs,
-          stdout: { text: '', truncated: false },
-          stderr: { text: '', truncated: false },
-          ...spec.sandboxPolicy !== undefined ? { sandbox: { mode: spec.sandboxPolicy.mode, denied: false } } : {},
+      if (!commandSettled) {
+        if (attached.process() === undefined) {
+          // The wait expired while preparation still ran: nothing is running
+          // to keep, so this is the deadline's preparation timeout, with the
+          // settled empty result the executor's own deadline would have given.
+          await stop('timed out during preparation')
+          return {
+            kind: 'foreground' as const,
+            cwd: spec.workdir,
+            exitCode: null,
+            signal: null,
+            timedOut: true,
+            aborted: false,
+            timeoutMs,
+            stdout: { text: '', truncated: false },
+            stderr: { text: '', truncated: false },
+            ...spec.sandboxPolicy !== undefined ? { sandbox: { mode: spec.sandboxPolicy.mode, denied: false } } : {},
+          }
         }
-      }
-      if (view.status === 'running' || view.status === 'stopping') {
         // The wait timed out: the job keeps running. One consuming read seeds
         // the result with the output so far, so `job_output` continues exactly
         // where this result stops.
@@ -371,18 +390,44 @@ export function apply(ctx: Context, config: Config = {}): void {
           ),
         }
       }
-      // Settled while the call waited: the model never saw the id, so the
-      // record leaves the registry with this result. The process handle keeps
-      // the split streams and classification the foreground result needs.
-      registry.remove(attached.id, owner)
+      // The command settled while the call waited. The model never saw the id,
+      // so the record leaves the registry with this result — unless processes
+      // of the command clearly outlive it, in which case the record stays
+      // live and the producer settles it when the managed range empties.
       const process = attached.process()
       // No process was published: the starter failed before the spawn, and the
       // job's terminal detail is the failure the foreground projection would
       // have rejected with.
-      if (process === undefined) throw new Error(view.detail)
+      if (process === undefined) {
+        const view = await registry.wait(attached.id, timeoutMs, owner)
+        registry.remove(attached.id, owner)
+        throw new Error(view.detail)
+      }
       const result = await process.result()
       const stopped = attached.stopped()
-      return { ...canonicalPwshResult(result, spec.workdir), ...stopped !== undefined ? { stopped } : {} }
+      const settled = { ...canonicalPwshResult(result, spec.workdir), ...stopped !== undefined ? { stopped } : {} }
+      const range = process.rangeSettled
+      if (range === undefined) {
+        await registry.wait(attached.id, timeoutMs, owner)
+        registry.remove(attached.id, owner)
+        return settled
+      }
+      const emptied = await Promise.race([
+        range.then(() => true),
+        new Promise<boolean>((resolve) => { setTimeout(() => resolve(false), RANGE_SETTLE_WINDOW_MS) }),
+      ])
+      if (emptied) {
+        // The range is gone: collect the settlement so no completion notice
+        // repeats what this result already carries, then the record leaves
+        // with the call.
+        await registry.wait(attached.id, timeoutMs, owner)
+        registry.remove(attached.id, owner)
+        return settled
+      }
+      // fork(context-editor): processes of the command are still alive — the
+      // record stays registered (popover row, sentinel reports, job_kill)
+      // until everything the command opened is closed (2.4.30).
+      return settled
     }
     /* jscpd:ignore-end */
     return defineTool({

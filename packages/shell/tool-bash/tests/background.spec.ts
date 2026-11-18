@@ -261,7 +261,8 @@ describe('foreground commands as jobs', () => {
     expect(text(result)).toBe('done\n[stderr]\nwarn\n')
     expect(ctx.jobs.list()).toEqual([])
     // Registered at the start, settled while awaited, removed with the result.
-    expect(seen.filter(type => type !== 'output')).toEqual(['registered', 'settled:true', 'removed'])
+    // fork(context-editor): the pid progress line (2.4.27) is part of the sequence.
+    expect(seen.filter(type => type !== 'output')).toEqual(['registered', 'progress', 'settled:true', 'removed'])
   })
 
   it('a foreground command stopped from outside the call reports the reason instead of failing', async ({ task }) => {
@@ -307,7 +308,8 @@ describe('foreground commands as jobs', () => {
     expect(result.error).toMatchObject({ message: 'tool call aborted', info: { name: 'AbortError', code: TOOL_ABORTED } })
     // The kill is this call's own: the settlement was awaited (so no notice
     // follows the abort the result already carries) and the record left.
-    expect(seen).toEqual(['registered', 'stopping', 'settled:killed:signal: SIGTERM; tool call aborted:true', 'removed'])
+    // fork(context-editor): the pid progress line (2.4.27) is part of the sequence.
+    expect(seen).toEqual(['registered', 'progress', 'stopping', 'settled:killed:signal: SIGTERM; tool call aborted:true', 'removed'])
     expect(ctx.jobs.list()).toEqual([])
   })
 
@@ -508,5 +510,77 @@ describe('owned background output', () => {
     await until(() => owned.get(job!.id, owner.id).status === 'completed' ? true : undefined)
     expect(() => retainedText(ctx, job!.id)).toThrow(/belongs to another session/)
     await until(() => retainedText(ctx, job!.id, owner).includes('owned') ? true : undefined)
+  })
+})
+
+// fork(context-editor): a job settles when the command's whole managed range
+// empties, so processes a launcher spawned before exiting keep their job —
+// popover row, sentinel reports, job_kill — alive until they close (2.4.30).
+describe('jobs that outlive their command', () => {
+  /** A launcher: its own process exits at once, its managed range stays until released. */
+  function launcherProcess(): { process: ShellExecution; releaseRange(): void; killed(): boolean } {
+    let releaseRange: () => void = () => {}
+    let killed = false
+    const rangeSettled = new Promise<void>((resolve) => { releaseRange = resolve })
+    const process: ShellExecution = {
+      status: 'running',
+      exitCode: null,
+      signal: null,
+      pid: 4242,
+      rangeSettled,
+      done: Promise.resolve().then(() => { process.status = 'completed'; process.exitCode = 0 }),
+      readOutput: () => ({ delta: '', lossy: false }),
+      observed: { stdout: silentReader, stderr: silentReader },
+      kill: () => {
+        killed = true
+        process.status = 'killed'
+        process.signal = 'SIGTERM'
+        releaseRange()
+        return true
+      },
+      result: () => Promise.resolve({
+        exitCode: 0, signal: null, timedOut: false, aborted: false, timeoutMs: 10_000,
+        stdout: { text: '', truncated: false }, stderr: { text: '', truncated: false },
+      }),
+    }
+    return { process, releaseRange, killed: () => killed }
+  }
+
+  it('keeps a finished foreground command\'s job alive until its processes exit, and job_kill reaches them', async () => {
+    const ctx = await setup()
+    const seen: string[] = []
+    ctx.jobs.events.subscribe({ owners: 'all' }, (event) => { seen.push(event.type === 'settled' ? `settled:${event.job.status}:${String(event.awaited)}` : event.type) })
+    const launcher = launcherProcess()
+    vi.spyOn(ctx.shell, 'execute').mockResolvedValue(launcher.process)
+    const result = await call(ctx, { command: 'launcher', description: 'spawn and exit', timeoutMs: 5_000 })
+    expect(result.isError).toBe(false)
+    // The command's result returned at once with its exit code…
+    expect(text(result)).toBe('(no output)')
+    // …while the record stays live for the processes it left behind.
+    const job = ctx.jobs.list()[0]!
+    expect(job).toMatchObject({ kind: 'bash', status: 'running', label: 'launcher' })
+    // The survivor note lands on the live row once the range clearly outlives the command.
+    await until(() => ctx.jobs.get(job.id).progress === 'pid 4242 (processes remain)' ? true : undefined)
+    // A kill after the command exited still reaches the processes.
+    expect(ctx.jobs.kill(job.id, undefined, 'model stop')).toBe('requested')
+    expect(launcher.killed()).toBe(true)
+    await until(() => ctx.jobs.get(job.id).status === 'killed' ? true : undefined)
+    // Nobody awaited this settlement: the completion notice is the model's signal that everything closed.
+    expect(seen.filter(type => type !== 'output')).toContain('settled:killed:false')
+  })
+
+  it('holds a background job until the processes its command spawned exit', async () => {
+    const ctx = await setup()
+    const launcher = launcherProcess()
+    vi.spyOn(ctx.shell, 'execute').mockResolvedValue(launcher.process)
+    const ack = await call(ctx, { command: 'launcher', description: 'bg spawn', run_in_background: true })
+    expect(text(ack)).toMatch(/^started background job bash-[0-9a-f]{16}$/)
+    const job = ctx.jobs.list()[0]!
+    // The command exited at once; the job stays running for its processes.
+    await until(() => ctx.jobs.get(job.id).progress === 'pid 4242 (processes remain)' ? true : undefined)
+    expect(ctx.jobs.get(job.id).status).toBe('running')
+    launcher.releaseRange()
+    await until(() => ctx.jobs.get(job.id).status === 'completed' ? true : undefined)
+    expect(ctx.jobs.get(job.id).detail).toBe('exit code: 0')
   })
 })

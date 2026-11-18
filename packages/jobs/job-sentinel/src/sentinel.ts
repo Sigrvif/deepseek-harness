@@ -56,10 +56,14 @@ function formatDuration(ms: number): string {
   return `${hours}h ${String(totalMinutes % 60).padStart(2, '0')}m`
 }
 
-/** The pid the producer published as its progress line (`pid 1234`), when present. */
+/**
+ * The pid the producer published as its progress line (`pid 1234`, optionally
+ * with a suffix such as `(processes remain)`), when present.
+ */
 function pidOf(view: JobView): string | undefined {
   if (view.progress === undefined) return undefined
-  return /^pid \d+$/u.test(view.progress) ? view.progress : undefined
+  const match = /^pid (\d+)/u.exec(view.progress)
+  return match === null ? undefined : `pid ${match[1] as string}`
 }
 
 function noticeText(session: string, views: readonly JobView[], now: number): string {

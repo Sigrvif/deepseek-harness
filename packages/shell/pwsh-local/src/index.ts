@@ -349,6 +349,9 @@ export class PwshLocalExecutor extends ShellExecutor {
       signal: null,
       // fork(context-editor): surface the spawned command's OS pid.
       pid: running?.pid,
+      // fork(context-editor): the managed-range wait — the job stays alive until
+      // every process the command spawned has exited (2.4.30).
+      rangeSettled: running === undefined ? undefined : running.waitForExit().then(() => undefined, () => undefined),
       observed: { stdout: collected.stdout, stderr: observedStderr },
       done: spawned.then((outcome) => {
         // Any signal termination is killed, including a command signaling itself.

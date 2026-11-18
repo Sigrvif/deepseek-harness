@@ -11,14 +11,15 @@ Refresh flow (identical for both platforms):
 1. `pnpm --filter @deepseek-ai/dsh deploy --prod --config.auto-install-peers=true --config.node-linker=hoisted /workspaces/devpod/DSH/.deploy-hoisted`
    (the ignored-build warning for dsh-subprocess-local is expected; the
    spawn helper is prebuilt inside the tree).
-2. `python3 hoist-parity.py` — the deploy misses a few vendor packages and
-   the src/ trees of ./src-exporting packages; this copies them from the
-   current verified bundle (which is why the previous bundle folders must
-   still exist when refreshing). Verify the deploy is actually fresh before
-   continuing (a silently skipped deploy step once shipped stale archives):
-   check the mtime of a just-built file, e.g.
-   `ls -la .deploy-hoisted/node_modules/@deepseek-ai/dsh-client-ui-context-editor/lib/client.js`
-   against the workspace `lib/` copy.
+2. `python3 hoist-parity.py` — the deploy aborts partway (ERR_PNPM_IGNORED
+   after ~325 of 352 fork packages; the abort is chronic and benign) and
+   misses packages plus the src/ trees of ./src-exporting packages. Since
+   2.4.30 the script backfills from the WORKSPACE build output first, so a
+   changed package never ships stale; the previous verified bundle remains
+   the fallback for packages absent from the workspace (vendored natives).
+   Verify freshness anyway before continuing — grep a marker of each changed
+   package in `.deploy-hoisted` (the 2.4.30 cycle shipped a stale bash-local
+   because the old script backfilled it from the 2.4.29 bundle).
 3. Linux: copy `.deploy-hoisted/.` into `DSLRH-Linux/app/`, reset
    `dsh-home` to pristine (profiles/web only), boot-check
    (`./node/bin/node app/lib/bin.js web --no-open`), pack

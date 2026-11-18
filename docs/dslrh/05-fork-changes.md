@@ -105,3 +105,16 @@ working directory outside a repository) and lists them without counts as
 now sees the same data: a new change-report plugin appends a compact
 files-changed notice to the conversation at the session's next step (on by
 default; a General-settings switch turns it off for small models).
+Shortly after, 2.4.30 made the jobs layer tell the truth about
+processes: a job used to settle the moment its command exited, so a
+launcher that spawned its processes and quit (the SLR Translator smoke
+test) vanished from the popover within seconds while the processes ran
+for minutes — unreported by the sentinel and beyond `job_kill` (only
+harness-close containment still held). A job now settles when the
+command's whole managed range is empty: the popover row, the
+still-running reports, and the stop button stay live until everything
+the command opened is actually closed, the live row says
+"pid N (processes remain)" once that is clearly the case, and the
+foreground result still returns the moment the command itself exits.
+The release also carries the fork's copyright line in the shipped
+LICENSE files.

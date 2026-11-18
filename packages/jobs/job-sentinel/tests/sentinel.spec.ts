@@ -90,6 +90,22 @@ describe('installSentinel', () => {
     expect(text).toContain('job_kill')
   })
 
+  // fork(context-editor): a settled command's surviving processes keep their job
+  // alive with a suffixed progress line (2.4.30); the pid still leads the notice.
+  it('reports a survivor job whose progress line carries the processes-remain suffix', async () => {
+    const b = await bench()
+    installSentinel(b.ctx, CONFIG)
+    b.fire({
+      type: 'registered',
+      job: view({ owner: SessionId('sentinel-c'), startedAt: Date.now() - 200, progress: 'pid 4242 (processes remain)' }),
+    })
+    const messages = b.enter(await b.step(Session.create(SessionId('sentinel-c'))))
+    expect(messages).toHaveLength(1)
+    const text = JSON.stringify(messages)
+    expect(text).toContain('pid 4242')
+    expect(text).not.toContain('(processes remain)')
+  })
+
   it('keeps the per-session interval before reporting again', async () => {
     const b = await bench()
     installSentinel(b.ctx, CONFIG)

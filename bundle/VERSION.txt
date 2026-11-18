@@ -1,8 +1,27 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.29 (2026-11-17)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.30 (2026-11-18)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
+
+  Jobs track everything a command opened (2.4.30)
+                      A job used to settle the moment its command
+                      exited: a launcher that spawned its processes and
+                      quit vanished from the active-processes popover
+                      within seconds while the processes ran on for
+                      minutes - unreported by the still-running notices
+                      and beyond job_kill (harness-close containment
+                      still held). A job now settles when the command's
+                      whole managed process range is empty: the popover
+                      row, the periodic reports to the model, and the
+                      stop button stay live until everything the command
+                      opened is actually closed; the live row says
+                      "pid N (processes remain)" once that is clearly
+                      the case; and the foreground result still returns
+                      the moment the command itself exits (it never
+                      waits for the survivors). This release also
+                      carries the fork's copyright line in the shipped
+                      LICENSE files.
 
   Files-changed summaries that always show, full shell coverage (2.4.29)
                       The changed-files card under each closing reply was

@@ -96,12 +96,27 @@ export function ringDelta(chunks: readonly JobChunk[]): string {
  * @param outcome - projects the settled process into the job outcome.
  * @returns synchronous job hooks whose completion includes preparation and process settlement.
  */
+/**
+ * fork(context-editor): how long a settled command's managed range gets to
+ * report empty before what remains is called survivors and the live row says
+ * so (2.4.30). The range probes poll, so a command whose range empties within
+ * this window leaves no trace; one whose processes clearly outlive it does.
+ */
+export const RANGE_SETTLE_WINDOW_MS = 1000
+
 export function processJob(
   start: (signal: AbortSignal) => Promise<ShellProcess>,
   outcome: (process: ShellProcess) => JobOutcome,
-): JobHooks {
+): JobHooks & { readonly commandDone: Promise<void> } {
   const controller = new AbortController()
   let process: ShellProcess | undefined
+  let commandSettled!: () => void
+  /**
+   * fork(context-editor): resolves once the command's own process settled —
+   * before the managed-range wait below, so a foreground call can return at
+   * command settlement while its job stays alive for the range (2.4.30).
+   */
+  const commandDone = new Promise<void>((resolve) => { commandSettled = resolve })
   const done: Promise<JobOutcome> = (async () => {
     try {
       process = await start(controller.signal)
@@ -110,8 +125,15 @@ export function processJob(
       } finally {
         await process.done
       }
+      commandSettled()
+      // fork(context-editor): the job settles when the command's whole managed
+      // range has exited, not when its leader reports an outcome — a launcher
+      // that spawns processes and exits keeps its job (popover row, sentinel
+      // reports, job_kill) alive until everything it opened is closed (2.4.30).
+      if (process.rangeSettled !== undefined) await process.rangeSettled
       return outcome(process)
     } catch (error: unknown) {
+      commandSettled()
       return {
         status: controller.signal.aborted && process === undefined ? 'killed' : 'failed',
         detail: error instanceof Error ? error.message : String(error),
@@ -125,5 +147,33 @@ export function processJob(
       process?.kill()
     },
     done,
+    commandDone,
   }
+}
+
+/**
+ * fork(context-editor): once the command settles, note clearly-surviving
+ * processes on the live row — the popover and the job-sentinel notices render
+ * the progress line — until the managed range empties (2.4.30).
+ * @param job - the job whose progress line updates.
+ * @param process - the command's process handle once the starter spawned it.
+ * @param commandDone - {@link processJob}'s command settlement.
+ * @param windowMs - survivor discrimination window; defaults to {@link RANGE_SETTLE_WINDOW_MS}.
+ */
+export function noteSurvivingProcesses(
+  job: { updateProgress(text: string): void },
+  process: () => Pick<ShellProcess, 'pid' | 'rangeSettled'> | undefined,
+  commandDone: Promise<void>,
+  windowMs: number = RANGE_SETTLE_WINDOW_MS,
+): void {
+  void commandDone.then(async () => {
+    const proc = process()
+    const range = proc?.rangeSettled
+    if (proc === undefined || range === undefined) return
+    const emptied = await Promise.race([
+      range.then(() => true),
+      new Promise<boolean>((resolve) => { setTimeout(() => resolve(false), windowMs) }),
+    ])
+    if (!emptied) job.updateProgress(proc.pid === undefined ? 'processes remain' : `pid ${proc.pid} (processes remain)`)
+  })
 }

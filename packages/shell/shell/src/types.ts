@@ -199,6 +199,13 @@ export interface ShellProcess {
    */
   readonly pid?: number | undefined
   /**
+   * fork(context-editor): resolves once every process of the command's managed
+   * range has exited — not just the command itself, so processes a launcher
+   * spawned before exiting remain observable. Absent when the executor cannot
+   * observe a range. Never rejects (2.4.30).
+   */
+  readonly rangeSettled?: Promise<void> | undefined
+  /**
    * Resolves when the underlying process settles (never rejects — provider
    * rejection settles as `killed` with a stage-neutral error on stderr).
    */

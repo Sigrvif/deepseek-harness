@@ -198,6 +198,18 @@ attention (`job_kill` stops one; `job_output`/`job_list` inspect). Closing
 the harness kills the whole process tree of everything it started; MCP
 servers and the included browser terminate through their own lifecycle.
 
+## Jobs track everything a command opened (2.4.30)
+
+A job settles when the command's whole managed process range is empty,
+not when the command exits: a launcher that spawns its processes and
+quits keeps its row in the active-processes popover, its still-running
+reports to the model, and its stop button alive until every process it
+opened is closed — the live row says "pid N (processes remain)" once
+that is clearly the case, and `job_kill` reaches the processes even
+after the command returned. Foreground results still return the moment
+the command itself exits. The shipped LICENSE now carries the fork's
+copyright line beside the upstream one.
+
 ## Files-changed summaries: always visible, shell-covered, model-reported (2.4.29)
 
 The changed-files card under each closing reply was gated behind the
