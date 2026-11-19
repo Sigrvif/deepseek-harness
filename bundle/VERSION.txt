@@ -1,8 +1,20 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.30 (2026-11-18)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.31 (2026-11-19)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
+
+  Changed-files review works for detected files; new mark (2.4.31)
+                      Opening a "detected" file from the changed-files
+                      card (preview or review tab) dead-ended in
+                      "Could not read the changes": the client-side
+                      comparison validator still only knew
+                      text/binary/oversized, so the served payload for a
+                      watcher-listed file mapped to the error state. It
+                      now renders the detected note, and the review
+                      tab's file selector shows "detected" where an
+                      observed file's counts would be. The sidebar mark
+                      ships the fixed artwork.
 
   Jobs track everything a command opened (2.4.30)
                       A job used to settle the moment its command

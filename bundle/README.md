@@ -198,6 +198,14 @@ attention (`job_kill` stops one; `job_output`/`job_list` inspect). Closing
 the harness kills the whole process tree of everything it started; MCP
 servers and the included browser terminate through their own lifecycle.
 
+## Changed-files review works for detected files (2.4.31)
+
+Opening a "detected" file from the changed-files card dead-ended in
+"Could not read the changes" — the client's comparison validator
+predated the watcher's `observed` kind. It now renders the detected
+note, and the review tab's file selector shows "detected" in place of
+counts. The sidebar mark ships the fixed artwork.
+
 ## Jobs track everything a command opened (2.4.30)
 
 A job settles when the command's whole managed process range is empty,

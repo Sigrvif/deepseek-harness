@@ -37,12 +37,13 @@ const ADDRESS = changesReviewAddress(COORDINATES)
 const SUMMARY_URL = changesSummaryUrl(SESSION, 5)
 
 const summary: ChangesSummary = {
-  turn: 2, total: 4, added: 4, deleted: 2,
+  turn: 2, total: 5, added: 4, deleted: 2,
   files: [
     { path: 'src/app/main.ts', display: 'src/app/main.ts', added: 3, deleted: 1 },
     { path: '/tmp/out/big.bin', display: '~/out/big.bin', added: 0, deleted: 0, oversized: true },
     { path: 'notes.txt', display: 'notes.txt', added: 1, deleted: 1 },
     { path: 'logo.png', display: 'logo.png', added: 0, deleted: 0, binary: true },
+    { path: '.env', display: '.env', added: 0, deleted: 0, observed: true },
   ],
 }
 
@@ -216,6 +217,7 @@ describe('ReviewTab', () => {
     const items = view.getAllByRole('menuitem')
     expect(items.map(item => item.textContent)).toEqual([
       'src/app/main.ts+3-1', '~/out/big.bin' + en['changes.oversized'], 'notes.txt+1-1', 'logo.png' + en['changes.binary'],
+      '.env' + en['changes.observed'],
     ])
     fireEvent.click(items[0]!)
     expect(store.getSnapshot().byTab[TAB]?.index).toBe(0)

@@ -120,6 +120,8 @@ describe('change comparison route', () => {
     expect(isChangesDiff({ ...text, hunks: [{ oldStart: 1, oldLines: 1, newStart: 1, newLines: 0, lines: ['-x', ' y', '+z'] }] })).toBe(true)
     expect(isChangesDiff({ kind: 'binary', path: 'a', display: 'a' })).toBe(true)
     expect(isChangesDiff({ kind: 'oversized', path: 'a', display: 'a' })).toBe(true)
+    // fork(deliverables): a watcher-observed comparison carries no body (2.4.31).
+    expect(isChangesDiff({ kind: 'observed', path: 'a', display: 'a' })).toBe(true)
     expect(isChangesDiff({ kind: 'other', path: 'a', display: 'a' })).toBe(false)
     expect(isChangesDiff({ kind: 'binary', path: '', display: 'a' })).toBe(false)
     expect(isChangesDiff({ ...text, before: 'yes' })).toBe(false)

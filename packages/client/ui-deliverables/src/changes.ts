@@ -88,7 +88,8 @@ export function isChangesDiff(value: unknown): value is ChangesDiff {
   if (!isRecord(value)) return false
   const { kind, path, display } = value
   if (typeof path !== 'string' || path.length === 0 || typeof display !== 'string' || display.length === 0) return false
-  if (kind === 'binary' || kind === 'oversized') return true
+  // fork(deliverables): a watcher-observed file serves no comparison body (2.4.31).
+  if (kind === 'binary' || kind === 'oversized' || kind === 'observed') return true
   if (kind !== 'text') return false
   const { before, after, hunks, coarse } = value
   return typeof before === 'boolean' && typeof after === 'boolean' && typeof coarse === 'boolean'

@@ -53,6 +53,8 @@ function navigatedIndex(params: unknown): number | undefined {
 /** Added and deleted line counts in the card's colors. */
 function Counts({ file, t }: { file: WorkspaceChangedFile } & PropsLocale<typeof NS>): ReactNode {
   if (file.binary === true) return <span className={css.label}>{t('changes.binary')}</span>
+  // fork(deliverables): an observed file has no counts to show (2.4.31).
+  if (file.observed === true) return <span className={css.label}>{t('changes.observed')}</span>
   if (file.oversized === true) return <span className={css.label}>{t('changes.oversized')}</span>
   return <>
     <span className={css.added}>{t('changes.added', { count: GROUPED.format(file.added) })}</span>

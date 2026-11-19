@@ -117,4 +117,8 @@ the command opened is actually closed, the live row says
 "pid N (processes remain)" once that is clearly the case, and the
 foreground result still returns the moment the command itself exits.
 The release also carries the fork's copyright line in the shipped
-LICENSE files.
+LICENSE files. 2.4.31 fixed the changed-files review for watcher-listed files — the
+client's comparison validator still spoke only text/binary/oversized, so
+opening a "detected" file dead-ended in an error; it now renders the
+detected note (in the review tab's file selector too) — and replaced the
+sidebar mark with the fixed artwork.
