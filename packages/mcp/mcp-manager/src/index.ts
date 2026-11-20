@@ -26,7 +26,7 @@ import { createVolatile } from '@deepseek-ai/cosmokit'
 import type {} from '@deepseek-ai/dsh-settings'
 import { McpManagerService } from './service.ts'
 import { installBroker } from './broker.ts'
-import { Config, type Config as ConfigShape } from './config.ts'
+import { Config } from './config.ts'
 
 export { mcpServersDomain } from './domain.ts'
 export { McpSupervisor } from './supervisor.ts'
@@ -52,7 +52,7 @@ export const inject = ['storageDomain', 'tools']
  * @param config - resolved volatile configuration; omitted (programmatic
  *   mounting, tests) resolves to the schema defaults.
  */
-export function apply(ctx: Context, config?: ConfigShape): void {
+export function apply(ctx: Context, config?: Config): void {
   const broker = config?.broker ?? createVolatile(true)
   new McpManagerService(ctx)
   ctx.effect(() => installBroker(ctx, broker))

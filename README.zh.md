@@ -2,9 +2,7 @@
 
 [English](README.md) | 中文
 
-> **DSLRH** 是 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)（基线：v0.2.2-alpha.2）的**非官方分支**，由 Shisaye 维护。
-> 新增了原生 **Context Editor**、**Context Fold**、内置 superpowers 技能、MCP 服务器管理器等——分支改动的完整清单见 [FORK.md](FORK.md)，用户文档见 [docs/dslrh/](docs/dslrh/)。
-> 本仓库**不是**官方项目：分支相关的问题与功能请求请提交到[本仓库的 Issues](https://github.com/Sigrvif/deepseek-harness/issues)；下方"社区与支持"中的渠道属于**上游官方**。
+> **DSLRH** 是 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)（基线：v0.2.2-alpha.2）的**非官方分支**，由 Shisaye 维护。 新增了原生 **Context Editor**、**Context Fold**、内置 superpowers 技能、MCP 服务器管理器等——分支改动的完整清单见 [FORK.md](FORK.md)，用户文档见 [docs/dslrh/](docs/dslrh/)。 本仓库**不是**官方项目：分支相关的问题与功能请求请提交到[本仓库的 Issues](https://github.com/Sigrvif/deepseek-harness/issues)；下方"社区与支持"中的渠道属于**上游官方**。
 
 DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的开源 agent harness（智能体框架）。
 

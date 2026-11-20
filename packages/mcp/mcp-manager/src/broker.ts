@@ -241,7 +241,7 @@ export function installBroker(ctx: Context, broker: Volatile<boolean>): () => vo
       if (definition === undefined) {
         return { text: `Unknown MCP tool ${JSON.stringify(tool)}. Search with mcp_search_tools for the current names.` }
       }
-      const parsed = (innerArguments ?? {}) as unknown
+      const parsed: unknown = (innerArguments ?? {})
       const innerExec = { ...exec, name: tool, arguments: parsed } as ToolRunContext
       const value = await definition.execute(parsed, innerExec)
       return { text: renderedText(definition, parsed, value) }

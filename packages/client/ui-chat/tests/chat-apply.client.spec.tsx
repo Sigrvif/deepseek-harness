@@ -166,10 +166,13 @@ describe('Chat apply wiring', () => {
     expect(view?.children?.['conversation.chat.user.images']).toBeUndefined()
     expect(flow?.children?.['conversation.chat.node']).toBeDefined()
     expect(flow?.children?.['conversation.chat.user.before']).toBeUndefined()
-    expect(user?.children?.['conversation.chat.user.before']).toMatchObject({ kind: 'chain', scope: 'session' })
+    // fork(context-editor): the seat declaration moved to the chat prompt
+    // edit-and-resend's replacement registration; the standard user entry
+    // drops it, and the ui-context-editor package pins the replacement.
+    expect(user?.children?.['conversation.chat.user.before']).toBeUndefined()
     expect(steering).toBeDefined()
     expect(steering?.children?.['conversation.chat.user.before']).toBeUndefined()
-    expect(b.runtime.slots.spec('conversation.chat.user.before')).toMatchObject({ kind: 'chain', scope: 'session' })
+    expect(b.runtime.slots.spec('conversation.chat.user.before')).toBeUndefined()
     expect(flow?.children?.['conversation.chat.message.images']).toBeUndefined()
     expect(flow?.children?.['conversation.chat.user.images']).toBeUndefined()
     expect(userContent.children?.['conversation.chat.message.images']).toBeUndefined()

@@ -1,9 +1,26 @@
 {
+  "ui-context-editor/src/client/ChatEdit.module.css": [
+    ".editor: border-radius: 12px",
+    ".text: border-radius: 8px",
+    ".button: border-radius: 8px"
+  ],
+  "ui-context-editor/src/client/ContextView.module.css": [
+    ".tab, .tabActive: border-radius: 8px",
+    ".row, .rowExcluded: border-radius: 8px",
+    ".search: border-radius: 8px",
+    ".editing textarea: border-radius: 8px",
+    ".actions button: border-radius: 8px",
+    ".jsonToggle button: border-radius: 8px",
+    ".json: border-radius: 8px"
+  ],
   "ui-deliverables/src/client/ChangedFiles.module.css": [
     ".tile: border-radius: 10px"
   ],
   "ui-deliverables/src/client/Deliverables.module.css": [
     ".fileIcon: border-radius: 10px"
+  ],
+  "ui-fork-info/src/client/ForkInfoTab.module.css": [
+    ".entry: border-radius: 10px"
   ],
   "ui-plan/src/client/PlanPreview.module.css": [
     ".cardIcon: border-radius: 10px"
@@ -53,6 +70,12 @@
     ".dialogButton: border-radius: 12px",
     ".page .action: border-radius: 12px",
     ".indicator: border-radius: 6px"
+  ],
+  "ui-settings-mcp/src/client/McpSection.module.css": [
+    ".brokerRow: border-radius: 10px",
+    ".card: border-radius: 10px",
+    ".form: border-radius: 10px",
+    ".field select, .field textarea: border-radius: 8px"
   ],
   "ui-shortcuts/src/client/Reference.module.css": [
     ".dialog: border-radius: 24px",

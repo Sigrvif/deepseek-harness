@@ -2,9 +2,7 @@
 
 English | [中文](README.zh.md)
 
-> **DSLRH** is an **unofficial fork** of [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) (base: v0.2.2-alpha.2), maintained by Shisaye.
-> It adds a native **Context Editor**, **Context Fold**, bundled superpowers skills, an MCP server manager, and more — the complete inventory of fork additions lives in [FORK.md](FORK.md), user documentation in [docs/dslrh/](docs/dslrh/).
-> This is not the official project: issues and feature requests for the fork belong in [this repository's issues](https://github.com/Sigrvif/deepseek-harness/issues); the channels under "Community and support" below belong to **upstream**.
+> **DSLRH** is an **unofficial fork** of [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) (base: v0.2.2-alpha.2), maintained by Shisaye. It adds a native **Context Editor**, **Context Fold**, bundled superpowers skills, an MCP server manager, and more — the complete inventory of fork additions lives in [FORK.md](FORK.md), user documentation in [docs/dslrh/](docs/dslrh/). This is not the official project: issues and feature requests for the fork belong in [this repository's issues](https://github.com/Sigrvif/deepseek-harness/issues); the channels under "Community and support" below belong to **upstream**.
 
 DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).
 

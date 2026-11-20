@@ -1,4 +1,4 @@
-/** Effective-context projection: model-visible rows with provenance over session events.
+/** Effective-context projection: model-visible rows with their source citations over session events.
  *
  * Reads raw event data (not the derivation rule), so excluded replacements stay
  * visible here — flagged — while the model-side skip lives in core derivation. */
@@ -18,7 +18,11 @@ const ROLES: Record<string, ContextRow['role']> = {
   'tool/result': 'tool',
 }
 
-/** The stored message of a surface event (data layouts differ per event type). */
+/**
+ * The stored message of a surface event (data layouts differ per event type).
+ * @param event - the session event to read.
+ * @returns the event's message, or undefined for non-message events.
+ */
 export function messageOf(event: SessionEvent): Message | undefined {
   switch (event.type) {
     case 'user/message': return event.data
@@ -51,8 +55,8 @@ function isReplacement(event: SessionEvent): boolean {
   return replaceRange(event) !== undefined
 }
 
-/** Provenance of a replacement: cited sources, or the shadowed surfaceOp range. */
-function provenanceOf(event: SessionEvent): number[] {
+/** The source events a replacement cites, or the shadowed surfaceOp range when it cites none. */
+function citedSeqsOf(event: SessionEvent): number[] {
   if (event.sourceEventSeqs !== undefined) return [...event.sourceEventSeqs]
   const range = replaceRange(event)
   if (range === undefined) return []
@@ -61,7 +65,12 @@ function provenanceOf(event: SessionEvent): number[] {
   return sources
 }
 
-/** Project the effective context from a session's events (live snapshot or cold read). */
+/**
+ * Project the effective context from a session's events (live snapshot or cold read).
+ * @param sessionId - the session id the projection reports.
+ * @param events - the session's full event log, live snapshot or cold read.
+ * @returns the model-visible rows with their source citations plus the latest request header.
+ */
 export function previewFromEvents(sessionId: string, events: readonly SessionEvent[]): ContextPreview {
   const { nodes } = foldSurface(events)
   const rows: ContextRow[] = []
@@ -71,19 +80,19 @@ export function previewFromEvents(sessionId: string, events: readonly SessionEve
     if (event === undefined || message === undefined) continue
     const replaced = isReplacement(event)
     const excluded = isExcluded(event)
-    // Range-fallback provenance lists the shadowed SURFACE nodes only. Rows
+    // The range fallback cites the shadowed SURFACE nodes only. Rows
     // whose cited sources chain into another replacement are restores: their
     // "originals" were already re-materialized, so no undo is offered.
     const sources = replaced
-      ? provenanceOf(event).filter(candidate => messageOf(events[candidate] ?? { type: 'turn/start', data: {} } as never) !== undefined)
+      ? citedSeqsOf(event).filter(candidate => messageOf(events[candidate] ?? { type: 'turn/start', data: {} } as never) !== undefined)
       : undefined
     const chainsIntoRestore = sources !== undefined
       && sources.some(candidate => isReplacement(events[candidate] ?? { type: 'turn/start', data: {} } as never))
-    const rowProvenance = sources !== undefined && sources.length > 0 && !chainsIntoRestore ? sources : undefined
+    const citedSeqs = sources !== undefined && sources.length > 0 && !chainsIntoRestore ? sources : undefined
     // The excluded stub shows what it removed: the cited originals' text, read
     // straight from the raw log (they are no longer surface nodes themselves).
-    const excludesText = excluded && rowProvenance !== undefined
-      ? rowProvenance
+    const excludesText = excluded && citedSeqs !== undefined
+      ? citedSeqs
         .map(candidate => messageOf(events[candidate] ?? { type: 'turn/start', data: {} } as never))
         .filter((cited): cited is Message => cited !== undefined)
         .map(cited => textOf(cited.content))
@@ -96,8 +105,8 @@ export function previewFromEvents(sessionId: string, events: readonly SessionEve
       text: textOf(message.content),
       blocks: message.content as unknown as JsonValue[],
       excluded,
-      ...(replaced && rowProvenance !== undefined
-        ? excluded ? { excludes: rowProvenance } : { editedFrom: rowProvenance }
+      ...(replaced && citedSeqs !== undefined
+        ? excluded ? { excludes: citedSeqs } : { editedFrom: citedSeqs }
         : {}),
       ...(excludesText !== undefined && excludesText !== '' ? { excludesText } : {}),
       estimateTokens: estimateMessage(message),

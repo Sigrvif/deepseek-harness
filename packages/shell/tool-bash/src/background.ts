@@ -91,12 +91,6 @@ export function ringDelta(chunks: readonly JobChunk[]): string {
 }
 
 /**
- * Adapt asynchronous shell preparation after job admission without exposing a partial process.
- * @param start - starts the process with job-owned cancellation.
- * @param outcome - projects the settled process into the job outcome.
- * @returns synchronous job hooks whose completion includes preparation and process settlement.
- */
-/**
  * fork(context-editor): how long a settled command's managed range gets to
  * report empty before what remains is called survivors and the live row says
  * so (2.4.30). The range probes poll, so a command whose range empties within
@@ -104,6 +98,20 @@ export function ringDelta(chunks: readonly JobChunk[]): string {
  */
 export const RANGE_SETTLE_WINDOW_MS = 1000
 
+/**
+ * Adapt asynchronous shell preparation after job admission without exposing a
+ * partial process: the starter runs inside the job, so the registry admits
+ * hooks, not a handle. `cancel` aborts a pending start or kills the live
+ * process; `done` settles with the mapped outcome once the command's whole
+ * managed range has exited; fork(context-editor) adds `commandDone`, resolved
+ * when the command's own process settles so a foreground call can stop
+ * waiting while the job stays alive for its range. A start that throws before
+ * settlement resolves `done` as `killed` (cancel before any process ran) or
+ * `failed` carrying the error message.
+ * @param start - starts the process with job-owned cancellation.
+ * @param outcome - projects the settled process into the job outcome.
+ * @returns synchronous job hooks whose completion includes preparation and process settlement.
+ */
 export function processJob(
   start: (signal: AbortSignal) => Promise<ShellProcess>,
   outcome: (process: ShellProcess) => JobOutcome,

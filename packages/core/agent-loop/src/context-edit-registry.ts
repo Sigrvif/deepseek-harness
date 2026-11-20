@@ -14,13 +14,21 @@ export interface ContextEditOverrides {
 
 const registry = new Map<string, ContextEditOverrides>()
 
-/** Install or clear the overrides for one session. */
+/**
+ * Install or clear the overrides for one session.
+ * @param sessionId - the session whose request finalization reads the overrides.
+ * @param overrides - the hooks to install, or undefined to clear the registration.
+ */
 export function registerContextEditOverrides(sessionId: string, overrides: ContextEditOverrides | undefined): void {
   if (overrides === undefined) registry.delete(sessionId)
   else registry.set(sessionId, overrides)
 }
 
-/** The overrides registered for a session, if any. */
+/**
+ * The overrides registered for a session, if any.
+ * @param sessionId - the session to look up.
+ * @returns the installed overrides, or undefined when none are registered.
+ */
 export function lookupContextEditOverrides(sessionId: string): ContextEditOverrides | undefined {
   return registry.get(sessionId)
 }

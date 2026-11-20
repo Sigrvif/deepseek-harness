@@ -29,7 +29,7 @@ const kit = {
   ...allowAllAccess,
 }
 
-const t = (key: string) => (en as unknown as Record<string, string>)[key] ?? key
+const t = (key: string) => (en as Record<string, string>)[key] ?? key
 
 /** An in-memory ConfigForm stand-in over one section value. */
 function fakeForm(initial: { autoUsingSuperpowers?: boolean } | undefined): ConfigForm<{ autoUsingSuperpowers?: boolean }> & {
@@ -123,7 +123,7 @@ describe('ui-fork-auto-skills browser plugin', () => {
       } as never, () => null)
       await ctx.plugin({ inject: [...inject], apply }).await()
       const entry = slots.entries('settings.general.item')[0]!
-      const injected = (entry.inject as unknown as () => AutoSkillsRowInjectionStub)()
+      const injected = (entry.inject as () => AutoSkillsRowInjectionStub)()
       return injected.hooks.autoSuperpowers.getSnapshot()
     }
     expect(await mounted(undefined)).toBe(true)

@@ -54,7 +54,15 @@ async function readEvents(ctx: Context, sessionId: SessionId): Promise<readonly 
   }
 }
 
-/** Condense [startSeq, endSeq] into one framed checkpoint user message. */
+/**
+ * Condense [startSeq, endSeq] into one framed checkpoint user message.
+ * @param ctx - the host context.
+ * @param sessionId - the session id whose log is condensed.
+ * @param startSeq - first log seq of the range to summarize.
+ * @param endSeq - last log seq of the range to summarize.
+ * @param instruction - optional steering text placed above the summarization prompt.
+ * @returns the compaction id of the written compaction event group.
+ */
 export async function condenseRange(
   ctx: Context,
   sessionId: SessionId,

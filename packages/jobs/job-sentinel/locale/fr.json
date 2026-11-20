@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Sentinelle de tâches",
+    "description": "Signale les tâches d’arrière-plan encore en cours quand l’agent recommence à agir."
+  }
+}

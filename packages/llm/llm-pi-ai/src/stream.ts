@@ -71,6 +71,8 @@ function classifyPiAiError(message: string): string {
  * Map a terminal pi-ai event to the harness finish reason.
  * @param message - the assistant message carried by the `done` or `error` event.
  * @param contextWindow - resolved catalog capacity for usage-based overflow detection.
+ * @param quotaResetTimezone - provider's IANA timezone for wall-clock quota reset times, enabling the
+ *   body-named reset parse; omission reads those times as UTC.
  * @returns the mapped harness reason. Recognized error text, `stop` usage above
  *   `contextWindow`, and zero-output `length` usage that fills the window map
  *   to `CONTEXT_WINDOW_EXCEEDED`; a `stop` with no content blocks maps to an
@@ -208,6 +210,8 @@ function codeForStatus(status: number): string | undefined {
  * @param callerSignal - caller cancellation state; an aborted caller makes any
  *   in-band terminal error an aborted finish.
  * @param requestedModel - request model identity recorded for durable replay.
+ * @param quotaResetTimezone - provider's IANA timezone for wall-clock quota reset times, forwarded to
+ *   {@link mapStopReason}; omission reads body-named reset times as UTC.
  * @returns the harness chunks, ending with `usage` then `finish`; throws
  *   `LlmError` (`STREAM_CLOSED`) if the source ends without a terminal event, or
  *   `MALFORMED_RESPONSE` when completed tool arguments are invalid. Length-limited

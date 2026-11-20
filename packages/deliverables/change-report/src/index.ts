@@ -86,4 +86,5 @@ export function apply(ctx: Context, config: Config): void {
 // schema off it — without `Config` here the runtime mounts schema-less, the
 // volatile toggle never binds, and the raw undefined config crashes the first
 // pre-step after an announcement (found in the 2.4.29 browser pass).
+/** Cordis loader shape: the plugin name, required services, config schema, and the {@link apply} mount. */
 export default { name, inject, Config, apply }

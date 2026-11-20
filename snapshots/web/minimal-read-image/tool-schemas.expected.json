@@ -1,6 +1,14 @@
 {
   "initial": [
     {
+      "name": "acp_status",
+      "description": "Show context usage: current pressure against the window, the fold ledger (what was folded, how much it saved), and what to do next. Call this before compressing to see the state, and whenever context feels tight.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
       "name": "bash",
       "description": "Run commands in a bash shell\n* When invoking this tool, the contents of the \"command\" parameter does NOT need to be XML-escaped.\n* Network access depends on the task environment. Prefer configured mirrors/proxies when they are available.\n* State is persistent across command calls and discussions with the user.\n* To inspect a particular line range of a file, e.g. lines 10-25, try 'sed -n 10,25p /path/to/the/file'.\n* Please avoid commands that may produce a very large amount of output.\n* Please run long lived commands in the background, e.g. 'sleep 10 &' or start a server in the background.",
       "parameters": {
@@ -17,6 +25,39 @@
       }
     },
     {
+      "name": "compress",
+      "description": "Fold consumed conversation history into a compact summary to free context. Call this when older conversation is no longer needed verbatim - compress by need, not by percentage. Write the summary yourself: preserve full file paths with line numbers, commands, ids, verbatim user quotes labeled as history, decisions, and an Open objectives carry-forward line; drop dead-end exploration but keep its lesson in one line. The summary replaces everything older than the protected recent tail (keepLast); the first user message stays visible. Folding is reversible: decompress restores the originals and search_context finds them. One compress call per batch; make it count.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "description": "The fold summary you wrote: markdown replacing the folded range. Keep full file paths with line numbers, commands, ids, decisions, verbatim user quotes labeled as history, and end with an Open objectives line."
+          },
+          "keepLast": {
+            "type": "integer",
+            "description": "Protect this many of the most recent messages from the fold; defaults to the configured tail."
+          }
+        },
+        "required": [
+          "summary"
+        ]
+      }
+    },
+    {
+      "name": "decompress",
+      "description": "Restore the original messages behind a fold and read them again. Pass the fold id shown by acp_status or a compress receipt (or omit it for the newest fold). The originals return as this tool result - the conversation surface stays folded, so reading a fold costs only the returned text. Long folds are truncated; use search_context for targeted retrieval instead of restoring everything.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "foldId": {
+            "type": "string",
+            "description": "Fold id from acp_status or a compress receipt (short form works); omit for the newest fold."
+          }
+        }
+      }
+    },
+    {
       "name": "read_image",
       "description": "Read a PNG/JPEG/WebP/GIF file and return the image itself. Large images are downscaled automatically; do not install image libraries or create thumbnails to inspect an image.",
       "parameters": {
@@ -29,6 +70,26 @@
         },
         "required": [
           "file_path"
+        ]
+      }
+    },
+    {
+      "name": "search_context",
+      "description": "Keyword-search the conversation: fold summaries, the original messages inside folds, and the visible messages. Use it to recover details you remember but no longer see - file paths, ids, decisions, codewords. Results name folds ([fold id]) or visible messages ([message seq N]) with snippets; to read a whole fold back, call decompress with its id.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Keywords to find. Multiple terms are AND-weighted; longer terms count more."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum hits to return; defaults to the configured search limit."
+          }
+        },
+        "required": [
+          "query"
         ]
       }
     },

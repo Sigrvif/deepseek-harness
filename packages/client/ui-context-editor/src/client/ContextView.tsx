@@ -277,7 +277,7 @@ function RequestsPane({ sessionId, api, labels }: {
         {entries.map(entry => (
           <li key={entry.seq} className={styles.row} data-testid={`request-${String(entry.seq)}`}>
             <span className={styles.tokens}>#{entry.seq}</span>
-            <span className={styles.role}>{entry.purpose ?? 'agent'}</span>
+            <span className={styles.role}>{entry.purpose ?? labels('requests.agent')}</span>
             <span className={styles.text}>{entry.model} · {new Date(entry.time).toLocaleTimeString()} · {entry.status}</span>
             <button type="button" onClick={() => { setOpenSeq(current => current === entry.seq ? undefined : entry.seq) }}>
               {openSeq === entry.seq ? '▾' : '▸'}
@@ -399,10 +399,10 @@ function ToolsPane({ sessionId, api, labels, preview, reload }: {
           </label>
         ))}
         <label className={styles.paramRow}>
-          <span>stop</span>
+          <span>{labels('params.stop')}</span>
           <input
             type="text"
-            placeholder="a, b, c"
+            placeholder={labels('params.stopPlaceholder')}
             defaultValue={(params['stop'] as string[] | undefined)?.join(', ') ?? ''}
             data-testid="param-stop"
             onBlur={(event) => { setStop(event.target.value) }}
@@ -458,7 +458,7 @@ export function ContextView({ sessionId, api, labels }: ContextViewProps): React
           {(labels('state.error') ?? 'Context Editor unavailable: {message}').replace('{message}', error)}
         </p>
       ) : preview === undefined ? (
-        <p>{labels('state.loading') ?? 'Loading context…'}</p>
+        <p>{labels('state.loading') ?? ''}</p>
       ) : pane === 'context' ? (
         <>
           {degraded ? <p className={styles.notice} data-testid="degraded-notice">{labels('state.captureDegraded')}</p> : null}

@@ -62,7 +62,7 @@ function reMaterialized(
   const [first, ...rest] = originals
   if (first === undefined) throw new TypeError('reMaterialized: no originals')
   // Coverage validation demands the shadowed node (the covering event) be cited;
-  // the re-materialized originals ride along for provenance.
+  // the re-materialized originals ride along as cited sources.
   const cited = mode === 'in-place'
     ? [covering.seq, first.seq, ...rest.map(original => original.seq)]
     : [first.seq]
@@ -114,7 +114,13 @@ function expansion(originals: readonly SessionEvent[], covering: SessionEvent): 
   return originals.map((_, index) => reMaterialized(originals.slice(index), covering, index === 0 ? 'in-place' : 'append'))
 }
 
-/** Undo an edit or exclusion: re-materialize the shadowed originals (spec §4.1b). */
+/**
+ * Undo an edit or exclusion: re-materialize the shadowed originals (spec §4.1b).
+ * @param ctx - the host context.
+ * @param sessionId - the session id holding the replacement to undo.
+ * @param startSeq - first log seq of the shadowed range to restore.
+ * @param endSeq - last log seq of the shadowed range to restore.
+ */
 export async function restoreRange(
   ctx: Context,
   sessionId: SessionId,
@@ -134,7 +140,12 @@ export async function restoreRange(
   })
 }
 
-/** Expand a compaction checkpoint in place back to its original messages. */
+/**
+ * Expand a compaction checkpoint in place back to its original messages.
+ * @param ctx - the host context.
+ * @param sessionId - the session id holding the checkpoint.
+ * @param checkpointSeq - log seq of the framed checkpoint event to expand.
+ */
 export async function expandCheckpoint(
   ctx: Context,
   sessionId: SessionId,
@@ -158,7 +169,13 @@ export async function expandCheckpoint(
   })
 }
 
-/** Fork the session at a boundary; the child keeps the exact prefix. */
+/**
+ * Fork the session at a boundary; the child keeps the exact prefix.
+ * @param ctx - the host context.
+ * @param sessionId - the session id to fork.
+ * @param boundarySeq - last log seq the child keeps; later events stay parent-only.
+ * @returns the child session's id.
+ */
 export async function createRecoveryBranch(
   ctx: Context,
   sessionId: SessionId,

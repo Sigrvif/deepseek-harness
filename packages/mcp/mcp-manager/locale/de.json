@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "MCP-Server",
+    "description": "Verbindet nutzerverwaltete MCP-Server und vermittelt deren Werkzeuge an das Modell."
+  }
+}

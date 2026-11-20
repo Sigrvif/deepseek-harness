@@ -1,8 +1,6 @@
 # 04 — Data, settings, and configuration
 
-`DSH_HOME` (the bundle's `dsh-home/` by default; an exported value wins)
-holds everything. Delete it for a factory reset — you lose sessions,
-settings, and stored keys.
+`DSH_HOME` (the bundle's `dsh-home/` by default; an exported value wins) holds everything. Delete it for a factory reset — you lose sessions, settings, and stored keys.
 
 ## Layout
 
@@ -18,31 +16,15 @@ settings, and stored keys.
 | `gui.log`, `gui.pid` | GUI diagnostics; pid used to stop a stale server holding the port |
 | `.env` | Optional user-level env layer (keys etc.; cannot set `DSH_*`/`PATH`/proxy vars) |
 
-KV domains under `storages/`: `session_projcache` (session-listing
-checkpoints), `workspace`, `schedule` (persistent reminders),
-`context_editor` (the Context tab's request log + edits/exclusions/overrides,
-keyed by session id — migrate it together with `sessions/`), and
-`mcp_servers` (2.4.14: the MCP Servers settings page's server definitions —
-each record is one server: name, transport, command/args/env or URL/headers,
-enabled flag).
+KV domains under `storages/`: `session_projcache` (session-listing checkpoints), `workspace`, `schedule` (persistent reminders), `context_editor` (the Context tab's request log + edits/exclusions/overrides, keyed by session id — migrate it together with `sessions/`), and `mcp_servers` (2.4.14: the MCP Servers settings page's server definitions — each record is one server: name, transport, command/args/env or URL/headers, enabled flag).
 
 ## Session logs
 
-Format v4: zstd-compressed JSONL; first record is a header (id, creation
-time, cwd, parent session, preset). Read one with
-`zstd -dc session.v4.jsonl.zstd`. Everything model-visible is
-reconstructable from the log — that is an upstream invariant ("model-visible
-⟺ logged"), and the Context tab's request log is derived from the same
-stream. `/export` in the UI packages a session as ZIP + Markdown. The format
-has been stable across the fork's whole 2.x line.
+Format v4: zstd-compressed JSONL; first record is a header (id, creation time, cwd, parent session, preset). Read one with `zstd -dc session.v4.jsonl.zstd`. Everything model-visible is reconstructable from the log — that is an upstream invariant ("model-visible ⟺ logged"), and the Context tab's request log is derived from the same stream. `/export` in the UI packages a session as ZIP + Markdown. The format has been stable across the fork's whole 2.x line.
 
 ## Settings
 
-One file: `dsh-home/profiles/web/cordis.patch.yml` (plain YAML, one entry
-per plugin; stop dsh before hand-editing — it rewrites the file on the next
-settings change). Deleting a plugin's entry resets that plugin to default;
-deleting the file also removes the shipped SLR preset (restorable from
-`examples/slr-runtime-provider.patch.yml`).
+One file: `dsh-home/profiles/web/cordis.patch.yml` (plain YAML, one entry per plugin; stop dsh before hand-editing — it rewrites the file on the next settings change). Deleting a plugin's entry resets that plugin to default; deleting the file also removes the shipped SLR preset (restorable from `examples/slr-runtime-provider.patch.yml`).
 
 Main namespaces the UI writes:
 
@@ -66,12 +48,7 @@ Most fields are *volatile*: edits apply live without a restart.
 
 ## Credentials
 
-`.credentials.yaml` holds stored keys (written by the Models page; never
-materialized into the process environment) and the
-`client-connection/browser-session` signing grant, which is auto-regenerated
-if missing — deleting just that record fixes login loops after migrations.
-Resolution order for a key reference: this file → inherited env → project
-`.env` → `$DSH_HOME/.env`.
+`.credentials.yaml` holds stored keys (written by the Models page; never materialized into the process environment) and the `client-connection/browser-session` signing grant, which is auto-regenerated if missing — deleting just that record fixes login loops after migrations. Resolution order for a key reference: this file → inherited env → project `.env` → `$DSH_HOME/.env`.
 
 ## Environment variables
 
@@ -88,9 +65,7 @@ Resolution order for a key reference: this file → inherited env → project
 | `DSH_GUI_BROWSER` | Substitute browser executable for the GUI (testing) |
 | `HTTP(S)_PROXY` / `NO_PROXY` / `ALL_PROXY` | Standard proxy env, honored for all outbound requests |
 
-Exported **into** agent shells: `DSH_HOME`, `DSH_SHELL`, `DSH_SESSION_ID`,
-`DSH_PROFILE`, `DSH_PROFILE_DIR`, `DSH_WEB_URL` (secret-looking names are
-scrubbed out).
+Exported **into** agent shells: `DSH_HOME`, `DSH_SHELL`, `DSH_SESSION_ID`, `DSH_PROFILE`, `DSH_PROFILE_DIR`, `DSH_WEB_URL` (secret-looking names are scrubbed out).
 
 ## CLI
 
@@ -104,5 +79,4 @@ scrubbed out).
 ./dsh --version / --help / --dump-config
 ```
 
-`--profile` picks/creates a profile under `$DSH_HOME/profiles`; `--patch`
-adds an overlay patch; first unrecognized token goes to the app command.
+`--profile` picks/creates a profile under `$DSH_HOME/profiles`; `--patch` adds an overlay patch; first unrecognized token goes to the app command.

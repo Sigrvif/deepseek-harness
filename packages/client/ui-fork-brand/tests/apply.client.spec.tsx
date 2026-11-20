@@ -3,6 +3,8 @@
 
 import { Context } from '@deepseek-ai/cordis'
 import { cleanup, render, screen } from '@testing-library/react'
+import { createElement } from 'react'
+import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { apply, inject, ForkBrandMark, ForkBrandName } from '../src/client/index.ts'
@@ -13,7 +15,9 @@ async function bench() {
   const ctx = new Context()
   onTestFinished(async () => { await ctx.fiber.dispose() })
   await ctx.plugin(SlotRegistry).await()
-  return { ctx, slots: ctx.get('slots') as SlotRegistry }
+  const locale = new LocaleRuntime(ctx)
+  ctx.provide('locale', locale)
+  return { ctx, slots: ctx.get('slots') as SlotRegistry, locale }
 }
 
 function declare(slots: SlotRegistry): () => void {
@@ -28,7 +32,7 @@ function declare(slots: SlotRegistry): () => void {
 
 describe('ui-fork-brand browser plugin', () => {
   it('declares only the slot registry', () => {
-    expect(inject).toEqual(['slots'])
+    expect(inject).toEqual(['slots', 'locale'])
   })
 
   it('claims the sidebar brand-mark and brand-name slots', async () => {
@@ -56,7 +60,7 @@ describe('ui-fork-brand browser plugin', () => {
 
     const writeText = vi.fn().mockResolvedValue(undefined)
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
-    render(<ForkBrandName />)
+    render(createElement(ForkBrandName, { t: (key: string) => (key === 'title' ? 'DSLRH' : key) } as never))
     expect(screen.getByText('DSLRH')).toBeDefined()
     const plate = screen.getByText('DSLRH').parentElement!
     expect(plate.getAttribute('data-copy-version')).not.toBeNull()

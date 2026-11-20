@@ -7,10 +7,15 @@ import { en } from '../src/client/locales.ts'
 import { provideChatEditFace, chatEdit, ChatPromptEditAction, ContextEditUserNodeView } from '../src/client/chat-edit.tsx'
 import type { ContextEditorApi } from '../src/client/api.ts'
 
-vi.mock('@deepseek-ai/dsh-client-ui-chat/client', () => ({
-  // The wrapper's fallback branch; the editor branch never touches it.
-  UserMessageNodeView: () => <div data-testid="standard-user-view" />,
-}))
+/** The stubbed standard bubble: the fallback branch the editor delegates to. */
+function StandardBubble(): object {
+  return <div data-testid="standard-user-view" />
+}
+
+/** The stubbed bubble is passed to the face directly (the seat-scan result). */
+function bubbleOf(): unknown {
+  return StandardBubble
+}
 
 afterEach(() => {
   cleanup()
@@ -66,7 +71,7 @@ function freshStandard(): { sessionId: string; inputActions: { setDraft: ReturnT
 describe('ChatPromptEditor', () => {
   it('opens with the message text, and cancel restores the standard view without calls', async () => {
     const api = mockApi()
-    provideChatEditFace(api, labelsOf())
+    provideChatEditFace(api, labelsOf(), bubbleOf())
     chatEdit.open('m-1')
     const standard = freshStandard()
     const view = render(createElement(ContextEditUserNodeView, {
@@ -82,7 +87,7 @@ describe('ChatPromptEditor', () => {
 
   it('save & resend excludes from the message seq and submits the edited text', async () => {
     const api = mockApi()
-    provideChatEditFace(api, labelsOf())
+    provideChatEditFace(api, labelsOf(), bubbleOf())
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
     chatEdit.open('m-1')
     const standard = freshStandard()
@@ -103,7 +108,7 @@ describe('ChatPromptEditor', () => {
   it('keeps the editor open with the error when the exclusion fails', async () => {
     const api = mockApi()
     api.excludeFrom = vi.fn(() => Promise.reject(new Error('session has an open turn')))
-    provideChatEditFace(api, labelsOf())
+    provideChatEditFace(api, labelsOf(), bubbleOf())
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
     chatEdit.open('m-1')
     const standard = freshStandard()
@@ -125,7 +130,7 @@ describe('ChatPromptEditAction', () => {
   const base = { messageId: 'm-1' }
 
   it('renders nothing while the session runs', () => {
-    provideChatEditFace(mockApi(), labelsOf())
+    provideChatEditFace(mockApi(), labelsOf(), bubbleOf())
     const view = render(createElement(ChatPromptEditAction, {
       ...base, useSession: session(true), useAccess: access(true),
     } as never))
@@ -133,7 +138,7 @@ describe('ChatPromptEditAction', () => {
   })
 
   it('renders nothing without prompt access', () => {
-    provideChatEditFace(mockApi(), labelsOf())
+    provideChatEditFace(mockApi(), labelsOf(), bubbleOf())
     const view = render(createElement(ChatPromptEditAction, {
       ...base, useSession: session(false), useAccess: access(false),
     } as never))
@@ -141,7 +146,7 @@ describe('ChatPromptEditAction', () => {
   })
 
   it('opens the editor for the clicked message on a settled session', () => {
-    provideChatEditFace(mockApi(), labelsOf())
+    provideChatEditFace(mockApi(), labelsOf(), bubbleOf())
     const view = render(createElement(ContextEditUserNodeView, {
       node: userNode(), ...freshStandard(),
     } as never))

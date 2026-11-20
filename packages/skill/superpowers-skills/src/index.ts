@@ -7,7 +7,7 @@
  * shipped launchers export `DSH_BUNDLED_SKILL_DIR` pointing at it, so the
  * preset-mounted skill-filesystem provider discovers it as the
  * lowest-precedence `bundled` source. This module exists so the package
- * conforms to the host build graph; it carries only provenance constants.
+ * conforms to the host build graph; it carries only attribution constants.
  *
  * @module @deepseek-ai/dsh-superpowers-skills
  */

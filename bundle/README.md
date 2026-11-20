@@ -14,8 +14,8 @@ connection is required to run it.
 | `DSLRH-Linux/` | Linux x86-64 (glibc) | dsh 0.2.2-alpha.2 fork + Node.js v24.22.1 |
 | `DSLRH-Windows/` | Windows 10/11 x64 | dsh 0.2.2-alpha.2 fork + Node.js v24.22.1 |
 
-The bundles carry a **fork of dsh 0.2.2-alpha.2** (upstream commit
-`e9b2168`): **DSLRH** (DeepSeek Local Runtime Harness) — the same harness
+The bundles carry a **fork of dsh 0.2.2-alpha.2** (the pristine upstream
+release): **DSLRH** (DeepSeek Local Runtime Harness) — the same harness
 with the native Context Editor integrated, the local-testing defaults
 summarized under [Adjustments in this package](#adjustments-in-this-package),
 and one upstream subsystem removed on purpose (the command sandbox). Each
@@ -145,7 +145,7 @@ has it received so far?*
   token estimate per row and for the whole request. Each row can be
   **edited** (text replaced in place, reasoning signatures handled), or
   **excluded** (removed from every future request; the timeline hides it
-  too). Edits keep their original as provenance — **Restore original** puts
+  too). Edits keep their original text — **Restore original** puts
   it back exactly. Multi-row selection supports batch edits and batch
   exclusion.
 - **Requests pane** — the log of the last requests actually sent to the
@@ -694,7 +694,7 @@ the set a native install on that OS would have.
   described above), not the Electron desktop app.
 - dsh is a fast-moving developer preview ("THERE WILL BE COMPATIBILITY-
   BREAKING CHANGES", per upstream). These bundles are pinned to the fork of
-  `0.2.2-alpha.2` (upstream commit `e9b2168`); the fork's own changes are
+  `0.2.2-alpha.2` (the pristine upstream release); the fork's own changes are
   tracked in the `FORK.md` inside the fork repository, and upstream updates
   can be merged following its runbook.
 - x64 only; Linux builds expect a standard glibc distribution (built around

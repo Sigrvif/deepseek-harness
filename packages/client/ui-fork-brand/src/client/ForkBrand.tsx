@@ -7,13 +7,11 @@
  */
 
 import type { ReactNode } from 'react'
+import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { useClipboardCopy } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SidebarBrandMarkOwnerProps } from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import dslrhMark from './assets/dslrh-mark.png'
 import css from './ForkBrand.module.css'
-
-/** The fork title as the name plate renders it. */
-export const FORK_TITLE = 'DSLRH'
 
 /**
  * The sidebar logo mark: the DSLRH artwork at the requested square edge.
@@ -26,10 +24,12 @@ export function ForkBrandMark({ size }: SidebarBrandMarkOwnerProps): ReactNode {
 
 /**
  * The sidebar name plate: the fork title over its version, click to copy the
- * version (the local-build fallbacks' behavior, kept).
+ * version (the local-build fallbacks' behavior, kept). The title is
+ * locale-owned (`forkBrand.title`); the brand name is language-independent.
+ * @param props - the slot runtime face plus the namespace-bound translate.
  * @returns the name plate.
  */
-export function ForkBrandName(): ReactNode {
+export function ForkBrandName(props: PropsRuntime<'sidebar.brand.name'> & PropsLocale<'forkBrand'>): ReactNode {
   const forkVersion = process.env.DSH_CLIENT_FORK_VERSION
   const { copied, onCopy } = useClipboardCopy(forkVersion ?? '')
   return (
@@ -39,7 +39,7 @@ export function ForkBrandName(): ReactNode {
       title={copied ? undefined : forkVersion}
       onClick={onCopy}
     >
-      <span className={css.title}>{FORK_TITLE}</span>
+      <span className={css.title}>{props.t('title')}</span>
       {forkVersion !== undefined && <span className={css.version}>{forkVersion}</span>}
     </span>
   )

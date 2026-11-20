@@ -56,7 +56,11 @@ export async function foldUsage(ctx: Context, session: Session): Promise<FoldUsa
   }
 }
 
-/** One-line usage summary for receipts and nudges. */
+/**
+ * One-line usage summary for receipts and nudges.
+ * @param usage - from {@link foldUsage}.
+ * @returns a single `Context now: …` line; unknown numbers render as `unknown`.
+ */
 export function usageLine(usage: FoldUsage): string {
   const used = usage.pressureTokens === undefined ? 'unknown' : `~${formatCount(usage.pressureTokens)}`
   const window = usage.contextWindow === undefined ? 'unknown' : formatCount(usage.contextWindow)

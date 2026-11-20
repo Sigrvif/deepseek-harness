@@ -20,7 +20,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 // Type-only: pulls this package's LocaleNamespaceMap merge ('forkAutoSkills').
 import type {} from './locales.ts'
 import { AutoSkillsRow, type AutoSkillsRowInjected } from './AutoSkillsRow.tsx'
-import { en, zh } from './locales.ts'
+import { en, ja, es, fr, de, ru, pt, zh } from './locales.ts'
 
 export type { AutoSkillsKey } from './locales.ts'
 
@@ -39,7 +39,7 @@ export const inject = ['slots', 'locale', 'configForms']
 
 /** Register the auto-superpowers row on the General settings section. */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-fork-auto-skills: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'ui-fork-auto-skills: dictionaries')
 
   const t = ctx.locale.bind(NS)
   const form = ctx.configForms.get<{ autoUsingSuperpowers?: boolean }>(NAMESPACE)

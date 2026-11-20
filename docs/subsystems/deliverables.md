@@ -31,14 +31,21 @@ interface WorkspaceChangedFile {
    * directory, otherwise the absolute path. Always slash-separated.
    */
   display: string
-  /** Lines added; zero for a binary or oversized file. */
+  /** Lines added; zero for a binary, oversized, or observed file. */
   added: number
-  /** Lines deleted; zero for a binary or oversized file. */
+  /** Lines deleted; zero for a binary, oversized, or observed file. */
   deleted: number
   /** Present when git reported the file as binary, or when a captured side holds a NUL byte. */
   binary?: true
   /** Present when a captured side exceeded the plugin's `maxFileBytes`; the file is listed without counts or comparison. */
   oversized?: true
+  /**
+   * fork(workspace-changes): present when the turn's watcher saw the path written
+   * but no earlier copy exists to compare — a write to an ignored path or to a
+   * working directory outside any repository — so the file is listed without
+   * counts; it may have been removed again by turn end (2.4.29).
+   */
+  observed?: true
 }
 ```
 
@@ -106,6 +113,12 @@ type WorkspaceFileDiff =
   | { kind: 'binary'; path: string; display: string }
   /** A side larger than the plugin's `maxFileBytes`; no lines are served. */
   | { kind: 'oversized'; path: string; display: string }
+  /**
+   * fork(workspace-changes): a file the turn's watcher saw written with no earlier
+   * copy to compare — an ignored path or a repository-free working directory
+   * (2.4.29).
+   */
+  | { kind: 'observed'; path: string; display: string }
 ```
 
 ## `WorkspaceChanges` — the Host service serving summaries and comparisons

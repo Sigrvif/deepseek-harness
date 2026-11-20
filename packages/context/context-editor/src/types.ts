@@ -37,8 +37,10 @@ export interface OverridesRecord {
   params: { temperature?: number; maxTokens?: number; stop?: string[] }
 }
 
-// Storage schemas stay deliberately loose: the durable payload is the
-// JSON-lossless request snapshot, and the wire boundary re-types it.
+/**
+ * Storage schema of one captured request. Deliberately loose: the durable
+ * payload is the JSON-lossless request snapshot, and the wire boundary re-types it.
+ */
 export const capturedRequestSchema = z.object({
   seq: z.number(),
   time: z.string(),
@@ -52,6 +54,7 @@ export const capturedRequestSchema = z.object({
   error: z.string().optional(),
 })
 
+/** Storage schema of one session's stored tool/parameter overrides. */
 export const overridesRecordSchema = z.object({
   removedTools: z.array(z.string()),
   toolEdits: z.record(z.string(), z.custom<JsonValue>()),

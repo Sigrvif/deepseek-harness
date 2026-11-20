@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Sentinela de tarefas",
+    "description": "Relata tarefas em segundo plano que ainda estão em execução quando o agent volta a agir."
+  }
+}

@@ -6,7 +6,11 @@ import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import contextEditorRemote from '@deepseek-ai/dsh-context-editor/remote'
 
-/** Mount the contextEditor remote into the client remote registry. */
+/**
+ * Mount the contextEditor remote into the client remote registry.
+ * @param ctx - the client context.
+ * @returns the disposer that withdraws the mounted namespace.
+ */
 export async function mountContextEditorRemote(ctx: ClientContext): Promise<unknown> {
   return ctx.remote.$mount(contextEditorRemote)
 }

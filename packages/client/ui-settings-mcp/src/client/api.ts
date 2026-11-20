@@ -24,6 +24,9 @@ export interface McpManagerApi {
 
 type RawNamespace = Record<string, (args?: unknown) => Promise<{ ok: boolean; value?: unknown; error?: { message: string; code: string } }>>
 
+/** Argument-bearing call shape. */
+type CallArgs = Record<string, unknown>
+
 /**
  * Adapt the mounted namespace to the page's API. Mounted methods sit behind
  * their wire export names (kebab-case) and answer RemoteResult envelopes;
@@ -31,9 +34,6 @@ type RawNamespace = Record<string, (args?: unknown) => Promise<{ ok: boolean; va
  * @param namespace - the mounted `remote.mcpManager` namespace service.
  * @returns the promise-style API the section consumes.
  */
-/** Argument-bearing call shape. */
-type CallArgs = Record<string, unknown>
-
 export function mcpManagerApi(namespace: unknown): McpManagerApi {
   const raw = namespace as RawNamespace
   const call = async <T>(name: string, args?: CallArgs): Promise<T> => {

@@ -164,4 +164,5 @@ export function apply(ctx: Context, config: Config): void {
   ctx.inject(['settings'], (child) => { child.effect(() => child.settings.configure({ auto: false }, ctx.fiber)) })
 }
 
+/** Cordis loader shape: the plugin name, required services, config schema, and the {@link apply} mount. */
 export default { name, inject, Config, apply }

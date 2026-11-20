@@ -119,6 +119,10 @@ function rangeReplacement(startSeq: number, endSeq: number): { type: SessionEven
   }
 }
 
+/**
+ * One event appended through an AppendTarget: a log-only protocol event, an
+ * in-place replacement of a seq range, or a plain surface append.
+ */
 export interface Replacement {
   type: SessionEvent['type']
   data: Record<string, unknown>
@@ -133,6 +137,13 @@ export interface AppendTarget {
   append(replacement: Replacement): SessionEvent
 }
 
+/**
+ * Run a validated edit batch over a session's events — live through the host
+ * Session, or cold through a detached replay Session persisted atomically.
+ * @param ctx - the host context.
+ * @param sessionId - the session id whose log is edited.
+ * @param build - the edit body; appends replacements against the snapshot it receives.
+ */
 export async function applyOperations(
   ctx: Context,
   sessionId: SessionId,
@@ -206,7 +217,13 @@ export async function applyOperations(
   }
 }
 
-/** Replace one message's text content in place. */
+/**
+ * Replace one message's text content in place.
+ * @param ctx - the host context.
+ * @param sessionId - the session id holding the message.
+ * @param targetSeq - log seq of the message event to replace.
+ * @param edit - the replacement text and, when set, the single textual block to edit.
+ */
 export async function editMessage(
   ctx: Context,
   sessionId: SessionId,
@@ -222,7 +239,13 @@ export async function editMessage(
   })
 }
 
-/** Exclude a contiguous message range from model input. */
+/**
+ * Exclude a contiguous message range from model input.
+ * @param ctx - the host context.
+ * @param sessionId - the session id whose range is excluded.
+ * @param startSeq - first log seq of the range to exclude.
+ * @param endSeq - last log seq of the range to exclude.
+ */
 export async function excludeRange(
   ctx: Context,
   sessionId: SessionId,
@@ -244,8 +267,13 @@ export async function excludeRange(
   })
 }
 
-/** Exclude one message and everything after it, computed atomically against the
- * same snapshot the replacement validates over (the chat's edit-and-resend). */
+/**
+ * Exclude one message and everything after it, computed atomically against the
+ * same snapshot the replacement validates over (the chat's edit-and-resend).
+ * @param ctx - the host context.
+ * @param sessionId - the session id whose tail is excluded.
+ * @param startSeq - log seq of the first message to exclude; the tail follows it.
+ */
 export async function excludeFrom(
   ctx: Context,
   sessionId: SessionId,

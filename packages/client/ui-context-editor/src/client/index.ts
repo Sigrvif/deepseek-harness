@@ -21,7 +21,7 @@ import { ContextView } from './ContextView.tsx'
 import type { ContextEditorApi } from './api.ts'
 import { ContextEditUserNodeView, provideChatEditFace } from './chat-edit.tsx'
 import { mountContextEditorRemote } from './remote.ts'
-import { en, zh } from './locales.ts'
+import { zh, en, ja, es, fr, de, ru, pt } from './locales.ts'
 
 export type { ContextEditorApi } from './api.ts'
 export { ContextView } from './ContextView.tsx'
@@ -82,18 +82,23 @@ function contextEditorApi(namespace: unknown): ContextEditorApi {
  */
 export async function apply(ctx: ClientContext): Promise<void> {
   await mountContextEditorRemote(ctx)
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-context-editor: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'ui-context-editor: dictionaries')
 
   ctx.inject(['remote.contextEditor', 'slots', 'locale'], (scoped: ClientContext) => {
     const scopedLocale = scoped.locale.bind(NS) as (key: string) => string
-    const api = contextEditorApi((scoped.remote as unknown as { contextEditor: unknown }).contextEditor)
+    const api = contextEditorApi((scoped.remote as { contextEditor?: unknown }).contextEditor)
 
     // fork(context-editor): the chat prompt edit-and-resend. The replacement
     // entries shadow the standard user/steering renderers (same key, lower
     // priority = lower renders) and own the user row's seat declaration —
     // child declarations are globally unique per slot, so the standard user
     // entry's registration dropped it in the same change.
-    provideChatEditFace(api, scopedLocale)
+    // The standard bubble renderer is ui-chat's own registration on the shared
+    // node seat (this package's replacement shadows it by priority); the module
+    // graph forbids importing it, so the component is resolved from the seat.
+    const standardBubble = scoped.slots.entries('conversation.chat.node')
+      .find(entry => entry.options.key === 'user' && entry.component !== ContextEditUserNodeView)?.component
+    provideChatEditFace(api, scopedLocale, standardBubble)
     scoped.slots.inject('conversation.chat.node', () => scoped.slots.register({
       name: 'conversation.chat.node',
       key: 'user',

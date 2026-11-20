@@ -98,6 +98,13 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   { file: 'packages/client/ui-agent-preset/tests/apply.client.spec.ts', upstream: ['cordis'] },
   { file: 'packages/client/ui-agent-preset/tests/locales.client.spec.ts', upstream: ['cordis'] },
   { file: 'packages/client/ui-agent-preset/tests/section.client.spec.tsx', upstream: ['cordis'] },
+  // fork(vendor-rescope): the fork's user documentation names the `cordis`
+  // preset in the same product-data sense; the docs table and the Context
+  // Fold plan quote the id, not the npm package.
+  { file: 'docs/dslrh/01-what-it-is.md', upstream: ['cordis'] },
+  { file: 'docs/dslrh/02-model-surface.md', upstream: ['cordis'] },
+  { file: 'docs/dslrh/05-fork-changes.md', upstream: ['cordis'] },
+  { file: 'docs/superpowers/plans/2026-10-29-context-fold.md', upstream: ['cordis'] },
   { file: 'apps/cli/tests/web-agent-presets.e2e.ts', upstream: ['cordis'] },
   { file: 'apps/cli/tests/profiles/web/tests/fixtures/creator-plugin-manager.mjs', upstream: ['cordis'] },
   { file: 'apps/web/tests/agent-preset-authoring.e2e.ts', upstream: ['cordis'] },
@@ -667,7 +674,10 @@ function main(): void {
   const mode = args.includes('--apply') ? 'apply' : args.includes('--check') ? 'check' : 'dry'
   const reverse = args.includes('--reverse')
   const all = patterns(reverse)
-  const files = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
+  // fork(vendor-rescope): this repository's file listing exceeds Node's default
+  // spawnSync buffer; mirror the 64 MiB ceiling the repository-reference scan
+  // uses for the same listing.
+  const files = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
     .split('\0')
     .filter(file => file !== '' && !isRescopeExcluded(file))
 

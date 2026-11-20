@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-change-report",
-  "description": "Per-turn files-changed notices for the DeepSeek Harness — a compact, non-waking report of what the last turn changed, so the model knows what it touched (fork addition)",
+  "description": "Per-turn files-changed notices for the DeepSeek Harness \u2014 a compact, non-waking report of what the last turn changed, so the model knows what it touched (fork addition)",
   "version": "0.2.2-alpha.2",
   "publishConfig": {
     "access": "public"
@@ -23,7 +23,6 @@
   },
   "files": [
     "lib/index.js",
-    "lib/types/**/*.js",
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",

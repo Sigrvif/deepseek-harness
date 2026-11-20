@@ -4,6 +4,10 @@ import { defineDomain, domainTable } from '@deepseek-ai/dsh-storage-domain'
 import { capturedRequestSchema, overridesRecordSchema } from './types.ts'
 import type { CapturedRequest, OverridesRecord } from './types.ts'
 
+/**
+ * The `context_editor` domain singleton: the request capture log and the
+ * per-session override records, both keyed by session id.
+ */
 export const contextEditorDomain = defineDomain({
   name: 'context_editor',
   version: 1,

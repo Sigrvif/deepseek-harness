@@ -21,13 +21,19 @@ export interface RequestCapture {
 
 function jsonSafe(value: unknown): unknown {
   try {
-    return JSON.parse(JSON.stringify(value ?? null)) as unknown
+    const parsed: unknown = JSON.parse(JSON.stringify(value ?? null))
+    return parsed
   } catch {
     return String(value)
   }
 }
 
-/** The storage key of one captured request (shared with the remote read side). */
+/**
+ * The storage key of one captured request (shared with the remote read side).
+ * @param sessionId - the session id the request belongs to.
+ * @param seq - the per-session request number of the capture.
+ * @returns the key `sessionId#seq`, zero-padded so keys sort by seq.
+ */
 export function keyFor(sessionId: string, seq: number): string {
   return `${sessionId}#${String(seq).padStart(6, '0')}`
 }
@@ -43,6 +49,14 @@ function sessionSeqs(table: KvTable<string, CapturedRequest>, sessionId: string)
   return seqs.sort((left, right) => left - right)
 }
 
+/**
+ * Register the `llm/stream` listener that snapshots every outbound request into
+ * the capture table and tracks its outcome. Persistence is fire-and-forget: a
+ * write failure only flips the returned handle's degraded flag.
+ * @param ctx - the host context.
+ * @param table - the requests table of the context_editor domain.
+ * @returns the capture handle exposing persistence health to the requests surface.
+ */
 export function installRequestCapture(ctx: Context, table: KvTable<string, CapturedRequest>): RequestCapture {
   let failed = false
   const fail = (): void => { failed = true }

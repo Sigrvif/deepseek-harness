@@ -10,7 +10,6 @@
 
 import { memo, useState, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
-import { UserMessageNodeView } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { ChatNode, ChatNodeViewProps } from '@deepseek-ai/dsh-client-ui-chat/client'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { IconEditOutlineRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -38,22 +37,38 @@ export const chatEdit = {
 let shared: {
   api: ContextEditorApi
   labels: (key: string) => string
+  /** The standard user/steering bubble renderer, resolved from the chat node seat. */
+  bubble: unknown
 } | undefined
 
 /**
- * Wire the chat components to the mounted `contextEditor` remote and the
- * plugin's own dictionary. `locale.bind` returns the stable per-namespace
- * translate, so the seat stays live across dictionary switches.
+ * Wire the chat components to the mounted `contextEditor` remote, the plugin's
+ * own dictionary, and the chat slot registry. `locale.bind` returns the stable
+ * per-namespace translate, so the seat stays live across dictionary switches.
  * @param api - the camelCase-adapted remote face.
  * @param labels - the `contextEditor` translate seat.
+ * @param bubble - the standard user/steering bubble renderer, read from the
+ *   chat node seat's ui-chat registration (the module graph forbids a runtime
+ *   import between client feature packages).
  */
-export function provideChatEditFace(api: ContextEditorApi, labels: (key: string) => string): void {
-  shared = { api, labels }
+export function provideChatEditFace(api: ContextEditorApi, labels: (key: string) => string, bubble: unknown): void {
+  shared = { api, labels, bubble }
 }
 
-function face(): { api: ContextEditorApi; labels: (key: string) => string } {
+function face(): { api: ContextEditorApi; labels: (key: string) => string; bubble: unknown } {
   if (shared === undefined) throw new Error('context-editor: chat edit face provisioned after use')
   return shared
+}
+
+/**
+ * The standard user/steering bubble renderer ui-chat keeps registered beside
+ * this package's replacement (the fallback entry on the shared node seat).
+ * Undefined only before ui-chat's registration — the transcript rendering it
+ * serves cannot exist then either.
+ */
+function userBubble(): ((props: ContextEditUserViewProps & { promptActions?: ReactNode }) => ReactNode) | undefined {
+  const component = face().bubble
+  return component === undefined ? undefined : component as (props: ContextEditUserViewProps & { promptActions?: ReactNode }) => ReactNode
 }
 
 /** Plain text of a message's content blocks (the editor edits text only). */
@@ -113,8 +128,10 @@ type ContextEditUserViewProps = ChatNodeViewProps<'user' | 'steering'> & {
  */
 export const ContextEditUserNodeView = memo(function ContextEditUserNodeView(props: ContextEditUserViewProps): ReactNode {
   const open = useSyncExternalStore(editing.subscribe, editing.getSnapshot)
+  const Bubble = userBubble()
   const messageId = props.node.data.messageId
-  if (messageId === undefined) return <UserMessageNodeView {...props} />
+  if (Bubble === undefined) return null
+  if (messageId === undefined) return <Bubble {...props} />
   if (open.includes(messageId)) {
     return (
       <ChatPromptEditor
@@ -126,7 +143,7 @@ export const ContextEditUserNodeView = memo(function ContextEditUserNodeView(pro
     )
   }
   return (
-    <UserMessageNodeView
+    <Bubble
       {...props}
       promptActions={(
         <ChatPromptEditAction

@@ -50,14 +50,21 @@ export class McpManagerService extends TypertRemoteService {
     ctx.effect(() => () => this.supervisor.disposeAll())
   }
 
-  /** Every managed server with its live status, storage order. */
+  /**
+   * Every managed server with its live status, storage order.
+   * @returns the server entries in storage order, each definition with its live status.
+   */
   @Remote
   async list(): Promise<{ servers: McpServerEntry[] }> {
     await this.ready
     return { servers: await this.entries() }
   }
 
-  /** Insert or replace one definition and reconcile its fiber. */
+  /**
+   * Insert or replace one definition and reconcile its fiber.
+   * @param request - the definition to insert or replace, matched by its id.
+   * @returns the server entries in storage order after the reconcile.
+   */
   @Remote
   async upsert(request: McpUpsertRequest): Promise<{ servers: McpServerEntry[] }> {
     await this.ready
@@ -70,7 +77,11 @@ export class McpManagerService extends TypertRemoteService {
     return { servers: await this.entries() }
   }
 
-  /** Delete one definition and dispose its fiber. */
+  /**
+   * Delete one definition and dispose its fiber.
+   * @param request - the id of the managed server to delete.
+   * @returns the remaining server entries in storage order.
+   */
   @Remote('delete-server')
   async remove(request: McpIdRequest): Promise<{ servers: McpServerEntry[] }> {
     await this.ready
@@ -80,7 +91,11 @@ export class McpManagerService extends TypertRemoteService {
     return { servers: await this.entries() }
   }
 
-  /** Force one server's remount (clear a stuck connection, pick up new tools). */
+  /**
+   * Force one server's remount (clear a stuck connection, pick up new tools).
+   * @param request - the id of the managed server to restart.
+   * @returns the server entries in storage order with the restarted status.
+   */
   @Remote('restart-server')
   async restart(request: McpIdRequest): Promise<{ servers: McpServerEntry[] }> {
     await this.ready

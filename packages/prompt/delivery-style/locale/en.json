@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Delivery style",
+    "description": "A system-prompt section steering the response to be the deliverable itself."
+  }
+}

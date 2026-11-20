@@ -82,7 +82,9 @@ const CHROME_ROWS: readonly ChromeRow[] = [
     file: SIDEBAR,
     selector: '.logoRow',
     markup: 'client/ui-sidebar/src/client/SidebarRoot.tsx',
-    height: ['height', '60px'],
+    // fork(context-editor): the row grew to 76px so the fork's 60px mark fits
+    // inside the 8px vertical padding (2.4.26).
+    height: ['height', '76px'],
   },
   {
     file: CONVERSATION,

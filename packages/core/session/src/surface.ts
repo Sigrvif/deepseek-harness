@@ -120,6 +120,19 @@ export function isReplacementSurfaceEvent(
 /** fork(context-editor): structural block shape for the exclusion marker check. */
 type ContentBlockLike = { readonly type?: string; readonly text?: string }
 
+/**
+ * Project a single event into the LLM message it derives to, or null when it
+ * produces none — a non-surface event, an empty-content system, developer, or
+ * assistant message, or a context-edit replacement emptied by exclusion
+ * (fork(context-editor): the exclusion marker check below). A caller
+ * reconstructing model input supplies the same prefix's `projectedMessages`
+ * from {@link foldSurface}; without that map this function reads original
+ * event content. Messages are immutable and unchanged content retains its
+ * durable identity.
+ * @param event - the event to project.
+ * @param projectedMessages - message projections from the same log prefix's surface fold.
+ * @returns the derived message, or null when the event produces none.
+ */
 export function deriveEventMessage(
   event: SessionEvent,
   projectedMessages?: ReadonlyMap<SessionSeq, Message>,
@@ -734,13 +747,21 @@ export class SurfaceManager implements SessionSurface {
 // client fold. They read the event-data marker written by the Context Editor.
 type ContextEditMarker = { readonly mode?: string }
 
-/** The Context Editor replacement marker of an event, when present. */
+/**
+ * The Context Editor replacement marker of an event, when present.
+ * @param event - a session event; only its `data` field is read.
+ * @returns the replacement marker, or undefined when the event carries none.
+ */
 export function contextEditMarkerOf(event: { readonly data?: unknown }): ContextEditMarker | undefined {
   const marker = (event.data as { contextEdit?: ContextEditMarker } | undefined)?.contextEdit
   return marker
 }
 
-/** Whether a durable surface event is a Context Editor replacement. */
+/**
+ * Whether a durable surface event is a Context Editor replacement.
+ * @param event - a session event; its `data` marker and `surfaceOp` are read.
+ * @returns true when the event carries the replacement marker and a surface op.
+ */
 export function isContextEditReplacement(event: { readonly data?: unknown; readonly surfaceOp?: unknown }): boolean {
   return contextEditMarkerOf(event) !== undefined && typeof event.surfaceOp === 'object' && event.surfaceOp !== null
 }
@@ -754,7 +775,11 @@ export interface ContextEditIntakeEntry {
   }
 }
 
-/** The surface seqs that context-edit replacements shadow, for intake filtering. */
+/**
+ * The surface seqs that context-edit replacements shadow, for intake filtering.
+ * @param entries - one intake entry per candidate replacement event.
+ * @returns the seqs the replacements shadow: cited source seqs when present, else the replace range.
+ */
 export function contextEditShadowedSeqs(entries: readonly ContextEditIntakeEntry[]): Set<number> {
   const shadowed = new Set<number>()
   for (const { event } of entries) {

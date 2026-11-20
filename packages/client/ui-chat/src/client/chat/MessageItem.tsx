@@ -11,6 +11,7 @@ import type { ModelRetryNode, TurnErrorNode, UserMessageNode } from '../contract
 import { CompactionItem } from './CompactionItem.tsx'
 import { ContextInjectionRow } from './ContextInjectionRow.tsx'
 import { MessageIconActions } from './MessageIconActions.tsx'
+import { formatRunDuration } from './message-chrome.ts'
 import css from './MessageItem.module.css'
 
 const EMPTY_TEXT_FACTS: Readonly<Partial<UserTextFacts>> = {}
@@ -41,17 +42,6 @@ function contentParts(content: readonly unknown[]): {
 
 function retrySeconds(milliseconds: number): number {
   return Math.max(1, Math.ceil(milliseconds / 1_000))
-}
-
-/** Coarse live duration for long waits ("45s", "18m 30s", "2h 13m"). */
-function retryDuration(milliseconds: number): string {
-  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1_000))
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  if (hours > 0) return `${hours}h ${minutes}m`
-  if (minutes > 0) return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`
-  return `${seconds}s`
 }
 
 interface RetryCountdown {
@@ -126,7 +116,7 @@ function ModelRetryItem({ node, active, t }: {
                 label,
                 retry: node.retry,
                 maximum,
-                duration: retryDuration(active ? deadline - Date.now() : node.delayMs),
+                duration: formatRunDuration(active ? deadline - Date.now() : node.delayMs, t).map(part => part.text).join(''),
               })
               : t('message.retry.status', { label, retry: node.retry, maximum, seconds })}
           </TextShimmer>

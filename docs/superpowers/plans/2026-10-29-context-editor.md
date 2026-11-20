@@ -82,7 +82,7 @@ The five failure modes most likely to bite a user, each pinned by a test in the 
 
 **Interfaces:**
 - Consumes: `Session` (`@deepseek-ai/dsh-session`: `session.log`, `session.surface.nodes`, `session.surface.contentGeneration`, `session.deriveMessages()`); token estimates `estimateMessage(message)` from `@deepseek-ai/dsh-token-meter/estimate`.
-- Produces: `interface ContextRow { seq: number; role: 'system' | 'developer' | 'user' | 'assistant' | 'tool'; text: string; blocks: unknown[]; excluded: boolean; editedFrom?: number[]; excludes?: number[]; estimateTokens: number }`; `interface ContextPreview { sessionId: string; rows: ContextRow[]; totalTokens: number; config: Record<string, unknown>; tools?: unknown[] }`. `export function previewContext(session: Session): ContextPreview` — walk `session.surface.nodes`, derive each event via `session.deriveEventMessage(event)`; provenance: replacement events (those with `surfaceOp.op === 'replace'`) carry `editedFrom`/`excludes` = their `sourceEventSeqs`; a row is `excluded` when its message source `kind === 'context-edit'` with `mode: 'excluded'`. Role from event type.
+- Produces: `interface ContextRow { seq: number; role: 'system' | 'developer' | 'user' | 'assistant' | 'tool'; text: string; blocks: unknown[]; excluded: boolean; editedFrom?: number[]; excludes?: number[]; estimateTokens: number }`; `interface ContextPreview { sessionId: string; rows: ContextRow[]; totalTokens: number; config: Record<string, unknown>; tools?: unknown[] }`. `export function previewContext(session: Session): ContextPreview` — walk `session.surface.nodes`, derive each event via `session.deriveEventMessage(event)`; source citation: replacement events (those with `surfaceOp.op === 'replace'`) carry `editedFrom`/`excludes` = their `sourceEventSeqs`; a row is `excluded` when its message source `kind === 'context-edit'` with `mode: 'excluded'`. Role from event type.
 - Produces: `export class ContextEditorService extends TypertRemoteService` (pattern: `packages/feedback/message-feedback/src/index.ts:118-135`), `static inject = ['sessions', 'sessionPersistence', 'llm', 'storageDomain', 'compaction']`, `super(ctx, 'contextEditor')`; methods `@Remote('preview') async preview(sessionId): Promise<ContextPreview>` (live session via `ctx.sessions.get`, else cold read via `ctx.sessionPersistence.open(id, 'read')` + `Session.fromRestore` — mirror the cold pattern in `packages/feedback/message-feedback/src/index.ts:221-284`); `@Remote('list-requests') async listRequests(sessionId, before?): Promise<{ entries: CapturedRequest[]; hasMore: boolean; captureDegraded: boolean }>` (capture records a module-level degraded flag when a log write fails — consumed by the Task 12 notice); `@Remote('get-request') async getRequest(sessionId, seq): Promise<CapturedRequest>`.
 - Generate typert descriptors: `pnpm exec tsx scripts/generate-typert.ts` (runs inside `pnpm run typecheck`).
 
@@ -203,7 +203,7 @@ The five failure modes most likely to bite a user, each pinned by a test in the 
 
 **Files:**
 - Modify: `packages/client/ui-context-editor/src/client/ContextView.tsx` (+ new `src/client/rows.tsx`, `src/client/editing.ts`, CSS modules)
-- Test: `packages/client/ui-context-editor/tests/rows.client.spec.tsx`, `tests/editing.client.spec.tsx`
+- Test: `packages/client/ui-context-editor/tests/context-view.client.spec.tsx` (implemented with `chat-edit.client.spec.tsx`; the planned rows/editing specs folded into the ContextView suite)
 
 **Interfaces:**
 - Consumes: `ContextPreview`/`ContextRow` (Task 3); remotes `edit-message`, `exclude-range`, `restore-range`; `estimateTokens` already inside rows (no client-side estimate import needed).
@@ -217,7 +217,7 @@ The five failure modes most likely to bite a user, each pinned by a test in the 
 
 **Files:**
 - Modify: `packages/client/ui-context-editor/src/client/ContextView.tsx` (+ `src/client/requests.tsx`, `src/client/tools.tsx`, CSS)
-- Test: `packages/client/ui-context-editor/tests/requests.client.spec.tsx`, `tests/tools.client.spec.tsx`
+- Test: `packages/client/ui-context-editor/tests/context-view.client.spec.tsx` (the planned requests/tools specs folded into the ContextView suite)
 
 **Interfaces:**
 - Consumes: `listRequests`/`getRequest` (Task 3), captured payloads as-is; `set-tools`/`set-params`/`get-overrides` (Task 8); `CapturedRequest.status/error`.
@@ -234,7 +234,7 @@ The five failure modes most likely to bite a user, each pinned by a test in the 
 - Test: `packages/client/ui-chat/tests/context-edit-timeline.client.spec.tsx` (NEW, ours)
 
 **Interfaces:**
-- Produces: (1) replacement events with source `kind: 'context-edit'` render as their node type with an `edited` badge when `mode: 'edited'` (content = replacement content, provenance = `sourceEventSeqs` for the view-original popover); (2) `mode: 'excluded'` replacements render a collapsed stub row "hidden from model · N messages · restore" (action → same restore flow as Task 11); (3) original append nodes whose seq is cited by a visible context-edit replacement are not rendered (the chat fold must consult the same replacement map — pin the actual fold mechanism first, see Step 1).
+- Produces: (1) replacement events with source `kind: 'context-edit'` render as their node type with an `edited` badge when `mode: 'edited'` (content = replacement content, source citation = `sourceEventSeqs` for the view-original popover); (2) `mode: 'excluded'` replacements render a collapsed stub row "hidden from model · N messages · restore" (action → same restore flow as Task 11); (3) original append nodes whose seq is cited by a visible context-edit replacement are not rendered (the chat fold must consult the same replacement map — pin the actual fold mechanism first, see Step 1).
 
 - [ ] **Step 1: Characterization test (may PASS as-is — that is a result, not a failure):** client spec folding a timeline where a user message is later replaced: assert exactly one user row renders and it shows the EFFECTIVE text. Run it; read the fold path it exercises (`ChatView`/store → node definitions) and use that same mechanism for (3). If compaction today leaves shadowed originals rendered, fix both through the same fold point and note it in FORK.md.
 - [ ] **Step 2: Failing specs** for (1) and (2): replacement-with-`context-edit` renders effective text + badge + view-original popover listing original text; excluded stub renders collapsed with count; shadowed original not rendered.
@@ -250,7 +250,7 @@ The five failure modes most likely to bite a user, each pinned by a test in the 
 **Interfaces:**
 - Produces: FORK.md containing: the complete upstream-diff inventory (3 marked edits with file:line + purpose; 1 new additive upstream file; 2 new packages; `packages/bundle/web-app/cordis.patch.yml` fork sections), the values carried in the fork-defaults block, and the upstream-update runbook (extract new upstream → rebase marked edits → keep our packages → re-run `pnpm vitest run` → re-verify Task 15 boot checks → rebuild bundles).
 
-- [ ] **Step 1: Audit:** `git diff --stat e9b2168..HEAD -- packages/core packages/client/ui-chat packages/bundle` — every listed file must appear in FORK.md; if anything extra appears, either move it into our packages or add it to FORK.md and flag it to the user in the final report.
+- [ ] **Step 1: Audit:** `git diff --stat <upstream-baseline>..HEAD -- packages/core packages/client/ui-chat packages/bundle` — every listed file must appear in FORK.md; if anything extra appears, either move it into our packages or add it to FORK.md and flag it to the user in the final report.
 - [ ] **Step 2:** Write FORK.md. **Step 3:** Commit `docs(context-editor): fork inventory and upstream-update runbook`
 
 ### Task 15: Full build + boot verification

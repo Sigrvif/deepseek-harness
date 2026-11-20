@@ -471,7 +471,8 @@
   },
   "packages/client/ui-conversation/tests/conversation-assembler.client.spec.ts": {
     "a7d8cc8d42e37ad5cc4882241492ac572ed8163c7fb8663180e893c7178e906f": 2,
-    "e4cebb35a6cc2bbb575d30d8dabbf41bcd0e3b0614d216d8a3f4c14a190ad340": 5
+    "e4cebb35a6cc2bbb575d30d8dabbf41bcd0e3b0614d216d8a3f4c14a190ad340": 5,
+    "4f0372ca57fb46ff69e3e5b98c4159760f3efb72debc51704a17829e7559be0e": 1
   },
   "packages/client/ui-conversation/tests/history-transport.perf.client.ts": {
     "4f87e6fde86dc32832b0255e38a4239e92589bbac81e5655f1ed5e1a83243b1f": 1,
@@ -893,7 +894,9 @@
     "9c778420b42b63ce03eb35c8105c06f1232f9934cfc00d4f624add8633797ebf": 1,
     "d2607c1e7b3b435e2b435bd02ab2d1197ec4a4ffab65422fcc8dc0a07d145e64": 1,
     "dcdf72d1bcc53d3868977a16e129c5df351c368e009f810c33ab9e36e63df198": 1,
-    "e45cff8ca88d996ff7e8eefdf86db1a9976b85de0811c136d662a3b313832fdf": 1
+    "e45cff8ca88d996ff7e8eefdf86db1a9976b85de0811c136d662a3b313832fdf": 1,
+    "4bec514f1f7213e00da4a79298a7358a1e2f0b4271f1911996736e181f86371e": 1,
+    "513ba7d2549e7814a30a8cca2f82908df136641cc4f9c847e3c8a1720d80dcce": 1
   },
   "packages/core/system-prompt/src/index.ts": {
     "7fe58280287ff63d40e979e72329f975e11015a95e9a8eec207a5a78748d3c89": 1
@@ -2061,5 +2064,77 @@
   },
   "website/tests/raw-markdown.spec.ts": {
     "016337c62f55ffcdfc006da693aaf9bb20c3bb49260939c0d50191117c48934e": 1
+  },
+  "packages/client/ui-chat/tests/context-edit-timeline.client.spec.tsx": {
+    "2252f54acdfaf39ac3c3ed2d011b03537e70453ffb13495204b58ce2858f4e40": 1,
+    "d10c066b677b7256c1f10124cd6d77d83eb55d56674dc68de04d94cc6dae5cc6": 1,
+    "11c8708c9f5a079415632173fc6187b9e577a1c2b3e710dc8ee81533882dcb2e": 1
+  },
+  "packages/client/ui-context-editor/src/client/index.ts": {
+    "d7d4dbea78b241e7ab9d33b2d0c1454cc43eab61fe9f42249b2d8fd877f8eb28": 1
+  },
+  "packages/client/ui-settings-mcp/src/client/index.ts": {
+    "d7d4dbea78b241e7ab9d33b2d0c1454cc43eab61fe9f42249b2d8fd877f8eb28": 1
+  },
+  "packages/client/ui-settings-mcp/tests/apply.client.spec.tsx": {
+    "38a7cf3dfd5da2f739390f5b233b97731f3bfa1ac3a51fdb8e1594735764bb80": 1
+  },
+  "packages/context/context-editor/src/projection.ts": {
+    "272a02e5f77cc1867fac86cab117455ae90ac11f696e128ffa5d66226824c2d9": 1,
+    "b7131ed146587269ea8e3dee1de6efa88d1f13a6faae370b7509d254dc7eb1a3": 1
+  },
+  "packages/context/context-editor/tests/capture.spec.ts": {
+    "d02f496b49771be2e9b15b001128edc6cee727d4049824d20be12a4043c0e4c8": 1
+  },
+  "packages/context/context-fold/tests/compress.spec.ts": {
+    "4dd1f265ec710503bb27f057a582099a1e9d8b5db80fb45f148e32fd2afb5325": 1,
+    "64ab5463fdb068e88a33f022baff473b7a0da77854c4ecf8e26412763d6dccf6": 1
+  },
+  "packages/context/context-fold/tests/decompress.spec.ts": {
+    "4dd1f265ec710503bb27f057a582099a1e9d8b5db80fb45f148e32fd2afb5325": 1,
+    "64ab5463fdb068e88a33f022baff473b7a0da77854c4ecf8e26412763d6dccf6": 1
+  },
+  "packages/context/context-fold/tests/nudge.spec.ts": {
+    "9dede43e638b9222c2586a04ca3817cbc371e62f62c89188434052bb41cff3f1": 1,
+    "4dd1f265ec710503bb27f057a582099a1e9d8b5db80fb45f148e32fd2afb5325": 2
+  },
+  "packages/context/context-fold/tests/search.spec.ts": {
+    "4dd1f265ec710503bb27f057a582099a1e9d8b5db80fb45f148e32fd2afb5325": 2,
+    "64ab5463fdb068e88a33f022baff473b7a0da77854c4ecf8e26412763d6dccf6": 2
+  },
+  "packages/context/context-fold/tests/status.spec.ts": {
+    "f1f4ff3f2cd489e723d4b79fd3767a6876cb19aea1b7169281084962565fbcaf": 2,
+    "4dd1f265ec710503bb27f057a582099a1e9d8b5db80fb45f148e32fd2afb5325": 1,
+    "64ab5463fdb068e88a33f022baff473b7a0da77854c4ecf8e26412763d6dccf6": 2
+  },
+  "packages/deliverables/change-report/tests/report.spec.ts": {
+    "efad0e8c9291587f571c60b647f0dc5138e765a862180ec08e8f766173ec319a": 1,
+    "cc6452ed26fb58910149fe03d71072a7e04051b71c51bd953f9b3557378f3671": 1,
+    "1d6fd8de16673801894afb3f15d9a67c22596a4cb4a66f005669a8052296efdc": 1
+  },
+  "packages/jobs/job-sentinel/tests/sentinel.spec.ts": {
+    "cf2a2ab3e863f75bb7d1519266ddda937f23bca288bd977b22544dc5bf7ccd09": 1,
+    "4dd1f265ec710503bb27f057a582099a1e9d8b5db80fb45f148e32fd2afb5325": 1,
+    "c3805cc8b488462a649f479df899a1b52a1153b1d93f041b271a538c7b828e5e": 1
+  },
+  "packages/mcp/mcp-manager/src/broker.ts": {
+    "2ba6070a7a796dbf8020795dbe6d38f9629b201d13e451293fe3fee1961a1677": 1
+  },
+  "packages/mcp/mcp-manager/tests/broker.spec.ts": {
+    "2d67513decc673311d06381c1b6dad4d964f3861c1390cfe01c3fa257ec8e853": 1,
+    "bf36d2c0d71bba7e6bb1983a2cdc894bee9ee6f2dce15aa0db49f45b402d8169": 1
+  },
+  "packages/mcp/mcp-manager/tests/service.spec.ts": {
+    "40313c722a7f1076503a3bf0904e148b58098482e31ac5920329b220a51641a2": 1
+  },
+  "packages/prompt/unrestricted-mode/tests/unrestricted.spec.ts": {
+    "cc6452ed26fb58910149fe03d71072a7e04051b71c51bd953f9b3557378f3671": 1,
+    "efad0e8c9291587f571c60b647f0dc5138e765a862180ec08e8f766173ec319a": 1
+  },
+  "packages/skill/superpowers-bootstrap/tests/bootstrap.spec.ts": {
+    "6eef23cee5370e7b20757cf3c9a3b4b47e065553930e64a068e31d7747d91634": 1,
+    "00cb0fe1d4cd883156380da762d1ba6c240dea43cd77d80bdd80487d8eb90388": 1,
+    "d2daabbbf8482d7e3c57eb22e6dd17686c00fd6f401dc1452b46039a17b7916f": 2,
+    "472216887a6683316d26584178f072f8ec7be5f2e0b42f17449a116c569f61ca": 2
   }
 }

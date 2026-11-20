@@ -1,5 +1,47 @@
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.33 (2026-11-20)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
+      + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
+
+Fork changes on top of upstream 0.2.2-alpha.2:
+
+  The gate backlog closes (2.4.33)
+                      Every release since 2.4.5 carried a growing list of
+                      "known pre-existing reds": the fork's own drift
+                      against this repository's own check gates. This
+                      release closes the sweep. The generated catalogs
+                      (composition graphs, cordis/client/config/
+                      persistence catalogs, tsconfig aliases, plugin
+                      reference) are regenerated to the fork composition
+                      for the first time since the sandbox removal, and
+                      the docs gates now hold: every fork package README
+                      carries the standard frontmatter, Summary, Model
+                      Experience and Known Limitations sections (three
+                      packages gained their first README; the prompt
+                      group gained its map), the persistence type
+                      history is acknowledged by a dated compatibility
+                      record, every exported fork name passes the JSDoc
+                      audit, and the client gates are clean - locale
+                      dictionaries ship all eight languages, hard-coded
+                      copy is gone, the chat edit-and-resend delegates
+                      through the shared node seat instead of a
+                      cross-package runtime import, and the retry clock's
+                      duration reads the shared localized formatter.
+                      Package manifests (files lists, peer/dev shapes)
+                      and fourteen package locale metadata sets joined
+                      the repo conventions; the product-classification
+                      policy declares the sandbox/PTC packages the fork
+                      composition deliberately leaves unmounted, and the
+                      repository-reference scan skips the generated
+                      uv.lock. Known remainder: the recorded-session
+                      snapshot suites replay the fork composition from
+                      refreshed fixtures but stay red on hosts without
+                      systemd scopes - the headless app's clean-exit
+                      races a slow managed-range poll under worker load -
+                      and on scenarios exercising capabilities the fork
+                      removed (PTC execution, sandbox escalation).
+
 DSLRH (DeepSeek Local Runtime Harness) package 2.4.32 (2026-11-19)
-Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
@@ -110,7 +152,7 @@ Fork changes on top of upstream 0.2.2-alpha.2:
                       silently.
 
   Mark size to 60px (2.4.26)
-Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
@@ -124,7 +166,7 @@ Fork changes on top of upstream 0.2.2-alpha.2:
                       keeps its small mark.
 
   Brand plate legibility (2.4.25)
-Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
@@ -139,7 +181,7 @@ Fork changes on top of upstream 0.2.2-alpha.2:
                       resolution artwork file.
 
   DSLRH branding (2.4.24)
-Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
@@ -152,7 +194,7 @@ Fork changes on top of upstream 0.2.2-alpha.2:
                       The window title reads DSLRH too.
 
   Right sidebar opening width (2.4.23)
-Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
@@ -165,7 +207,7 @@ Fork changes on top of upstream 0.2.2-alpha.2:
                       and persists for the app run.
 
   Workspace Files sidebar (2.4.22)
-Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
@@ -182,7 +224,7 @@ Fork changes on top of upstream 0.2.2-alpha.2:
                       persists per session as before.
 
   Live fold of edited/excluded context (2.4.21)
-Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
@@ -207,7 +249,7 @@ Fork changes on top of upstream 0.2.2-alpha.2:
                       per field; fields sit at their natural height.
 
   Edit & resend: editor no longer sticks open (2.4.20)
-Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
@@ -224,7 +266,7 @@ Fork changes on top of upstream 0.2.2-alpha.2:
                       of 2.4.19.
 
   Prompt edit & resend (2.4.19)
-Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
@@ -246,7 +288,7 @@ Fork changes on top of upstream 0.2.2-alpha.2:
                       references, skill loads) stay in context.
 
   License paperwork rides every bundle (2.4.18)
-Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:

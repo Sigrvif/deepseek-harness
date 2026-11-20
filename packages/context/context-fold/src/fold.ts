@@ -40,10 +40,14 @@ function eventAt(events: readonly SessionEvent[], seq: SessionSeq | undefined): 
   return events[Number(seq)]
 }
 
-/** The message a surface event carries, if any (mirrors the editor's projection helper). */
+/**
+ * The message a surface event carries, if any (mirrors the editor's projection helper).
+ * @param event - the event to read, or undefined.
+ * @returns the event's message, or undefined when the event carries none.
+ */
 export function messageOf(event: SessionEvent | undefined): Message | undefined {
   if (event === undefined) return undefined
-  if (event.type === 'user/message') return event.data as unknown as Message
+  if (event.type === 'user/message') return event.data as Message
   if (event.type === 'assistant/message' || event.type === 'tool/result'
     || event.type === 'system/message' || event.type === 'developer/message') {
     return (event.data as { message?: Message }).message
@@ -207,6 +211,16 @@ export function planFold(
   }
 }
 
+/** The turn currently open at the log tail, or null between turns (format rule: a numbered compaction owner must match the open turn). */
+function openTurnOf(events: readonly SessionEvent[]): number | null {
+  let open: number | null = null
+  for (const event of events) {
+    if (event.type === 'turn/start') open = (event.data as { turn?: number }).turn ?? null
+    else if (event.type === 'turn/end') open = null
+  }
+  return open
+}
+
 /**
  * Append a fold as the compaction checkpoint protocol: lifecycle events, the
  * model-written summary record, the framed checkpoint message replacing the
@@ -218,16 +232,6 @@ export function planFold(
  * @param meta - summary token estimate and the conversation route that wrote it.
  * @returns the protocol start event and checkpoint message seqs.
  */
-/** The turn currently open at the log tail, or null between turns (format rule: a numbered compaction owner must match the open turn). */
-function openTurnOf(events: readonly SessionEvent[]): number | null {
-  let open: number | null = null
-  for (const event of events) {
-    if (event.type === 'turn/start') open = (event.data as { turn?: number }).turn ?? null
-    else if (event.type === 'turn/end') open = null
-  }
-  return open
-}
-
 export function appendFold(
   session: Session,
   plan: FoldPlan,

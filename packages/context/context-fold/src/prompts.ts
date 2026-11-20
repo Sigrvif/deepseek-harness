@@ -17,18 +17,23 @@
 export const COMPRESS_DESCRIPTION =
   'Fold consumed conversation history into a compact summary to free context. Call this when older conversation is no longer needed verbatim - compress by need, not by percentage. Write the summary yourself: preserve full file paths with line numbers, commands, ids, verbatim user quotes labeled as history, decisions, and an Open objectives carry-forward line; drop dead-end exploration but keep its lesson in one line. The summary replaces everything older than the protected recent tail (keepLast); the first user message stays visible. Folding is reversible: decompress restores the originals and search_context finds them. One compress call per batch; make it count.'
 
+/** The compress tool's `summary` parameter description: what the model must write into a fold. */
 export const COMPRESS_SUMMARY_PARAMETER_DESCRIPTION =
   'The fold summary you wrote: markdown replacing the folded range. Keep full file paths with line numbers, commands, ids, decisions, verbatim user quotes labeled as history, and end with an Open objectives line.'
 
+/** The compress tool's `keepLast` parameter description: the recent-tail protection the model controls. */
 export const COMPRESS_KEEP_LAST_PARAMETER_DESCRIPTION =
   'Protect this many of the most recent messages from the fold; defaults to the configured tail.'
 
+/** The decompress tool description sent on the fold tool surface. */
 export const DECOMPRESS_DESCRIPTION =
   'Restore the original messages behind a fold and read them again. Pass the fold id shown by acp_status or a compress receipt (or omit it for the newest fold). The originals return as this tool result - the conversation surface stays folded, so reading a fold costs only the returned text. Long folds are truncated; use search_context for targeted retrieval instead of restoring everything.'
 
+/** The search_context tool description sent on the fold tool surface. */
 export const SEARCH_CONTEXT_DESCRIPTION =
   'Keyword-search the conversation: fold summaries, the original messages inside folds, and the visible messages. Use it to recover details you remember but no longer see - file paths, ids, decisions, codewords. Results name folds ([fold id]) or visible messages ([message seq N]) with snippets; to read a whole fold back, call decompress with its id.'
 
+/** The acp_status tool description sent on the fold tool surface. */
 export const ACP_STATUS_DESCRIPTION =
   'Show context usage: current pressure against the window, the fold ledger (what was folded, how much it saved), and what to do next. Call this before compressing to see the state, and whenever context feels tight.'
 

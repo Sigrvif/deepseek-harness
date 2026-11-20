@@ -6,7 +6,11 @@ import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import mcpManagerRemote from '@deepseek-ai/dsh-mcp-manager/remote'
 
-/** Mount the mcpManager remote into the client remote registry. */
+/**
+ * Mount the mcpManager remote into the client remote registry.
+ * @param ctx - the client context.
+ * @returns the disposer that withdraws the mounted namespace.
+ */
 export async function mountMcpManagerRemote(ctx: ClientContext): Promise<unknown> {
   return ctx.remote.$mount(mcpManagerRemote)
 }

@@ -15,7 +15,10 @@ export const PARAM_WHITELIST: ReadonlySet<string> = new Set([
   'stop',
 ])
 
-/** Reject anything outside the whitelist with an explicit code. */
+/**
+ * Reject anything outside the whitelist with an explicit code.
+ * @param params - the requested parameter overrides, keyed by field name.
+ */
 export function validateParams(params: Record<string, number | string[]>): void {
   for (const field of Object.keys(params)) {
     if (!PARAM_WHITELIST.has(field)) {
@@ -24,7 +27,12 @@ export function validateParams(params: Record<string, number | string[]>): void 
   }
 }
 
-/** Merge the whitelisted params over the finalized call config. */
+/**
+ * Merge the whitelisted params over the finalized call config.
+ * @param record - the session's stored override record.
+ * @param config - the finalized call config about to be dispatched.
+ * @returns the config with the whitelisted record params merged over it.
+ */
 export function applyParams(record: OverridesRecord, config: LlmCallConfig): LlmCallConfig {
   const merged = { ...config } as LlmCallConfig & Record<string, unknown>
   for (const [field, value] of Object.entries(record.params)) {
@@ -33,7 +41,12 @@ export function applyParams(record: OverridesRecord, config: LlmCallConfig): Llm
   return merged
 }
 
-/** Drop removed tools and apply same-name schema edits (renames are impossible by construction). */
+/**
+ * Drop removed tools and apply same-name schema edits (renames are impossible by construction).
+ * @param record - the session's stored override record.
+ * @param tools - the request's tool schemas as built so far.
+ * @returns the tool list with removals applied and edits merged in.
+ */
 export function applyTools(record: OverridesRecord, tools: NonNullable<GenerateOptions['tools']>): NonNullable<GenerateOptions['tools']> {
   return tools
     .filter(tool => !record.removedTools.includes(tool.name))
@@ -43,7 +56,11 @@ export function applyTools(record: OverridesRecord, tools: NonNullable<GenerateO
     })
 }
 
-/** The registry hooks for one session's record. */
+/**
+ * The registry hooks for one session's record.
+ * @param record - the session's stored override record.
+ * @returns the agent-loop override hooks; aspects the record does not touch are omitted.
+ */
 export function buildOverrides(record: OverridesRecord): ContextEditOverrides {
   return {
     ...(Object.keys(record.toolEdits).length > 0 || record.removedTools.length > 0

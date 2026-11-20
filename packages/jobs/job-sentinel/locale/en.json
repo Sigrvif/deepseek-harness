@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Job sentinel",
+    "description": "Reports background jobs that are still running when the agent steps again."
+  }
+}

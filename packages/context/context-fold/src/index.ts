@@ -7,7 +7,7 @@
  *
  * fork(context-fold): behavior adapted from billion-context
  * (https://github.com/ranxianglei/billion-context, MIT + attribution term) —
- * see ./prompts.ts for the corpus provenance.
+ * see ./prompts.ts for the corpus's source and attribution.
  * @module @deepseek-ai/dsh-context-fold
  */
 
@@ -53,4 +53,5 @@ export function apply(ctx: Context, config: Config = {} as Config): void {
   ctx.effect(() => installNudge(ctx, resolved))
 }
 
+/** The plugin object Cordis loads: name, required services, and mount. */
 export default { name, inject, apply }

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Job-Wächter",
+    "description": "Meldet Hintergrundaufgaben, die noch laufen, wenn der Agent erneut handelt."
+  }
+}

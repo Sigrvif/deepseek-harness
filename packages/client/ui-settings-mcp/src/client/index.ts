@@ -24,7 +24,7 @@ import { McpSection } from './McpSection.tsx'
 import type { McpSectionInjected } from './McpSection.tsx'
 import { mcpManagerApi } from './api.ts'
 import { mountMcpManagerRemote } from './remote.ts'
-import { en, zh } from './locales.ts'
+import { en, ja, es, fr, de, ru, pt, zh } from './locales.ts'
 
 export type { McpSettingsLocaleKey } from './locales.ts'
 export { McpSection } from './McpSection.tsx'
@@ -49,7 +49,7 @@ export const inject = ['remote', 'slots', 'locale', 'configForms']
  */
 export async function apply(ctx: ClientContext): Promise<void> {
   await mountMcpManagerRemote(ctx)
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-settings-mcp: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'ui-settings-mcp: dictionaries')
 
   // The broker flag lives in the mcp-manager namespace (volatile, default on);
   // reads ride the shared settings mirror, writes the revision-fenced mutate.
@@ -72,7 +72,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
       const registry = scoped.slots as unknown as {
         register: (options: Record<string, unknown>, component: unknown) => () => void
       }
-      const binder = scoped.locale.bind(NS) as unknown as (key: string, values?: Record<string, unknown>) => string
+      const binder = scoped.locale.bind(NS) as (key: string, values?: Record<string, unknown>) => string
       return registry.register({
         name: 'settings.section',
         id: 'mcp',
@@ -80,7 +80,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
         label: () => binder('nav'),
         locale: NS,
         inject: (): McpSectionInjected => ({
-          api: mcpManagerApi((scoped.remote as unknown as { mcpManager: unknown }).mcpManager),
+          api: mcpManagerApi((scoped.remote as { mcpManager?: unknown }).mcpManager),
           labels: binder,
           hooks: { broker },
           setBroker: async (enabled: boolean) => {

@@ -48,7 +48,7 @@ describe('ui-fork-info browser plugin', () => {
     expect(entry.options).toMatchObject({ id: 'fork-additions', order: 5 })
     expect(entry.locale).toBe(NS)
     expect(resolveSlotLabel(entry.options.label)).toBe('分支新增功能')
-    // Both dictionaries are registered up front; non-zh/en languages fall back.
+    // All eight shipped dictionaries register up front; the pinned zh-CN resolves the zh dictionary directly.
     expect(b.locale.bind(NS)('editor.name')).toBe(zh['editor.name'])
   })
 

@@ -49,4 +49,18 @@ export const PRODUCT_PACKAGE_POLICY: Readonly<Record<string, ProductPackagePolic
   'packages/client/web': { category: 'web-distribution', reason: 'Browser boot kernel bundled into the Web distribution.' },
   'packages/client/ui-dockkit': { category: 'web-distribution', reason: 'Layout library bundled into the Web distribution.' },
   'packages/util/package-manifest': { category: 'declarations', reason: 'Shared package metadata declarations have no runtime mount.' },
+  // fork(sandbox-removal): DSLRH does not confine shell commands in-process (see
+  // the fork(sandbox-removal) block in packages/bundle/base/cordis.patch.yml), so
+  // the confinement providers, the preset service over them, and the PTC
+  // script-execution seam they gate are unmounted by design. They stay maintained
+  // non-experimental packages: their tests exercise them and a future composition
+  // may mount them again.
+  'packages/shell/bash-sandbox': { category: 'optional', reason: 'Sandboxed bash executor; DSLRH runs the plain local executor, so no product composition mounts this.' },
+  'packages/shell/pwsh-sandbox': { category: 'optional', reason: 'Sandboxed PowerShell executor; DSLRH runs the plain local executor, so no product composition mounts this.' },
+  'packages/fs/fs-sandbox': { category: 'optional', reason: 'File policy enforcement over a confinement provider; DSLRH runs provider-free, so no product composition mounts this.' },
+  'packages/client/ui-permission-presets': { category: 'optional', reason: 'Client surface for the preset service the fork composition does not mount; kept beside it for a future composition.' },
+  'packages/core/tool-executor-ptc': { category: 'optional', reason: 'PTC script executor over the sandbox seam; unmounted by fork(sandbox-removal).' },
+  'packages/ptc-runtime/ptc-runtime': { category: 'optional', reason: 'PTC runtime engine without a mounted provider; unmounted by fork(sandbox-removal).' },
+  'packages/workflow/tool-workflow': { category: 'optional', reason: 'Workflow tool whose engines are stranded without the PTC runtime; unmounted by fork(sandbox-removal).' },
+  'packages/skill/superpowers-skills': { category: 'optional', reason: 'Bundled skill data exposed through DSH_BUNDLED_SKILL_DIR; no product composition imports it.' },
 }

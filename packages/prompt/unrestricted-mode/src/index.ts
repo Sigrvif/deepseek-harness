@@ -3,7 +3,7 @@
  * contract for the system prompt (fork addition, OFF by default).
  *
  * An unscoped `system-prompt/assemble` waterfall listener fuses the ported
- * execution-mode block (see ./text.ts for provenance) into each assembly by
+ * execution-mode block (see ./text.ts for the adapted text) into each assembly by
  * structural section names (see ./fuse.ts). The volatile `enabled` toggle
  * (default false) is read per fire — flipping it on the General settings page
  * takes effect on the next request without remounting, and with the toggle
@@ -65,4 +65,5 @@ export function apply(ctx: Context, config: Config): void {
   ctx.inject(['settings'], (child) => { child.effect(() => child.settings.configure({ auto: false }, ctx.fiber)) })
 }
 
+/** Cordis loader shape: the plugin name, required services, config schema, and the {@link apply} mount. */
 export default { name, inject, Config, apply }

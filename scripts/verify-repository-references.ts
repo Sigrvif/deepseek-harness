@@ -12,7 +12,12 @@ const organizationUrl = new RegExp(`\\bgithub\\.com/${organization}(?![a-z0-9-])
 // The independent kit repository owns the engine source and documentation.
 const kitRepositoryUrl = new RegExp(`\\bgithub\\.com/${organization}/libreoffice-kit(?:\\.git)?(?=/|[^a-zA-Z0-9_.-]|$)`, 'g')
 const commitCandidate = /(?<![a-z0-9])[\da-f]{7,40}(?![a-z0-9])/gi
-const excludedPrefixes = ['vendor/', '.agents/notes/archived/']
+// fork(repository-references): the generated uv.lock carries decimal literals
+// (package sizes) that the candidate scan reads as hex and this repository's
+// larger object database resolves to a unique commit prefix; generated
+// lockfiles cannot be hand-vetted against the git namespace, so they are
+// excluded the way the release snapshots below are.
+const excludedPrefixes = ['vendor/', '.agents/notes/archived/', 'python/sdk/uv.lock']
 const gitOutputLimit = 64 * 1024 * 1024
 // One 41-byte line per object; 1.2 million objects produce about 49 MiB.
 const objectListingLimit = 1024 * 1024 * 1024

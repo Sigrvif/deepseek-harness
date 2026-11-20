@@ -16,11 +16,11 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 // Type-only: pulls this package's LocaleNamespaceMap merge ('forkInfo').
 import type {} from './locales.ts'
 import { ForkInfoTab } from './ForkInfoTab.tsx'
-import { en, zh } from './locales.ts'
+import { zh, en, ja, es, fr, de, ru, pt } from './locales.ts'
 
 export type { ForkInfoLocaleKey } from './locales.ts'
 export { ForkInfoTab } from './ForkInfoTab.tsx'
-export { en, zh } from './locales.ts'
+export { zh, en, ja, es, fr, de, ru, pt } from './locales.ts'
 
 /** Dictionary namespace owned by this plugin. */
 export const NS = 'forkInfo'
@@ -30,7 +30,7 @@ export const inject = ['slots', 'locale']
 
 /** Contribute the Fork additions tab to the Plugins settings section. */
 export function apply(ctx: ClientContext): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-fork-info: dictionaries')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'ui-fork-info: dictionaries')
 
   const t = ctx.locale.bind(NS)
   ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({

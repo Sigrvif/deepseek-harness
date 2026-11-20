@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Plegado de contexto",
+    "description": "Compresión reversible de la conversación ya consumida, dirigida por el modelo."
+  }
+}

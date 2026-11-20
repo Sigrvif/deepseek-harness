@@ -452,6 +452,24 @@ export type Config = LocalConfig
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-bash-sandbox -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-change-report -->
+<a id="deepseek-aidsh-change-report"></a>
+
+## `@deepseek-ai/dsh-change-report`
+
+- `inject`: `workspaceChanges`
+- `refs`: `Volatile` (`@deepseek-ai/cordis`)
+- `source`: [`packages/deliverables/change-report/src/index.ts:38`](../packages/deliverables/change-report/src/index.ts)
+
+```ts config-catalog
+/** Runtime toggle projected to the browser. */
+export interface Config {
+  /** Report each announced turn's changed files to the model at its next step. */
+  enabled: Volatile<boolean>
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-change-report -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-connection -->
 <a id="deepseek-aidsh-client-connection"></a>
 
@@ -823,6 +841,19 @@ export interface ResolvedFoldConfig {
   nudgeGrowthTokens: number
   /** Visible-context pressure fraction that arms a pressure nudge. */
   pressureNudgeRatio: number
+  /**
+   * Usage fraction below which a fired nudge is informational — but only
+   * while the absolute usage is also below {@link nudgeInfoMaxTokens}, so a
+   * million-token window still escalates once real token counts accumulate.
+   */
+  nudgeAdviseRatio: number
+  /** Absolute usage cap (tokens) on the informational tier, independent of the window fraction. */
+  nudgeInfoMaxTokens: number
+  /**
+   * Usage fraction at or above which a fired nudge demands compression
+   * instead of suggesting it; past 0.9 the wording turns urgent.
+   */
+  nudgeDemandRatio: number
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-context-fold -->
@@ -908,6 +939,23 @@ export interface Config {
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-deepseek-account-platform -->
+
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-delivery-style -->
+<a id="deepseek-aidsh-delivery-style"></a>
+
+## `@deepseek-ai/dsh-delivery-style`
+
+- `inject`: `systemPrompt`
+- `source`: [`packages/prompt/delivery-style/src/config.ts:6`](../packages/prompt/delivery-style/src/config.ts)
+
+```ts config-catalog
+/** Runtime schema for the delivery-style section. */
+export interface Config {
+  /** Register the deliverable-style prompt section. */
+  enabled: boolean
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-delivery-style -->
 
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-agent-team -->
 <a id="deepseek-aidsh-experimental-agent-team"></a>
@@ -1922,6 +1970,30 @@ export interface TlsConfig {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-host-webserver -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-job-sentinel -->
+<a id="deepseek-aidsh-job-sentinel"></a>
+
+## `@deepseek-ai/dsh-job-sentinel`
+
+- `inject`: `jobs`
+- `source`: [`packages/jobs/job-sentinel/src/config.ts:6`](../packages/jobs/job-sentinel/src/config.ts)
+
+```ts config-catalog
+/** Plugin config: every knob has a documented default; see the package README. */
+export interface Config {
+  /** Master switch; `false` mounts nothing. */
+  enabled: boolean
+  /**
+   * A job younger than this never triggers a report — the model was told the
+   * command would take a while, and a first look belongs after a real wait.
+   */
+  minAgeMs: number
+  /** Minimum distance between two reports for the same session. */
+  minIntervalMs: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-job-sentinel -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-jobs-local -->
 <a id="deepseek-aidsh-jobs-local"></a>
 
@@ -1994,7 +2066,7 @@ export interface Config extends ProtocolConfig, ModelListingConfig {
 
 - `inject`: `llm`
 - `refs`: `Api` (`@earendil-works/pi-ai`) · `CacheRetention` (`@earendil-works/pi-ai`) · `Model` (`@earendil-works/pi-ai`) · `ModelThinkingLevel` (`@earendil-works/pi-ai`) · `OpenAICompletionsCompat` (`@earendil-works/pi-ai`) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts) · `ThinkingBudgets` (`@earendil-works/pi-ai`) · `Transport` (`@earendil-works/pi-ai`) · `Volatile` (`@deepseek-ai/cordis`)
-- `source`: [`packages/llm/llm-pi-ai/src/config.ts:230`](../packages/llm/llm-pi-ai/src/config.ts)
+- `source`: [`packages/llm/llm-pi-ai/src/config.ts:242`](../packages/llm/llm-pi-ai/src/config.ts)
 
 ```ts config-catalog
 /** Plugin configuration: the provider routes this instance owns. */
@@ -2485,6 +2557,28 @@ export interface ReconnectConfig {
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-mcp-client -->
+
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-mcp-manager -->
+<a id="deepseek-aidsh-mcp-manager"></a>
+
+## `@deepseek-ai/dsh-mcp-manager`
+
+- `inject`: `storageDomain` · `tools`
+- `refs`: `Volatile` (`@deepseek-ai/cosmokit`)
+- `source`: [`packages/mcp/mcp-manager/src/config.ts:7`](../packages/mcp/mcp-manager/src/config.ts)
+
+```ts config-catalog
+/** Manager configuration. */
+export interface Config {
+  /**
+   * Broker mode: the model sees the three indirection tools (search / describe
+   * / execute) instead of every server's `mcp__*` tools. Read per request, so
+   * a flip applies to the next assembled request without remounting.
+   */
+  broker: Volatile<boolean>
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-mcp-manager -->
 
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-message-feedback -->
 <a id="deepseek-aidsh-message-feedback"></a>
@@ -3829,7 +3923,7 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-system-prompt`
 
-- `source`: [`packages/core/system-prompt/src/index.ts:265`](../packages/core/system-prompt/src/index.ts)
+- `source`: [`packages/core/system-prompt/src/index.ts:267`](../packages/core/system-prompt/src/index.ts)
 
 ```ts config-catalog
 /** Plugin config: the deployment-authored fragment of the system prompt (see {@link Config.personaPrefix} for its contract). */
@@ -3924,14 +4018,18 @@ export type ShellDialect = 'bash' | 'pwsh'
 ## `@deepseek-ai/dsh-time-context`
 
 - `inject`: `agents` · `sessionProjections`
-- `source`: [`packages/context/time-context/src/index.ts:52`](../packages/context/time-context/src/index.ts)
+- `source`: [`packages/context/time-context/src/index.ts:51`](../packages/context/time-context/src/index.ts)
 
 ```ts config-catalog
 /** Request-preparation clock formatting and append scheduling. Invalid values fail plugin load. */
 export interface Config {
   /** Fallback display zone when the open turn has no unique browser zone. Omit to use the process zone. */
   timeZone?: string
-  /** Minimum milliseconds between durable injections in one session. Defaults to 600000 (10 minutes); 0 injects at every eligible step. */
+  /**
+   * Minimum milliseconds between durable injections in one session.
+   * fork(local-test): defaults to 3600000 (one hour; upstream shipped 10
+   * minutes); 0 injects at every eligible step.
+   */
   refreshIntervalMs?: number
 }
 ```
@@ -4552,6 +4650,24 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-typert-loader -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-unrestricted-mode -->
+<a id="deepseek-aidsh-unrestricted-mode"></a>
+
+## `@deepseek-ai/dsh-unrestricted-mode`
+
+- `inject`: `systemPrompt`
+- `refs`: `Volatile` (`@deepseek-ai/cordis`)
+- `source`: [`packages/prompt/unrestricted-mode/src/index.ts:36`](../packages/prompt/unrestricted-mode/src/index.ts)
+
+```ts config-catalog
+/** Runtime toggle projected to the browser. */
+export interface Config {
+  /** Fuse the unrestricted execution-mode block into every assembly. */
+  enabled: Volatile<boolean>
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-unrestricted-mode -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-user-approval -->
 <a id="deepseek-aidsh-user-approval"></a>
 
@@ -4846,7 +4962,7 @@ export interface Config {
 ## `@deepseek-ai/dsh-workspace-changes`
 
 - `inject`: `subprocess` · `fs`
-- `source`: [`packages/deliverables/workspace-changes/src/index.ts:34`](../packages/deliverables/workspace-changes/src/index.ts)
+- `source`: [`packages/deliverables/workspace-changes/src/index.ts:40`](../packages/deliverables/workspace-changes/src/index.ts)
 
 ```ts config-catalog
 /** Snapshot, capture, and comparison bounds. Invalid values fail plugin load. */
@@ -4864,6 +4980,13 @@ export interface Config {
   maxFileBytes: number
   /** Milliseconds a line comparison may run before it degrades to whole-file replacement. */
   diffTimeoutMs: number
+  /** fork(workspace-changes): whether each turn watches the working directory for writes the snapshots cannot see. */
+  watchEnabled: boolean
+  /**
+   * fork(workspace-changes): directory names at any depth whose writes the
+   * watcher never lists, extending the built-in noise directories.
+   */
+  watchExclusions: string[]
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-workspace-changes -->
@@ -4903,7 +5026,10 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-client-ui-entry-customization` | — | [`packages/client/ui-entry-customization/src/index.ts`](../packages/client/ui-entry-customization/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-file-drag` | — | [`packages/client/ui-file-drag/src/index.ts`](../packages/client/ui-file-drag/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-fork-auto-skills` | — | [`packages/client/ui-fork-auto-skills/src/index.ts`](../packages/client/ui-fork-auto-skills/src/index.ts) |
+| `@deepseek-ai/dsh-client-ui-fork-brand` | — | [`packages/client/ui-fork-brand/src/index.ts`](../packages/client/ui-fork-brand/src/index.ts) |
+| `@deepseek-ai/dsh-client-ui-fork-change-report` | — | [`packages/client/ui-fork-change-report/src/index.ts`](../packages/client/ui-fork-change-report/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-fork-info` | — | [`packages/client/ui-fork-info/src/index.ts`](../packages/client/ui-fork-info/src/index.ts) |
+| `@deepseek-ai/dsh-client-ui-fork-unrestricted` | — | [`packages/client/ui-fork-unrestricted/src/index.ts`](../packages/client/ui-fork-unrestricted/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-goal` | — | [`packages/client/ui-goal/src/index.ts`](../packages/client/ui-goal/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-input-trigger` | — | [`packages/client/ui-input-trigger/src/index.ts`](../packages/client/ui-input-trigger/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-jobs` | — | [`packages/client/ui-jobs/src/index.ts`](../packages/client/ui-jobs/src/index.ts) |
@@ -4923,6 +5049,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-client-ui-settings` | — | [`packages/client/ui-settings/src/index.ts`](../packages/client/ui-settings/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-settings-agent-loop` | — | [`packages/client/ui-settings-agent-loop/src/index.ts`](../packages/client/ui-settings-agent-loop/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-settings-general` | — | [`packages/client/ui-settings-general/src/index.ts`](../packages/client/ui-settings-general/src/index.ts) |
+| `@deepseek-ai/dsh-client-ui-settings-mcp` | — | [`packages/client/ui-settings-mcp/src/index.ts`](../packages/client/ui-settings-mcp/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-settings-plugin-inventory` | — | [`packages/client/ui-settings-plugin-inventory/src/index.ts`](../packages/client/ui-settings-plugin-inventory/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-settings-plugins` | — | [`packages/client/ui-settings-plugins/src/index.ts`](../packages/client/ui-settings-plugins/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-settings-session-log` | — | [`packages/client/ui-settings-session-log/src/index.ts`](../packages/client/ui-settings-session-log/src/index.ts) |

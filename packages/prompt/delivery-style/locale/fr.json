@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Style de livraison",
+    "description": "Une section du prompt système orientant la réponse pour qu’elle soit le livrable lui-même."
+  }
+}

@@ -1,4 +1,4 @@
-/** previewFromEvents: model-visible rows with provenance, straight over session events. */
+/** previewFromEvents: model-visible rows with their source citations, straight over session events. */
 import { describe, expect, it } from 'vitest'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import { createAssistantMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
@@ -44,7 +44,7 @@ describe('previewFromEvents', () => {
     expect(preview.tools).toEqual([{ name: 'read', description: 'read', parameters: {} }])
   })
 
-  it('marks replacement rows as edited with their source provenance', () => {
+  it('marks replacement rows as edited with their cited source events', () => {
     const session = conversation()
     const assistantSeq = session.surface.nodes[1]!
     session.append('assistant/message', {

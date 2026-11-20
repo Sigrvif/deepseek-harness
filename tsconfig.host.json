@@ -452,7 +452,7 @@
     { "path": "./packages/skill/tool-skill" },
     // fork(local-test): the automatic superpowers bootstrap.
     { "path": "./packages/skill/superpowers-bootstrap" },
-    // fork(superpowers): the vendored skills data package (provenance face).
+    // fork(superpowers): the vendored skills data package (attribution face).
     { "path": "./packages/skill/superpowers-skills" },
     { "path": "./packages/interaction/tool-ask-user" },
     { "path": "./packages/context/agent-instructions" },

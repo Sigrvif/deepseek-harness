@@ -238,7 +238,7 @@ describe('excludeFrom', () => {
       expect(preview.rows).toHaveLength(1)
       expect(preview.rows[0]?.excluded).toBe(true)
       // Cold storage keeps the surfaceOp range, not the live citation list, so
-      // the stub's provenance re-derives: every shadowed message event, in order.
+      // the stub's source list re-derives: every shadowed message event, in order.
       expect(preview.rows[0]?.excludes).toContain(start)
       expect(preview.rows[0]?.excludes).toContain(end)
     } finally {

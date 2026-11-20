@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Modo sin restricciones",
+    "description": "Bloque opcional del prompt de sistema para el modo de ejecución sin restricciones."
+  }
+}

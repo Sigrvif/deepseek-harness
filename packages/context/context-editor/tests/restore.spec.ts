@@ -114,7 +114,7 @@ describe('restoreRange', () => {
 })
 
 describe('createRecoveryBranch', () => {
-  it('refuses to restore a restore and offers no provenance for the restored row', async () => {
+  it('refuses to restore a restore and offers no source citation for the restored row', async () => {
     const { ctx } = await mounted()
     questionTurn(ctx, SessionId('restore-restore'))
     const session = ctx.sessions.get(SessionId('restore-restore'))!

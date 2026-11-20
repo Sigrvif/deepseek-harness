@@ -1,6 +1,6 @@
 {
-  "view.label": "Context",
-  "pane.context": "Context",
-  "pane.requests": "Requests",
-  "pane.tools": "Tools & params"
+  "meta": {
+    "title": "Context editor",
+    "description": "The Context tab: edit, exclude, and restore the model-bound context."
+  }
 }

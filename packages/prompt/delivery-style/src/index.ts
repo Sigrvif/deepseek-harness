@@ -43,4 +43,5 @@ export function apply(ctx: Context, config: Config = {} as Config): void {
   }), 'delivery-style.section()')
 }
 
+/** Cordis loader shape: the plugin name, required services, and the {@link apply} mount. */
 export default { name, inject, apply }
