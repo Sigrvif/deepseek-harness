@@ -842,3 +842,78 @@ describe('SessionProjectionCache summary reads', () => {
     expect(cache.cachedSnapshot(headerOf(SessionId('summary-absent')), summaryKeys)).toBeUndefined()
   })
 })
+
+// fork(session-projection-cache): a resumed session seeds its cells from the
+// identity-matched cache rows before the creation checkpoint, so the
+// mandatory create write serializes seeded cells instead of folding every
+// unit over the entire resident log (2.4.32).
+describe('SessionProjectionCache resumed-session seeding', () => {
+  const resumedSeed: SessionEvent[] = [
+    { seq: SessionSeq(0), time: 0, type: 'cache-test/mark', data: { marks: ['a'] } },
+    { seq: SessionSeq(1), time: 1, type: 'cache-test/mark', data: { marks: ['a', 'b'] } },
+  ]
+
+  /** Harness plus a logger line collector. */
+  async function seededHarness(root: string) {
+    const ctx = new Context()
+    contexts.push(ctx)
+    const lines: string[] = []
+    ctx.logger.exporter({
+      levels: { default: 3 },
+      export: (message: { name: string; type: string; args: unknown[] }) => {
+        lines.push(`${message.name}: ${message.args.map(String).join(' ')}`)
+      },
+    } as never)
+    await ctx.plugin(Storage)
+    await ctx.plugin({ name: storageJsonName, inject: storageJsonInject, apply: storageJsonApply, Config: storageJsonConfig }, { root })
+    await ctx.plugin({ name: storageDomainName, inject: storageDomainInject, apply: storageDomainApply, Config: storageDomainConfig }, { backend: 'json' })
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(SessionProjectionRegistry)
+    await ctx.sessionProjections.register(marksUnit())
+    await ctx.plugin(SessionProjectionCache, { writeEveryEvents: 100, writeIntervalMs: 60_000 })
+    return { ctx, lines }
+  }
+
+  it('seeds a resumed session from matching rows and logs it', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-projcache-'))
+    roots.push(root)
+    const id = SessionId('resumed-seeded')
+    const seededRow = { ver: 1, seq: SessionSeq(2), val: { marks: ['a', 'b'] } }
+    await seedRecord(root, id, { 'cache-test/marks': seededRow })
+    const { ctx, lines } = await seededHarness(root)
+    const created = whenWritten(ctx, id)
+    const session = ctx.sessions.prepare(id, {
+      seed: resumedSeed,
+      meta: headerOf(id),
+      inheritedEventCount: SessionLogOffset(0),
+    })
+    ctx.sessions.enter(session)
+    ctx.sessions.announce(session)
+    await created
+    expect(lines.some(line => line.includes(`seeded resumed "${String(id)}" from cache rows`))).toBe(true)
+    // The creation write serialized the seeded cells byte-identically — the
+    // log line above is the seeding proof; a refold would still write seq 2.
+    const rows = await storedRows(root, id)
+    expect(rows?.['cache-test/marks']).toEqual(seededRow)
+  })
+
+  it('logs the fold fallback when no matching row exists', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-projcache-'))
+    roots.push(root)
+    const id = SessionId('resumed-unmatched')
+    const { ctx, lines } = await seededHarness(root)
+    const created = whenWritten(ctx, id)
+    const session = ctx.sessions.prepare(id, {
+      seed: resumedSeed,
+      meta: headerOf(id),
+      inheritedEventCount: SessionLogOffset(0),
+    })
+    ctx.sessions.enter(session)
+    ctx.sessions.announce(session)
+    await created
+    expect(lines.some(line => line.includes('has no matching cache row'))).toBe(true)
+    // The create write folded the seed and stored the fresh cut.
+    const rows = await storedRows(root, id)
+    expect(rows?.['cache-test/marks']).toMatchObject({ ver: 1, seq: 2, val: { marks: ['a', 'b'] } })
+  })
+})

@@ -198,6 +198,17 @@ attention (`job_kill` stops one; `job_output`/`job_list` inspect). Closing
 the harness kills the whole process tree of everything it started; MCP
 servers and the included browser terminate through their own lifecycle.
 
+## Fast resume; the harness logs its work (2.4.32)
+
+Resuming a large session re-folded its entire history through every
+projection unit although the durable projection cache held exactly the
+checkpoints that skip that work — a resumed session now seeds from the
+cache and replays only the tail. The harness also never mounted a log
+exporter, so nothing it logged reached the terminal; logs now print to
+stdout, and every heavy phase (session-log decode, resume repair and
+preparation, projection hydration, first meter replay, per-turn
+workspace snapshot) reports its cost.
+
 ## Changed-files review works for detected files (2.4.31)
 
 Opening a "detected" file from the changed-files card dead-ended in

@@ -734,9 +734,14 @@ export class SessionProjectionRegistry extends Service {
       session.header,
       session.inheritedEventCount,
     )
+    let seeded = 0
+    let folded = 0
     for (const registration of this.registrations.values()) {
       const row = restored.checkpoint[registration.def.key]
-      if (row === undefined) continue
+      if (row === undefined) {
+        folded += 1
+        continue
+      }
       const current = registration.cells.get(session)
       if (current !== undefined && current.observedSeq > row.seq) continue
       registration.cells.set(session, {
@@ -744,7 +749,11 @@ export class SessionProjectionRegistry extends Service {
         observedSeq: row.seq,
         views: [undefined, undefined],
       })
+      seeded += 1
     }
+    // fork(session-projection): name the seeding split so a resume shows
+    // whether the cache skipped the full folds (2.4.32).
+    this.ctx.logger.info(`sessionProjections: hydrated "${session.id}" — ${seeded} units seeded from rows, ${folded} folded from ${events.length} events`)
     return restored.snapshot
   }
 
@@ -769,13 +778,15 @@ export class SessionProjectionRegistry extends Service {
   private cellFor(registration: Registration, session: Session): UnitCell {
     let cell = registration.cells.get(session)
     if (cell === undefined) {
-      cell = this.buildCell(
-        registration.def,
-        session.header,
-        session.inheritedEventCount,
-        // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
-        session.snapshotEvents(),
-      )
+      // fork(session-projection): the late build folds the whole log per unit —
+      // log the big ones so a slow resume names its cost (2.4.32).
+      const foldStarted = performance.now()
+      const events = // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
+        session.snapshotEvents()
+      cell = this.buildCell(registration.def, session.header, session.inheritedEventCount, events)
+      if (events.length >= 1000) {
+        this.ctx.logger.info(`sessionProjections: unit "${registration.def.key}" folded ${events.length} events in ${((performance.now() - foldStarted) / 1000).toFixed(1)}s`)
+      }
       registration.cells.set(session, cell)
     } else {
       this.advanceCell(registration.def, cell, session, cursorBefore(session.seq))

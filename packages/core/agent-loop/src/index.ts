@@ -796,11 +796,19 @@ export class AgentLoop extends Service implements AgentFactory {
           // back the physically valid log; an interrupted final turn receives
           // synthetic closers (missing tool errors, step/end, turn/end) that
           // are appended through the same handle as an ordinary batch.
+          const resumeStarted = performance.now()
+          this.runtime.ctx.logger.info(`agent "${id}": resuming — log opened`)
           const coldRead = await handle.read(0, undefined, { signal: fused })
           fused.throwIfAborted()
           const persisted = coldRead.events
+          // fork(agent-loop): surface the resume phases and their costs (2.4.32).
+          this.runtime.ctx.logger.info(`agent "${id}": log read — ${persisted.length} events in ${((performance.now() - resumeStarted) / 1000).toFixed(1)}s`)
           const closers = interruptedTurnClosers(persisted)
-          if (closers.length > 0) await handle.append(closers)
+          if (closers.length > 0) {
+            this.runtime.ctx.logger.info(`agent "${id}": repair — appending ${closers.length} interrupted-turn closers`)
+            await handle.append(closers)
+          }
+          const prepareStarted = performance.now()
           preparation = SessionPreparation.create(this.runtime.ctx.sessions.prepare(id, {
             seed: [...persisted, ...closers],
             meta: structuredClone(handle.header),
@@ -809,6 +817,7 @@ export class AgentLoop extends Service implements AgentFactory {
           }))
           stored = { handle, storedCount: persisted.length + closers.length }
           await this.appendUnstoredSuffix(stored, preparation.session)
+          this.runtime.ctx.logger.info(`agent "${id}": session prepared — ${persisted.length + closers.length} events in ${((performance.now() - prepareStarted) / 1000).toFixed(1)}s`)
         } finally {
           await unfollowOwner()
         }

@@ -319,6 +319,17 @@ describe('workspace-changes in a repository', () => {
     expect(changes(ctx, session).map(summary => summary.files.map(file => file.display))).toEqual([['top.txt']])
   })
 
+  // fork(workspace-changes): the turn-start snapshot cost is logged (2.4.32).
+  it('logs the turn-start baseline snapshot through the host logger', async () => {
+    const cwd = await repository()
+    const { ctx } = await boot()
+    const info = vi.spyOn(ctx.logger, 'info').mockImplementation(() => undefined)
+    const session = ctx.sessions.create(SessionId('snaplog'), { meta: { cwd } })
+    startTurn(session, 1)
+    await settle(ctx, session)
+    expect(info.mock.calls.some(([message]) => String(message).includes('turn 1 baseline snapshot + watcher'))).toBe(true)
+  })
+
   it('rejects non-positive bounds at load', async () => {
     const ctx = new Context()
     cleanups.push(() => ctx.fiber.dispose())

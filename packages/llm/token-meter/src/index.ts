@@ -242,6 +242,9 @@ export class TokenMeter extends Service {
       this.states.set(session, state)
     }
     const projected = useProjection ? this.measurementProjectionHandle?.stateOf(session) : undefined
+    // fork(token-meter): the first sync after a resume replays the whole log
+    // event-by-event — log the big ones (2.4.32).
+    const replayStarted = state.consumedEvents === SessionLogOffset(0) ? performance.now() : undefined
     while (state.consumedEvents < session.seq) {
       // Cold price caches may replay resident history.
       // oxlint-disable-next-line typescript/no-non-null-assertion, typescript/no-deprecated
@@ -267,6 +270,11 @@ export class TokenMeter extends Service {
       return this._sync(session, false)
     }
     // An initialized registration supplies `projected`; earlier reads keep the same pure fold locally.
+    if (replayStarted !== undefined && state.consumedEvents >= 1000) {
+      // fork(token-meter): logged after the checkpoint check so a discarded
+      // projection replay reports only the real final pass (2.4.32).
+      this.ctx.logger.info(`tokenMeter: initial replay of "${session.id}" — ${state.consumedEvents} events in ${((performance.now() - replayStarted) / 1000).toFixed(1)}s`)
+    }
     return { prices: state, measurement: projected ?? state.pendingMeasurement }
   }
 

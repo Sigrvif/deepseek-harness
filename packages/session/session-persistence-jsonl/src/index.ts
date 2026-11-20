@@ -619,16 +619,23 @@ class JsonlSessionPersistence extends SessionPersistence {
     if (memoized?.status === 'current' && memoized.revision === probe) {
       this.coldLogMemo.delete(id)
       this.coldLogMemo.set(id, memoized)
+      // fork(session-persistence-jsonl): surface the memo hit (2.4.32).
+      this.ctx.logger.info(`${this.name}: session "${id}" log served from the decode memo (${memoized.events.length} events)`)
       return memoized
     }
+    const decodeStarted = performance.now()
     const current = await readStableJsonlFile(selected.sourcePath, signal)
-    return this.decodeStoredLog(
+    const stored = await this.decodeStoredLog(
       selected.sourcePath,
       id,
       current.bytes,
       fileRevision(current.identity),
       signal,
     )
+    // fork(session-persistence-jsonl): the decode is one of the heaviest
+    // resume phases — give it a line with its cost (2.4.32).
+    this.ctx.logger.info(`${this.name}: session "${id}" log decoded — ${(current.bytes.byteLength / 1048576).toFixed(1)} MB, ${stored.events.length} events in ${((performance.now() - decodeStarted) / 1000).toFixed(1)}s`)
+    return stored
   }
 
   /** Probe the memo and otherwise decode one historical generation under backend cancellation. */

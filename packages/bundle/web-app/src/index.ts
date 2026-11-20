@@ -217,6 +217,18 @@ async function probeServing(url: string, attempts: number = PROBE_ATTEMPTS, paus
  * @param config - validated {@link Config}.
  */
 export function apply(ctx: Context, config: Config): void {
+  // fork(web-app): the composition mounts no log exporter — the logger only
+  // buffers in memory, so nothing the harness logs would ever reach the
+  // operator's terminal. Print every info/warn/error line to STDERR: stdout
+  // is a protocol stream (ACP agents speak JSON-RPC over it; the web snapshot
+  // fixtures compare it) and log lines there corrupt it (2.4.32).
+  ctx.logger.exporter({
+    levels: { default: 1 },
+    export: (message: { name: string; type: string; args: unknown[] }) => {
+      const body = message.args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg)).join(' ')
+      console.error(`[${message.name}] ${message.type}: ${body}`)
+    },
+  })
   // The schema validates a present string; an explicit YAML `null` bypasses
   // the string transform and reaches here, meaning unset.
   const publicUrl = config.publicUrl ?? undefined

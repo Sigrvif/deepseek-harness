@@ -112,7 +112,11 @@ export class SessionObservationReader {
       if (attachedDuringStat !== undefined) return this.live(attachedDuringStat, projectionMode)
       let entry = this.cachedEntry(persistence.identity, sessionId, snapshot.revision)
       if (entry === undefined) {
+        // fork(session-query): the cold read is one of the heaviest resume
+        // phases — log its cost (2.4.32).
+        const coldStarted = performance.now()
         const loaded = await this.loadSource(persistence, sessionId, signal)
+        this.ctx.logger.info(`session-query: cold read of "${sessionId}" — ${loaded.events.length} events in ${((performance.now() - coldStarted) / 1000).toFixed(1)}s`)
         throwIfObservationAborted(signal)
         const attached = this.ctx.sessions.get(sessionId)
         if (attached !== undefined) return this.live(attached, projectionMode)

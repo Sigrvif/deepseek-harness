@@ -27,6 +27,8 @@ export interface RecorderEnvironment {
   diffTimeoutMs: number
   /** fork(workspace-changes): watching facts for the per-turn watcher (2.4.29). */
   watch: { enabled: boolean; exclusions: readonly string[] }
+  /** fork(workspace-changes): phase reporter for snapshot/watcher costs (2.4.32). */
+  log?: ((message: string) => void) | undefined
   /** Failure reporter; a failed turn records nothing and the next turn retries. */
   warn: (message: string) => void
 }
@@ -143,6 +145,9 @@ export class TurnRecorder {
     const state = freshState(turn)
     this.state = state
     void this.enqueue(async (signal) => {
+      // fork(workspace-changes): the turn-start snapshot hashes the whole
+      // work tree twice a turn — name its cost (2.4.32).
+      const started = performance.now()
       try {
         this.paths ??= { cwd: await realpath(this.cwd), home: await canonicalPath(homedir()), temporaryRoots: await temporaryRoots() }
         // fork(workspace-changes): watch the working directory for the turn, so ignored-path
@@ -157,6 +162,7 @@ export class TurnRecorder {
         if (repository === null) return
         const tree = await snapshotTree(repository.git, repository.workspace, signal)
         state.baseline = { ...repository, tree }
+        this.env.log?.(`workspace-changes: turn ${turn} baseline snapshot + watcher in ${((performance.now() - started) / 1000).toFixed(1)}s`)
       } catch (error: unknown) {
         // A repository whose snapshot failed must not be summarized as if it had none.
         state.baseline = 'failed'

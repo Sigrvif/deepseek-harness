@@ -155,6 +155,8 @@ export function apply(ctx: Context, config: Config): void {
           enabled: config.watchEnabled,
           exclusions: [...WATCH_NOISE_DIRECTORIES, ...config.watchExclusions.filter(name => name !== '')],
         },
+        // fork(workspace-changes): phase logs ride the host logger (2.4.32).
+        log: (message) => { ctx.logger.info(message) },
         warn: (message) => { ctx.logger.warn(message) },
       })
       recorders.set(session, recorder)

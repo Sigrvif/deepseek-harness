@@ -1,8 +1,24 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.31 (2026-11-19)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.32 (2026-11-19)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (upstream commit e9b2168)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
+
+  Fast resume; the harness logs its work (2.4.32)
+                      Resuming a large session re-folded its entire
+                      history through every projection unit (about 35 of
+                      them) although the durable projection cache held
+                      exactly the checkpoints that skip that work - the
+                      announce-time checkpoint forced the folds. A
+                      resumed session now seeds from the cache and
+                      replays only the tail. The harness also never
+                      mounted a log exporter - nothing it logged reached
+                      the terminal - so the whole silent multi-minute
+                      window was invisible. Logs now print to stdout,
+                      and every heavy phase reports its cost: session
+                      log decode, resume repair and preparation,
+                      projection hydration, first meter replay, and the
+                      per-turn workspace snapshot.
 
   Changed-files review works for detected files; new mark (2.4.31)
                       Opening a "detected" file from the changed-files

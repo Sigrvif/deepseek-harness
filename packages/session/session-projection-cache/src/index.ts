@@ -336,6 +336,12 @@ export class SessionProjectionCache extends Service {
     // the store, would leave the seed-derived values (the title) unreadable
     // on the cold list. The creation write captures the seed-derived cut.
     this.ctx.on('session/created', (session: Session) => {
+      // fork(session-projection-cache): a resumed session arrives with its
+      // whole log already resident; seed its cells from the identity-matched
+      // cache rows BEFORE the creation checkpoint, so the mandatory write
+      // serializes seeded cells instead of folding every unit over the
+      // entire log (2.4.32).
+      if (session.seq > 0) this.seedResumed(session)
       void this.flushSoft(session, 'create')
     })
 
@@ -372,6 +378,30 @@ export class SessionProjectionCache extends Service {
       await this.write(session)
     } catch (error) {
       this.ctx.logger.warn(`session projection cache: ${trigger} write for "${session.id}" failed (cache stays stale): ${String(error)}`)
+    }
+  }
+
+  /**
+   * fork(session-projection-cache): seed a resumed session's projection cells
+   * from the identity-matched durable rows before the creation checkpoint.
+   * Each unit restarts from its row's seq and replays only the tail, so the
+   * mandatory create write serializes the seeded cells instead of folding
+   * every unit over the entire resident log. Any failure leaves the cells
+   * unseeded — the create write then folds as before (2.4.32).
+   * @param session - the resumed live session (seq greater than zero).
+   */
+  private seedResumed(session: Session): void {
+    const started = performance.now()
+    const record = this.recordFor(session.id, identityOf(session.header, session.inheritedEventCount))
+    if (record === undefined) {
+      this.ctx.logger.info(`session projection cache: resumed "${session.id}" has no matching cache row (${session.seq} events); the creation checkpoint folds every unit`)
+      return
+    }
+    try {
+      this.ctx.sessionProjections.hydrate(session, record.rows, session.snapshotEvents(), SessionLogOffset(0))
+      this.ctx.logger.info(`session projection cache: seeded resumed "${session.id}" from cache rows in ${((performance.now() - started) / 1000).toFixed(1)}s`)
+    } catch (error) {
+      this.ctx.logger.warn(`session projection cache: seeding resumed "${session.id}" failed (${String(error)}); the creation checkpoint folds every unit`)
     }
   }
 

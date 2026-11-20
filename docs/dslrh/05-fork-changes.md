@@ -121,4 +121,11 @@ LICENSE files. 2.4.31 fixed the changed-files review for watcher-listed files �
 client's comparison validator still spoke only text/binary/oversized, so
 opening a "detected" file dead-ended in an error; it now renders the
 detected note (in the review tab's file selector too) — and replaced the
-sidebar mark with the fixed artwork.
+sidebar mark with the fixed artwork. 2.4.32 attacked the silent multi-minute resume window itself: a resumed
+session's projections now seed from the durable projection cache (the
+announce-time checkpoint no longer re-folds the whole log per unit —
+roughly 35 units × the entire history), and the harness finally logs —
+the composition never mounted a log exporter, so nothing the harness
+logged ever reached the terminal. Every heavy phase now reports its cost
+on stdout: log decode, resume repair and preparation, projection
+hydration, first meter replay, and the per-turn workspace snapshot.
