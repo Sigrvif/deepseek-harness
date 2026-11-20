@@ -194,6 +194,42 @@ describe('bash tool through the agent loop', () => {
     )).toBe(true)
   })
 
+  it('foreground: a settled call leaves no long deadline timer armed (2.4.34)', async () => {
+    // fork(context-editor): the command/deadline/abort race must clear its
+    // losing deadline timer — a referenced loser once ran to its full timeout
+    // and held the whole process's event loop that long after the turn ended.
+    const settle = vi.spyOn(globalThis, 'setTimeout')
+    const clear = vi.spyOn(globalThis, 'clearTimeout')
+    try {
+      const adapter = new MockAdapter([
+        toolCallResponse('call-1', 'bash', { command: 'echo settle-ok', description: 'test command' }, 'Running it.'),
+        textResponse('It printed settle-ok.'),
+      ])
+      const ctx = await harness(adapter)
+      const agent = await ctx.agentLoop.create(SessionId('it-fg-timer'), { provider: 'mock', model: 'mock' })
+      agent.followup(createUserMessage({ content: [{ type: 'text', text: 'run echo settle-ok' }], source: { kind: 'user' } }))
+      await waitForIdle(ctx, agent)
+      expect(resultText(findEvent(events(agent), 'tool/result'))).toBe('settle-ok\n')
+      // Every multi-second timer armed during the turn (the call deadline, the
+      // job registry's own wait deadline; 10s in this harness) is cleared
+      // once the call settles — mock.results pairs each recorded call with
+      // the handle the real setTimeout returned.
+      const armedHandles = settle.mock.calls
+        .map((call, index) => ({ delay: call[1], result: settle.mock.results[index] }))
+        .filter(armed => typeof armed.delay === 'number' && armed.delay >= 5_000 && armed.result !== undefined && armed.result.type === 'return')
+        .map(armed => armed.result!.value)
+      expect(armedHandles.length).toBeGreaterThan(0)
+      const clearedHandles = clear.mock.calls.map(call => call[0])
+      for (const handle of armedHandles) {
+        expect(clearedHandles.some(cleared => cleared === handle), `timer ${String(handle)} still armed`).toBe(true)
+      }
+      await ctx.fiber.dispose()
+    } finally {
+      settle.mockRestore()
+      clear.mockRestore()
+    }
+  })
+
   it('foreground: non-zero exit is reported in the result text, not as isError', async () => {
     const adapter = new MockAdapter([
       toolCallResponse('call-1', 'bash', { command: 'exit 9', description: 'test command' }),

@@ -333,12 +333,23 @@ export function apply(ctx: Context, config: Config = {}): void {
       // from the commandDone continuation, invisible to control flow.
       const settlement = { command: false }
       void attached.commandDone.then(() => { settlement.command = true })
-      const deadline = new Promise<'deadline'>((resolve) => { setTimeout(() => { resolve('deadline') }, timeoutMs) })
+      // fork(context-editor): the deadline timer must leave with the race —
+      // a referenced loser ran to its full timeout after the command settled
+      // and held the process's event loop the whole time (2.4.34).
+      let deadlineTimer: ReturnType<typeof setTimeout> | undefined
+      const deadline = new Promise<'deadline'>((resolve) => {
+        deadlineTimer = setTimeout(() => { resolve('deadline') }, timeoutMs)
+      })
       const callerAborted = new Promise<'aborted'>((resolve) => {
         if (exec.signal.aborted) { resolve('aborted'); return }
         exec.signal.addEventListener('abort', () => { resolve('aborted') }, { once: true })
       })
-      const why = await Promise.race([attached.commandDone.then(() => 'command' as const), deadline, callerAborted])
+      let why: 'command' | 'deadline' | 'aborted'
+      try {
+        why = await Promise.race([attached.commandDone.then(() => 'command' as const), deadline, callerAborted])
+      } finally {
+        clearTimeout(deadlineTimer)
+      }
       if (why === 'aborted') {
         // A wait on the caller's own live job ends for the caller's abort: the
         // model's call is over, so the command goes with it, as under the

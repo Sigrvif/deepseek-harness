@@ -1,3 +1,25 @@
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.34 (2026-11-20)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
+      + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
+
+Fork changes on top of upstream 0.2.2-alpha.2:
+
+  One-shot runs exit when their work is done (2.4.34)
+                      The 2.4.30 foreground job race armed a
+                      60-second deadline timer and never cleared it when
+                      the command settled first - the losing timer kept
+                      the whole process alive to its full timeout, so
+                      every headless one-shot run "hung" about a minute
+                      past its final answer (the recorded-session suites
+                      read it as a 30 s timeout kill, which in turn
+                      blocked their fixture refresh from ever writing
+                      the fork composition back). The race now clears
+                      its timer in a finally block; the standalone
+                      repro that exited at 63 s now exits in seconds
+                      with the answer, and a regression spec pins that
+                      no multi-second timer armed during a settled
+                      foreground call survives it.
+
 DSLRH (DeepSeek Local Runtime Harness) package 2.4.33 (2026-11-20)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
