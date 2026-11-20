@@ -89,7 +89,7 @@ export function McpSection({ api, labels: t, useBroker, setBroker }: PropsRuntim
   void state
   if (!loadedOnce) {
     setLoadedOnce(true)
-    void api.list().then((value) => { setServers(value.servers); setLoadFailed(false) }).catch(() => setLoadFailed(true))
+    void api.list().then((value) => { setServers(value.servers); setLoadFailed(false) }).catch(() => { setLoadFailed(true) })
   }
 
   const run = async (action: () => Promise<McpListValue>, done?: (value: McpListValue) => void): Promise<void> => {
@@ -149,7 +149,7 @@ export function McpSection({ api, labels: t, useBroker, setBroker }: PropsRuntim
       headers: source.transport === 'streamable-http' ? parsePairs(draft.headersText, ':') ?? {} : undefined,
       toolCallTimeoutMs: draft.timeoutText.trim() === '' ? undefined : Number(draft.timeoutText),
     }
-    void run(() => api.upsert(candidate), () => setDraft(undefined))
+    void run(() => api.upsert(candidate), () => { setDraft(undefined) })
   }
 
   const summary = (def: McpServerDef): string => def.transport === 'stdio'
@@ -167,7 +167,7 @@ export function McpSection({ api, labels: t, useBroker, setBroker }: PropsRuntim
         onChange={(next) => {
           setBusy(true)
           setError(undefined)
-          void setBroker(next).catch((cause: unknown) => setError(`${t('opFailed')}: ${(cause as Error).message}`)).finally(() => setBusy(false))
+          void setBroker(next).catch((cause: unknown) => { setError(`${t('opFailed')}: ${(cause as Error).message}`) }).finally(() => { setBusy(false) })
         }} />
     </div>
     <div className={css.header}>
@@ -189,10 +189,12 @@ export function McpSection({ api, labels: t, useBroker, setBroker }: PropsRuntim
           <span>{t('transport')}</span>
           <select
             value={draft.def.transport}
-            onChange={event => setDraft({
-              ...draft,
-              def: { ...draft.def, transport: event.currentTarget.value as McpServerDef['transport'] },
-            })}
+            onChange={(event) => {
+              setDraft({
+                ...draft,
+                def: { ...draft.def, transport: event.currentTarget.value as McpServerDef['transport'] },
+              })
+            }}
           >
             <option value="stdio">{t('transportStdio')}</option>
             <option value="streamable-http">{t('transportHttp')}</option>
@@ -201,7 +203,7 @@ export function McpSection({ api, labels: t, useBroker, setBroker }: PropsRuntim
         <label className={css.field} htmlFor="mcp-server-name">
           <span>{t('serverName')}</span>
           <Input id="mcp-server-name" value={draft.def.serverName}
-            onChange={event => setDraft({ ...draft, def: { ...draft.def, serverName: event.currentTarget.value } })} />
+            onChange={(event) => { setDraft({ ...draft, def: { ...draft.def, serverName: event.currentTarget.value } })} } />
           <small>{t('serverNameHint')}</small>
         </label>
       </div>
@@ -209,37 +211,37 @@ export function McpSection({ api, labels: t, useBroker, setBroker }: PropsRuntim
         <label className={css.field} htmlFor="mcp-command">
           <span>{t('command')}</span>
           <Input id="mcp-command" value={draft.def.command ?? ''}
-            onChange={event => setDraft({ ...draft, def: { ...draft.def, command: event.currentTarget.value } })} />
+            onChange={(event) => { setDraft({ ...draft, def: { ...draft.def, command: event.currentTarget.value } })} } />
           <small>{t('commandHint')}</small>
         </label>
         <label className={css.field}>
           <span>{t('args')}</span>
           <textarea rows={3} value={draft.argsText}
-            onChange={event => setDraft({ ...draft, argsText: event.currentTarget.value })} />
+            onChange={(event) => { setDraft({ ...draft, argsText: event.currentTarget.value })} } />
           <small>{t('argsHint')}</small>
         </label>
         <label className={css.field}>
           <span>{t('env')}</span>
           <textarea rows={3} value={draft.envText}
-            onChange={event => setDraft({ ...draft, envText: event.currentTarget.value })} />
+            onChange={(event) => { setDraft({ ...draft, envText: event.currentTarget.value })} } />
           <small>{t('envHint')}</small>
         </label>
         <label className={css.field}>
           <span>{t('cwd')}</span>
           <Input value={draft.def.cwd ?? ''}
-            onChange={event => setDraft({ ...draft, def: { ...draft.def, cwd: event.currentTarget.value } })} />
+            onChange={(event) => { setDraft({ ...draft, def: { ...draft.def, cwd: event.currentTarget.value } })} } />
         </label>
       </> : <>
         <label className={css.field}>
           <span>{t('url')}</span>
           <Input value={draft.def.url ?? ''}
-            onChange={event => setDraft({ ...draft, def: { ...draft.def, url: event.currentTarget.value } })} />
+            onChange={(event) => { setDraft({ ...draft, def: { ...draft.def, url: event.currentTarget.value } })} } />
           <small>{t('urlHint')}</small>
         </label>
         <label className={css.field}>
           <span>{t('headers')}</span>
           <textarea rows={3} value={draft.headersText}
-            onChange={event => setDraft({ ...draft, headersText: event.currentTarget.value })} />
+            onChange={(event) => { setDraft({ ...draft, headersText: event.currentTarget.value })} } />
           <small>{t('headersHint')}</small>
         </label>
       </>}
@@ -247,12 +249,12 @@ export function McpSection({ api, labels: t, useBroker, setBroker }: PropsRuntim
         <label className={css.field}>
           <span>{t('timeout')}</span>
           <Input inputMode="numeric" value={draft.timeoutText}
-            onChange={event => setDraft({ ...draft, timeoutText: event.currentTarget.value })} />
+            onChange={(event) => { setDraft({ ...draft, timeoutText: event.currentTarget.value })} } />
         </label>
         <label className={css.field}>
           <span>{t('enabled')}</span>
           <Switch checked={draft.def.enabled} label={t('enabled')}
-            onChange={next => setDraft({ ...draft, def: { ...draft.def, enabled: next } })} />
+            onChange={(next) => { setDraft({ ...draft, def: { ...draft.def, enabled: next } })} } />
         </label>
       </div>
       <div className={css.formActions}>
@@ -287,17 +289,17 @@ export function McpSection({ api, labels: t, useBroker, setBroker }: PropsRuntim
             ? <>
               <span>{t('deleteTitle', { name: def.serverName })}</span>
               <Button variant="outline" disabled={busy} onClick={() => {
-                void run(() => api.remove(def.id), () => setConfirmingId(undefined))
+                void run(() => api.remove(def.id), () => { setConfirmingId(undefined) })
               }}>{t('confirmDelete')}</Button>
-              <Button onClick={() => setConfirmingId(undefined)}>{t('cancel')}</Button>
+              <Button onClick={() => { setConfirmingId(undefined) }}>{t('cancel')}</Button>
             </>
             : <>
               <Button size="sm" disabled={busy} onClick={() => { setError(undefined); setDraft(draftOf(def)) }}>{t('edit')}</Button>
               <Button size="sm" disabled={busy}
-                onClick={() => { void run(() => api.restart(def.id), () => setNotice(t('restartDone', { name: def.serverName }))) }}>
+                onClick={() => { void run(() => api.restart(def.id), () => { setNotice(t('restartDone', { name: def.serverName })) }) }}>
                 {t('restart')}
               </Button>
-              <Button size="sm" disabled={busy} onClick={() => setConfirmingId(def.id)}>{t('remove')}</Button>
+              <Button size="sm" disabled={busy} onClick={() => { setConfirmingId(def.id) }}>{t('remove')}</Button>
             </>}
         </div>
       </li>)}

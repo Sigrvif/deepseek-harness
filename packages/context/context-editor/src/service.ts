@@ -77,7 +77,7 @@ export class ContextEditorService extends TypertRemoteService {
         throw new RemoteError('context-editor/rename', `tool '${name}' is not in the session's recorded tool set; renames are refused`, { name })
       }
     }
-    const previous = await table.get(String(request.sessionId))
+    const previous = table.get(String(request.sessionId))
     const record: OverridesRecord = {
       removedTools: [...request.removedTools],
       toolEdits: { ...request.toolEdits },
@@ -98,7 +98,7 @@ export class ContextEditorService extends TypertRemoteService {
   async setParams(request: { sessionId: SessionId; params: OverridesRecord['params'] }): Promise<OverridesRecord> {
     validateParams(request.params)
     const table = await this.overrides()
-    const previous = await table.get(String(request.sessionId))
+    const previous = table.get(String(request.sessionId))
     const record: OverridesRecord = {
       removedTools: previous?.removedTools ?? [],
       toolEdits: previous?.toolEdits ?? {},
@@ -117,7 +117,7 @@ export class ContextEditorService extends TypertRemoteService {
   @Remote('get-overrides')
   async getOverrides(request: { sessionId: SessionId }): Promise<{ record: OverridesRecord | null; inheritedByForks: false }> {
     const table = await this.overrides()
-    return { record: (await table.get(String(request.sessionId))) ?? null, inheritedByForks: false }
+    return { record: table.get(String(request.sessionId)) ?? null, inheritedByForks: false }
   }
 
   /** Tool names from the session's latest request/header (empty set when none recorded). */
@@ -135,7 +135,7 @@ export class ContextEditorService extends TypertRemoteService {
   async preview(request: { sessionId: SessionId }): Promise<ContextPreview> {
     const live = this.ctx.sessions.get(request.sessionId)
     if (live !== undefined) {
-      // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred (mirrors message-feedback).
+      // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
       return previewFromEvents(request.sessionId, live.snapshotEvents())
     }
     if (await this.ctx.sessionPersistence.stat(request.sessionId) === undefined) {

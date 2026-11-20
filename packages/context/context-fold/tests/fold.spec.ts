@@ -218,7 +218,7 @@ describe('planFold', () => {
   it('refuses ranges under the minimum character gate', () => {
     const session = plainSession()
     expect(() => planFold(session.snapshotEvents(), { keepLast: 2, minFoldChars: 100000 }))
-      .toThrowError(expect.objectContaining({ code: 'fold/too-small' }) as never)
+      .toThrow(expect.objectContaining({ code: 'fold/too-small' }) as never)
   })
 
   it('refuses when nothing is foldable', () => {

@@ -41,6 +41,7 @@ function turnOpen(events: readonly SessionEvent[]): boolean {
 async function readEvents(ctx: Context, sessionId: SessionId): Promise<readonly SessionEvent[]> {
   const live = ctx.sessions.get(sessionId)
   if (live !== undefined) {
+    // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
     return live.snapshotEvents()
   }
   if (await ctx.sessionPersistence.stat(sessionId) === undefined) {

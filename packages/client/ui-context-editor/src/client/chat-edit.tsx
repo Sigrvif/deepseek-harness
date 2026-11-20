@@ -20,6 +20,10 @@ import css from './ChatEdit.module.css'
 /** Message ids with the inline editor open (message ids are globally unique; the roster stays tiny). */
 const editing = createSnapshotStore<string[]>([])
 
+/** Stable useSyncExternalStore adapters over the editor roster (keeps referential identity across renders). */
+const subscribeEditing = (onStoreChange: () => void): (() => void) => editing.subscribe(onStoreChange)
+const editingSnapshot = (): string[] => editing.getSnapshot()
+
 /** Open/close the inline editor for one message. */
 export const chatEdit = {
   open: (messageId: string): void => { editing.update((draft) => { if (!draft.includes(messageId)) draft.push(messageId) }) },
@@ -96,7 +100,7 @@ export interface ChatPromptEditActionProps {
 export const ChatPromptEditAction = memo(function ChatPromptEditAction({
   messageId, useSession, useAccess,
 }: ChatPromptEditActionProps): ReactNode {
-  const settled = useSession(snapshot => !snapshot.running && !snapshot.removed) ?? false
+  const settled = useSession(snapshot => !snapshot.running && !snapshot.removed)
   const allowed = useAccess('session/prompt')
   if (!settled || !allowed) return null
   return (
@@ -127,7 +131,7 @@ type ContextEditUserViewProps = ChatNodeViewProps<'user' | 'steering'> & {
  * @returns the bubble or the editor.
  */
 export const ContextEditUserNodeView = memo(function ContextEditUserNodeView(props: ContextEditUserViewProps): ReactNode {
-  const open = useSyncExternalStore(editing.subscribe, editing.getSnapshot)
+  const open = useSyncExternalStore(subscribeEditing, editingSnapshot)
   const Bubble = userBubble()
   const messageId = props.node.data.messageId
   if (Bubble === undefined) return null

@@ -117,7 +117,7 @@ export function previewFromEvents(sessionId: string, events: readonly SessionEve
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index]
     if (event?.type !== 'request/header') continue
-    config = { ...event.data.header.config } as { [key: string]: JsonValue }
+    config = { ...event.data.header.config }
     tools = event.data.header.tools === undefined ? undefined : ([...event.data.header.tools] as unknown as JsonValue[])
     break
   }

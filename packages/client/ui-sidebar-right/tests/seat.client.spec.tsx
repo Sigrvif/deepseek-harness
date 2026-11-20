@@ -341,7 +341,8 @@ describe('RightbarSeat presentation', () => {
     // A session with a saved layout keeps it: collapse persists, no re-open.
     h.controller.toggleExpanded()
     expect(h.layout().expanded).toBe(false)
-    expect(JSON.parse(localStorage.getItem(`dsh.sidebar-right.v2.${SESSION}`) ?? '{}').bySession[SESSION].layout.expanded).toBe(false)
+    const persisted = JSON.parse(localStorage.getItem(`dsh.sidebar-right.v2.${SESSION}`) ?? '{}') as { bySession: Record<string, { layout: { expanded: boolean } }> }
+    expect(persisted.bySession[SESSION]?.layout.expanded).toBe(false)
     persistCollapsedLayout()
     const reopened = await mountSeat()
     expect(reopened.layout().expanded).toBe(false)

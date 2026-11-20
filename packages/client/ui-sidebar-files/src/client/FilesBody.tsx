@@ -158,6 +158,7 @@ export function FilesBody({
   const copyRelative = useClipboardCopy(rowMenu?.relative ?? '')
   // Reference in chat drops an @-mention into the composer through the
   // session's input face; unavailable without it (root contexts).
+  // oxlint-disable-next-line typescript/no-unnecessary-condition -- seat types it required; root contexts mount without the input face.
   const onReference = inputActions === undefined
     ? undefined
     : (relativePath: string) => {
@@ -261,7 +262,7 @@ export function FilesBody({
         anchor={<span />}
         getAnchorRect={() => rowMenu === undefined
           ? null
-          : new DOMRect(rowMenu.x, rowMenu.y, 0, 0) as DOMRect}
+          : new DOMRect(rowMenu.x, rowMenu.y, 0, 0)}
         items={rowMenu === undefined ? [] : [
           ...(rowMenu.isFile ? [{ id: 'open', label: t('action.open') }] : []),
           { id: 'copyAbsolute', label: t('action.copyAbsolute') },

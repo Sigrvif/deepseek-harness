@@ -180,7 +180,7 @@ export function noteSurvivingProcesses(
     if (proc === undefined || range === undefined) return
     const emptied = await Promise.race([
       range.then(() => true),
-      new Promise<boolean>((resolve) => { setTimeout(() => resolve(false), windowMs) }),
+      new Promise<boolean>((resolve) => { setTimeout(() => { resolve(false) }, windowMs) }),
     ])
     if (!emptied) job.updateProgress(proc.pid === undefined ? 'processes remain' : `pid ${proc.pid} (processes remain)`)
   })

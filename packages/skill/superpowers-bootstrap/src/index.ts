@@ -113,6 +113,7 @@ function latestInvocation(events: readonly SessionEvent[]): SessionEvent | undef
  */
 function sessionCarriesBootstrap(agent: Agent): boolean {
   const session = agent.session
+  // oxlint-disable-next-line typescript/no-deprecated -- Existing synchronous history read; migration deferred.
   const events = session.snapshotEvents()
   const last = latestInvocation(events)
   if (last === undefined) return false
@@ -137,7 +138,7 @@ export function apply(ctx: Context, config: Config): void {
   ): Promise<PreStepDecision> => {
     const decision = await next()
     if (decision.kind === 'reject') return decision
-    if (config.autoUsingSuperpowers.get() !== true) return decision
+    if (!config.autoUsingSuperpowers.get()) return decision
     if (!hasFreshPrompt(messages) || explicitlyInvoked(messages)) return decision
     signal.throwIfAborted()
     if (sessionCarriesBootstrap(agent)) return decision

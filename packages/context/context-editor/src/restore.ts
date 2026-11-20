@@ -21,7 +21,7 @@ function coveringReplacement(events: readonly SessionEvent[], startSeq: number, 
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index]
     const op = event?.surfaceOp
-    if (typeof op === 'object' && op !== null && op.op === 'replace'
+    if (typeof op === 'object'
       && Number(op.startSeq) <= startSeq && Number(op.endSeq) >= endSeq) return event
   }
   return undefined
@@ -36,7 +36,7 @@ function shadowedSurfaceNodes(events: readonly SessionEvent[], covering: Session
       .filter((event): event is SessionEvent => event !== undefined && messageOf(event) !== undefined)
   }
   const op = covering.surfaceOp
-  if (typeof op !== 'object' || op === null) return []
+  if (typeof op !== 'object') return []
   const result: SessionEvent[] = []
   for (let seq = Number(op.startSeq); seq <= Number(op.endSeq); seq += 1) {
     const event = events[seq]
@@ -101,7 +101,7 @@ function planRestore(events: readonly SessionEvent[], sessionId: SessionId, star
   // nothing left to undo for that set.
   const seqs = new Set(originals.map(original => Number(original.seq)))
   for (const original of originals) {
-    if (typeof original.surfaceOp !== 'object' || original.surfaceOp === null) continue
+    if (typeof original.surfaceOp !== 'object') continue
     const cited = original.sourceEventSeqs ?? []
     if (cited.some(seq => seqs.has(Number(seq)))) {
       throw new RemoteError('context-editor/bad-range', `the ${what} at ${String(covering.seq)} already restores earlier edits; nothing left to undo`, { sessionId, startSeq: covering.seq, endSeq: covering.seq })
@@ -176,11 +176,11 @@ export async function expandCheckpoint(
  * @param boundarySeq - last log seq the child keeps; later events stay parent-only.
  * @returns the child session's id.
  */
-export async function createRecoveryBranch(
+export function createRecoveryBranch(
   ctx: Context,
   sessionId: SessionId,
   boundarySeq: number,
 ): Promise<SessionId> {
   const child = ctx.sessions.fork(sessionId, SessionSeq(boundarySeq))
-  return child.id
+  return Promise.resolve(child.id)
 }

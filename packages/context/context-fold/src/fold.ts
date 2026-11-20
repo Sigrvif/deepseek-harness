@@ -47,7 +47,7 @@ function eventAt(events: readonly SessionEvent[], seq: SessionSeq | undefined): 
  */
 export function messageOf(event: SessionEvent | undefined): Message | undefined {
   if (event === undefined) return undefined
-  if (event.type === 'user/message') return event.data as Message
+  if (event.type === 'user/message') return event.data
   if (event.type === 'assistant/message' || event.type === 'tool/result'
     || event.type === 'system/message' || event.type === 'developer/message') {
     return (event.data as { message?: Message }).message
@@ -241,6 +241,7 @@ export function appendFold(
   const compactionId = CompactionId(plan.foldId)
   // A mid-turn fold (the compress tool's own case) must own its open turn;
   // null is legal only between turns — the format reader rejects the mismatch.
+  // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
   const turn = openTurnOf(session.snapshotEvents())
   const startEvent = session.append('compaction/start', { compactionId, turn })
   const summaryEvent = session.append('compaction/summary', {

@@ -4,7 +4,7 @@ import type { AssembledSection, PromptPresentation } from '@deepseek-ai/dsh-syst
 import { afterEach, describe, expect, it } from 'vitest'
 import { fuseSections } from '../src/fuse.ts'
 import { BLOCK_SECTION, EXECUTION_MODE_BLOCK, PERSONA_POINTER, PTC_ONLY_NOTE, PLAN_NOTE, STRUCTURED_OUTPUT_NOTE } from '../src/text.ts'
-import { apply, type Config } from '../src/index.ts'
+import { apply } from '../src/index.ts'
 
 const contexts: Context[] = []
 afterEach(async () => {
@@ -28,7 +28,7 @@ async function run(ctx: Context, sections: AssembledSection[], contexts: RunCont
   const assembly: PromptPresentation = { sections, contexts, variables: {} }
   // Unscoped dispatch: an inert thisArg (no scope filter) like the registry's
   // global-layer assemblies see.
-  const dispatch = ctx.waterfall as unknown as (...args: unknown[]) => Promise<PromptPresentation>
+  const dispatch = ctx.waterfall.bind(ctx) as unknown as (...args: unknown[]) => Promise<PromptPresentation>
   return await dispatch({}, 'system-prompt/assemble', assembly, {}, () => Promise.resolve(assembly))
 }
 
@@ -36,7 +36,7 @@ async function run(ctx: Context, sections: AssembledSection[], contexts: RunCont
 function bench(enabled: boolean): Context {
   const ctx = new Context()
   contexts.push(ctx)
-  apply(ctx, { enabled: { get: () => enabled } } as unknown as Config)
+  apply(ctx, { enabled: { get: () => enabled } })
   return ctx
 }
 

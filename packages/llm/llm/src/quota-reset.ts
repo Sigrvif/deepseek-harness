@@ -107,19 +107,19 @@ export function parseQuotaResetAt(
   for (const match of message.matchAll(CALENDAR_CANDIDATE)) {
     const parts = {
       year: Number(match[1]), month: Number(match[2]), day: Number(match[3]),
-      hour: Number(match[4]), minute: Number(match[5] as string), second: match[6] === undefined ? 0 : Number(match[6]),
+      hour: Number(match[4]), minute: Number(match[5]), second: match[6] === undefined ? 0 : Number(match[6]),
     }
     const parsed = inferredOffsetMs !== undefined
       ? asUtcWithOffset(parts, inferredOffsetMs)
       : wallTimeToEpochMs(parts.year, parts.month, parts.day, parts.hour, parts.minute, parts.second, zone)
-    if (parsed !== undefined) candidates.push({ index: match.index ?? 0, resetAtMs: parsed })
+    if (parsed !== undefined) candidates.push({ index: match.index, resetAtMs: parsed })
   }
   for (const match of message.matchAll(EPOCH_CANDIDATE)) {
     const value = Number(match[1])
     // The digit shapes pin the unit: 13-digit runs are milliseconds
     // (1.0e12–2.0e12 spans 2001–2033), 10-digit runs are seconds.
     const parsed = value >= 100_000_000_000 ? value : value * 1000
-    candidates.push({ index: match.index ?? 0, resetAtMs: parsed })
+    candidates.push({ index: match.index, resetAtMs: parsed })
   }
   let winner: { index: number; resetAtMs: number; distance: number } | undefined
   for (const candidate of candidates) {

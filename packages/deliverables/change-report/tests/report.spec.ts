@@ -58,13 +58,13 @@ function bench(enabled: boolean, summaries: Map<string, WorkspaceChangesSummary>
     summary: (sessionId: SessionId, seq: number) => summaries.get(`${String(sessionId)}:${String(seq)}`),
     diff: () => Promise.resolve(undefined),
   } as never)
-  apply(ctx, { enabled: { get: () => enabled } } as unknown as Config)
+  apply(ctx, { enabled: { get: () => enabled } })
   return ctx
 }
 
 /** Dispatch one pre-step waterfall with a single base message. */
 async function step(ctx: Context, sessionId: SessionId): Promise<PreStepDecision> {
-  const dispatch = ctx.waterfall as unknown as (...args: unknown[]) => Promise<PreStepDecision>
+  const dispatch = ctx.waterfall.bind(ctx) as unknown as (...args: unknown[]) => Promise<PreStepDecision>
   return await dispatch({}, 'agent/pre-step', {
     agent: { session: { id: sessionId } }, turn: 2, step: 1, signal: new AbortController().signal, modelSelection: {},
   }, () => Promise.resolve({ kind: 'enter', messages: [] }))

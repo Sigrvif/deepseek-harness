@@ -47,7 +47,7 @@ function mockApi(preview: Promise<ContextPreview>): ContextEditorApi {
     setTools: () => { throw new Error('unused') },
     setParams: () => { throw new Error('unused') },
     getOverrides: () => Promise.resolve({ record: null, inheritedByForks: false }),
-  } as never as ContextEditorApi
+  } satisfies ContextEditorApi
 }
 
 describe('ContextView', () => {
@@ -80,7 +80,7 @@ describe('ContextView', () => {
       editMessage: (args: { text: string }) => { calls.push(args); return Promise.resolve(previews[1]!) },
       listRequests: () => Promise.resolve({ entries: [], hasMore: false, captureDegraded: false }),
       getOverrides: () => Promise.resolve({ record: null, inheritedByForks: false }),
-    } as never as ContextEditorApi
+    } satisfies ContextEditorApi
     render(<ContextView sessionId="ctx-view" api={api} labels={labelsOf(en)} />)
     await waitFor(() => { expect(screen.getAllByTestId('context-row-user')).toHaveLength(1) })
     fireEvent.click(screen.getByText('Edit'))
@@ -99,7 +99,7 @@ describe('ContextView', () => {
       excludeRange: (args: { startSeq: number }) => { calls.push(args); return Promise.resolve(fixturePreview()) },
       listRequests: () => Promise.resolve({ entries: [], hasMore: false, captureDegraded: false }),
       getOverrides: () => Promise.resolve({ record: null, inheritedByForks: false }),
-    } as never as ContextEditorApi
+    } satisfies ContextEditorApi
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
     render(<ContextView sessionId="ctx-view" api={api} labels={labelsOf(en)} />)
     await waitFor(() => { expect(screen.getAllByTestId('context-rows')).toHaveLength(1) })
@@ -121,7 +121,7 @@ describe('ContextView', () => {
       restoreRange: () => Promise.resolve(preview),
       listRequests: () => Promise.resolve({ entries: [], hasMore: false, captureDegraded: false }),
       getOverrides: () => Promise.resolve({ record: null, inheritedByForks: false }),
-    } as never as ContextEditorApi
+    } satisfies ContextEditorApi
     render(<ContextView sessionId="ctx-view" api={api} labels={labelsOf(en)} />)
     await waitFor(() => { expect(screen.getByTestId('excluded-6')).toBeDefined() })
     expect(screen.getByTestId('excluded-6').textContent).toContain('Excludes #1–#4')
@@ -137,7 +137,7 @@ describe('ContextView', () => {
       excludeFrom: (args: { startSeq: number }) => { calls.push(args); return Promise.resolve(fixturePreview()) },
       listRequests: () => Promise.resolve({ entries: [], hasMore: false, captureDegraded: false }),
       getOverrides: () => Promise.resolve({ record: null, inheritedByForks: false }),
-    } as never as ContextEditorApi
+    } satisfies ContextEditorApi
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
     render(<ContextView sessionId="ctx-view" api={api} labels={labelsOf(en)} />)
     await waitFor(() => { expect(screen.getAllByTestId('context-rows')).toHaveLength(1) })
@@ -160,7 +160,7 @@ describe('ContextView', () => {
         hasMore: false, captureDegraded: true,
       }),
       getOverrides: () => Promise.resolve({ record: null, inheritedByForks: false }),
-    } as never as ContextEditorApi
+    } satisfies ContextEditorApi
     render(<ContextView sessionId="ctx-view" api={api} labels={labelsOf(en)} />)
     fireEvent.click(screen.getByText('Requests'))
     await waitFor(() => { expect(screen.getByTestId('request-1')).toBeDefined() })
@@ -182,7 +182,7 @@ describe('ContextView', () => {
         return Promise.resolve({ removedTools: [], toolEdits: {}, params: args.params })
       },
       listRequests: () => Promise.resolve({ entries: [], hasMore: false, captureDegraded: false }),
-    } as never as ContextEditorApi
+    } satisfies ContextEditorApi
     render(<ContextView sessionId="ctx-view" api={api} labels={labelsOf(en)} />)
     fireEvent.click(screen.getByText('Tools & params'))
     await waitFor(() => { expect(screen.getByTestId('param-temperature')).toBeDefined() })

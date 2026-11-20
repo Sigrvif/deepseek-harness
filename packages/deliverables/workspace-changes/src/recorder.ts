@@ -385,7 +385,7 @@ export class TurnRecorder {
     for (const [absolute, firstEvent] of observed) {
       if (firstEvent === 'add') {
         try {
-          if ((await stat(absolute)).isFile() !== true) continue
+          if (!(await stat(absolute)).isFile()) continue
         } catch {
           continue
         }

@@ -217,7 +217,8 @@ export function needsSetup(row: ProviderRow, anyUsable: boolean): boolean {
 /** fork(local-test): the model ids a namespace's slr-runtime provider lists. */
 function modelIdsOf(namespace: SettingsNamespaceView): unknown[] {
   const providers = (namespace.value as { providers?: { 'slr-runtime'?: { models?: { id?: unknown }[] } } }).providers
-  return (providers?.['slr-runtime']?.models ?? []).map(model => model?.id)
+  if (providers === undefined) return []
+  return providers['slr-runtime'] === undefined ? [] : (providers['slr-runtime'].models ?? []).map(model => model.id)
 }
 
 function keyConfiguredOf(row: ProviderRow): boolean {

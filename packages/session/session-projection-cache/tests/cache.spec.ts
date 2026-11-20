@@ -863,7 +863,7 @@ describe('SessionProjectionCache resumed-session seeding', () => {
       export: (message: { name: string; type: string; args: unknown[] }) => {
         lines.push(`${message.name}: ${message.args.map(String).join(' ')}`)
       },
-    } as never)
+    })
     await ctx.plugin(Storage)
     await ctx.plugin({ name: storageJsonName, inject: storageJsonInject, apply: storageJsonApply, Config: storageJsonConfig }, { root })
     await ctx.plugin({ name: storageDomainName, inject: storageDomainInject, apply: storageDomainApply, Config: storageDomainConfig }, { backend: 'json' })

@@ -59,7 +59,7 @@ describe('ui-fork-brand browser plugin', () => {
     cleanup()
 
     const writeText = vi.fn().mockResolvedValue(undefined)
-    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    vi.stubGlobal('navigator', Object.assign({}, navigator, { clipboard: { writeText } }))
     render(createElement(ForkBrandName, { t: (key: string) => (key === 'title' ? 'DSLRH' : key) } as never))
     expect(screen.getByText('DSLRH')).toBeDefined()
     const plate = screen.getByText('DSLRH').parentElement!

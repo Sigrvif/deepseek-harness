@@ -183,11 +183,8 @@ export async function pickNativeDirectory(
     } catch (error: unknown) {
       rethrowIfAborted(signal, error)
       if (errorCode(error) === 1) return null
-      if (zenityFailure === undefined) {
-        // Unreachable: the first tier always records (or returned/threw) before
-        // this tier runs; the guard only satisfies narrowing.
-        throw error
-      }
+      // The first tier always records (or returned/threw) before this tier
+      // runs, so zenityFailure is set; the fallback only satisfies narrowing.
       throw chooserFailure(zenityFailure, error)
     }
   }

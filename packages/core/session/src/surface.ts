@@ -146,8 +146,8 @@ export function deriveEventMessage(
   const contextEditMarker = (event.data as { contextEdit?: { mode?: string } }).contextEdit
   if (contextEditMarker?.mode === 'excluded') {
     const candidate = event.type === 'user/message'
-      ? event.data as { content?: readonly ContentBlockLike[] }
-      : (event.data as { message?: { content?: readonly ContentBlockLike[] } }).message
+      ? event.data as { content?: readonly (ContentBlockLike | null)[] }
+      : (event.data as { message?: { content?: readonly (ContentBlockLike | null)[] } }).message
     const content = candidate?.content
     const empty = content === undefined || content.length === 0
       || content.every(block => typeof block === 'object' && block !== null
@@ -789,7 +789,7 @@ export function contextEditShadowedSeqs(entries: readonly ContextEditIntakeEntry
     const replaceOp = op as { op?: string; startSeq?: number; endSeq?: number }
     if (replaceOp.op !== 'replace') continue
     if (event.sourceEventSeqs !== undefined) {
-      for (const seq of event.sourceEventSeqs) shadowed.add(Number(seq))
+      for (const seq of event.sourceEventSeqs) shadowed.add(seq)
       continue
     }
     for (let seq = Number(replaceOp.startSeq); seq <= Number(replaceOp.endSeq); seq += 1) shadowed.add(seq)

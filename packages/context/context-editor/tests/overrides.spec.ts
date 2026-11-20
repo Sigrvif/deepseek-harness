@@ -34,13 +34,13 @@ class RecordingAdapter extends LlmAdapter {
 
 describe('override shaping (pure)', () => {
   it('rejects non-whitelisted parameters', () => {
-    expect(() => validateParams({ temperature: 0.2 })).not.toThrow()
-    expect(() => validateParams({ bogus: 1 } as never)).toThrowError(/not overridable/u)
+    expect(() => { validateParams({ temperature: 0.2 }) }).not.toThrow()
+    expect(() => { validateParams({ bogus: 1 }) }).toThrow(/not overridable/u)
   })
 
   it('applies whitelisted params over the config', () => {
     const record: OverridesRecord = { removedTools: [], toolEdits: {}, params: { temperature: 0.2 } }
-    const merged = applyParams(record, { provider: 'p', model: 'm', temperature: 1 } as never)
+    const merged = applyParams(record, { provider: 'p', model: 'm', temperature: 1 })
     expect(merged['temperature']).toBe(0.2)
   })
 

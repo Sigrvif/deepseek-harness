@@ -95,7 +95,7 @@ function serverOf(tool: string): string {
 
 /** Render a definition's canonical value the way the normal pipeline would. */
 function renderedText(definition: ToolDefinition, args: unknown, value: unknown): string {
-  const blocks: readonly ContentBlock[] = definition.output?.render?.(args, value as never) ?? []
+  const blocks: readonly ContentBlock[] = definition.output.render(args, value as never)
   const text = blocks.map(block => block.type === 'text' ? block.text : '').join('').trim()
   return text === '' ? JSON.stringify(value ?? null) : text
 }
@@ -118,11 +118,11 @@ interface RootToolsView {
  * @returns disposer removing the tools and every mask.
  */
 export function installBroker(ctx: Context, broker: Volatile<boolean>): () => void {
-  const rootTools = (): RootToolsView => (ctx.tools as unknown as RootToolsView)
+  const rootTools = (): RootToolsView => (ctx.tools)
   // session id -> deny names currently registered for it.
   const overrides = new Map<string, { names: string[] }>()
 
-  const denyFor = (): string[] => brokerDenyNames(rootTools().definitions().map(definition => definition.name), broker.get() === true)
+  const denyFor = (): string[] => brokerDenyNames(rootTools().definitions().map(definition => definition.name), broker.get())
 
   /**
    * Shape one session's request tool list through the context-edit override
@@ -167,20 +167,20 @@ export function installBroker(ctx: Context, broker: Volatile<boolean>): () => vo
       schema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'], additionalProperties: false },
       render: (_args: unknown, value: unknown) => [{ type: 'text', text: (value as { text: string }).text }],
     },
-    async execute(args: unknown, _exec: ToolRunContext) {
+    execute(args: unknown, _exec: ToolRunContext) {
       const { query } = args as { query?: string }
       const hits = rootTools().definitions()
         .filter(definition => definition.name.startsWith(MCP_TOOL_PREFIX))
         .map(definition => ({ tool: definition.name, server: serverOf(definition.name), description: definition.description }))
       if (hits.length === 0) {
-        return { text: 'No MCP servers are configured (or none are connected). Nothing to search.' }
+        return Promise.resolve({ text: 'No MCP servers are configured (or none are connected). Nothing to search.' })
       }
       const ranked = rankTools(query ?? '', hits).slice(0, SEARCH_LIMIT)
       if (ranked.length === 0) {
-        return { text: `No MCP tools match ${JSON.stringify(query ?? '')}. Try shorter or more literal terms; an empty query lists every tool.` }
+        return Promise.resolve({ text: `No MCP tools match ${JSON.stringify(query ?? '')}. Try shorter or more literal terms; an empty query lists every tool.` })
       }
       const lines = ranked.map(hit => `- ${hit.tool} — ${hit.description}`)
-      return { text: ['Matching MCP tools (call mcp_describe_tool on one to see its arguments):', ...lines].join('\n') }
+      return Promise.resolve({ text: ['Matching MCP tools (call mcp_describe_tool on one to see its arguments):', ...lines].join('\n') })
     },
   }
 
@@ -200,18 +200,18 @@ export function installBroker(ctx: Context, broker: Volatile<boolean>): () => vo
       schema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'], additionalProperties: false },
       render: (_args: unknown, value: unknown) => [{ type: 'text', text: (value as { text: string }).text }],
     },
-    async execute(args: unknown, _exec: ToolRunContext) {
+    execute(args: unknown, _exec: ToolRunContext) {
       const { tool } = args as { tool: string }
       const known = rootTools().definitions().filter(definition => definition.name.startsWith(MCP_TOOL_PREFIX))
       const definition = known.find(candidate => candidate.name === tool)
       if (definition === undefined) {
         const suggestions = known.map(candidate => candidate.name).slice(0, 6).join(', ')
-        return { text: `Unknown MCP tool ${JSON.stringify(tool)}.${suggestions === '' ? ' No MCP tools are connected.' : ` Known tools: ${suggestions}.`}` }
+        return Promise.resolve({ text: `Unknown MCP tool ${JSON.stringify(tool)}.${suggestions === '' ? ' No MCP tools are connected.' : ` Known tools: ${suggestions}.`}` })
       }
-      return {
+      return Promise.resolve({
         text: [`Tool: ${definition.name}`, definition.description, 'Arguments (JSON Schema):', JSON.stringify(definition.parameters, null, 2),
           'Run it with mcp_execute_tool using this exact tool name.'].join('\n'),
-      }
+      })
     },
   }
 

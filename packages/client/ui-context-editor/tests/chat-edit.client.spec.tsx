@@ -43,7 +43,7 @@ function mockApi(): ContextEditorApi & {
     setTools: () => { throw new Error('unused') },
     setParams: () => { throw new Error('unused') },
     getOverrides: () => Promise.resolve({ record: null, inheritedByForks: false }),
-  } as never as ContextEditorApi & { excludeFrom: ReturnType<typeof vi.fn> }
+  } satisfies ContextEditorApi & { excludeFrom: ReturnType<typeof vi.fn> }
 }
 
 /** A durable user node carrying one text block. */

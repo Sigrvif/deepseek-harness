@@ -149,15 +149,16 @@ function decompressTool(config: ResolvedFoldConfig): ToolDefinition {
         return [{ type: 'text', text: value.content ?? '' }]
       },
     },
-    async execute(args: { foldId?: string }, exec): Promise<DecompressValue> {
+    execute(args: { foldId?: string }, exec): Promise<DecompressValue> {
       const session = exec.agent?.session
       if (session === undefined) {
-        throw new Error('context-fold decompress: no agent session on the execution context; decompress runs only inside an agent turn')
+        return Promise.reject(new Error('context-fold decompress: no agent session on the execution context; decompress runs only inside an agent turn'))
       }
+      // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
       const events = session.snapshotEvents()
       const records = deriveFoldRecords(events)
       if (records.length === 0) {
-        return { ok: false, reason: 'no folds recorded for this session yet - nothing to decompress', hint: 'Call acp_status to see usage; compress creates folds.' }
+        return Promise.resolve({ ok: false, reason: 'no folds recorded for this session yet - nothing to decompress', hint: 'Call acp_status to see usage; compress creates folds.' })
       }
       let target: FoldRecord
       if (args.foldId === undefined) {
@@ -168,21 +169,21 @@ function decompressTool(config: ResolvedFoldConfig): ToolDefinition {
           ? records.filter(record => record.foldId.toLowerCase().startsWith(given))
           : []
         if (candidates.length !== 1) {
-          return {
+          return Promise.resolve({
             ok: false,
             reason: `fold id '${args.foldId}' matches ${String(candidates.length)} folds`,
             hint: `Available folds: ${records.map(record => record.foldId.slice(0, 8)).join(', ')}. Call acp_status for the full ledger.`,
-          }
+          })
         }
         target = candidates[0] as FoldRecord
       }
       const { content } = renderFoldOriginals(events, target, config.decompressCapChars)
-      return {
+      return Promise.resolve({
         ok: true,
         foldId: target.foldId.slice(0, 8),
         messageCount: target.shadowedSeqs.length,
         content,
-      }
+      })
     },
   })
 }
@@ -214,13 +215,14 @@ function searchContextTool(config: ResolvedFoldConfig): ToolDefinition {
         },
         additionalProperties: false,
       },
-      render: (_args, value): ContentBlock[] => [{ type: 'text', text: String(value.text ?? '') }],
+      render: (_args, value): ContentBlock[] => [{ type: 'text', text: value.text ?? '' }],
     },
-    async execute(args: { query: string; limit?: number }, exec) {
+    execute(args: { query: string; limit?: number }, exec) {
       const session = exec.agent?.session
       if (session === undefined) {
-        throw new Error('context-fold search_context: no agent session on the execution context; search runs only inside an agent turn')
+        return Promise.reject(new Error('context-fold search_context: no agent session on the execution context; search runs only inside an agent turn'))
       }
+      // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
       const events = session.snapshotEvents()
       const hits = searchContext(args.query, deriveFoldRecords(events), events, args.limit ?? config.searchLimit)
       const text = hits.length === 0
@@ -230,7 +232,7 @@ function searchContextTool(config: ResolvedFoldConfig): ToolDefinition {
           : `[message seq ${String(hit.seq)}] ${hit.snippet}`)
           .join('\n')
       const value: SearchContextValue = { ok: true, query: args.query, hits, text }
-      return { ...value, hits: hits as never[] }
+      return Promise.resolve({ ...value, hits: hits as never[] })
     },
   })
 }
@@ -316,6 +318,7 @@ function compressTool(ctx: Context, config: ResolvedFoldConfig): ToolDefinition 
       }
       let plan: FoldPlan
       try {
+        // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
         plan = planFold(session.snapshotEvents(), {
           keepLast: args.keepLast ?? config.keepLast,
           minFoldChars: config.minFoldChars,

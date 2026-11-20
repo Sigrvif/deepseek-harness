@@ -52,7 +52,9 @@ export function applyTools(record: OverridesRecord, tools: NonNullable<GenerateO
     .filter(tool => !record.removedTools.includes(tool.name))
     .map((tool) => {
       const edit = record.toolEdits[tool.name]
-      return edit === undefined ? tool : { ...tool, ...(edit as Partial<ToolSchema>) } as ToolSchema
+      // `toolEdits` values are JSON payloads; the fragment cast keeps the
+      // object-spread shape-safe against the array/primitive JsonValue branches.
+      return edit === undefined ? tool : { ...tool, ...(edit as Partial<ToolSchema>) }
     })
 }
 

@@ -51,7 +51,7 @@ describe('registerFoldSection', () => {
     contexts.push(ctx)
     await ctx.plugin(SystemPrompt)
     const dispose = registerFoldSection(ctx)
-    expect(() => registerFoldSection(ctx)).toThrowError(/already/i)
+    expect(() => registerFoldSection(ctx)).toThrow(/already/i)
     dispose()
     const reDispose = registerFoldSection(ctx)
     expect(typeof reDispose).toBe('function')

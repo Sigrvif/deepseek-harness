@@ -29,6 +29,7 @@ function formatCount(value: number): string {
  * @returns usage with absent numbers left undefined — never guessed.
  */
 export async function foldUsage(ctx: Context, session: Session): Promise<FoldUsage> {
+  // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
   const records = deriveFoldRecords(session.snapshotEvents())
   const meter = ctx.get('tokenMeter') as
     | { contextPressure?: (session: Session) => { pressureTokens?: number; contextWindow?: number } }

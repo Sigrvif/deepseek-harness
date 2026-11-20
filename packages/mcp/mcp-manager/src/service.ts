@@ -47,7 +47,7 @@ export class McpManagerService extends TypertRemoteService {
         this.defs = [...opened.table('servers').entries()].map(([, def]) => def)
         await this.supervisor.sync(this.defs)
       })
-    ctx.effect(() => () => this.supervisor.disposeAll())
+    ctx.effect(() => () => { this.supervisor.disposeAll() })
   }
 
   /**
@@ -118,7 +118,7 @@ export class McpManagerService extends TypertRemoteService {
   /** Normalize and validate one definition before it is stored or mounted. */
   private validate(def: McpServerDef): McpServerDef {
     const id = def.id === '' ? randomUUID() : def.id
-    const serverName = def.serverName?.trim() ?? ''
+    const serverName = def.serverName.trim()
     if (!SERVER_NAME_PATTERN.test(serverName)) {
       throw new RemoteError('mcpManager/invalid', 'server name must match [A-Za-z0-9_-] and be 1-32 characters', { field: 'serverName' })
     }

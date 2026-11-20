@@ -342,12 +342,14 @@ export function apply(ctx: Context, config: Config = {}): void {
       // settlement as command settlement: the call races the command's own
       // handle against the call deadline and the caller's abort, and keeps the
       // record alive afterwards while processes of the command remain.
-      let commandSettled = false
-      void attached.commandDone.then(() => { commandSettled = true })
-      const deadline = new Promise<'deadline'>((resolve) => { setTimeout(() => resolve('deadline'), timeoutMs) })
+      // The holder defeats literal narrowing: the settlement assignment runs
+      // from the commandDone continuation, invisible to control flow.
+      const settlement = { command: false }
+      void attached.commandDone.then(() => { settlement.command = true })
+      const deadline = new Promise<'deadline'>((resolve) => { setTimeout(() => { resolve('deadline') }, timeoutMs) })
       const callerAborted = new Promise<'aborted'>((resolve) => {
         if (exec.signal.aborted) { resolve('aborted'); return }
-        exec.signal.addEventListener('abort', () => resolve('aborted'), { once: true })
+        exec.signal.addEventListener('abort', () => { resolve('aborted') }, { once: true })
       })
       const why = await Promise.race([attached.commandDone.then(() => 'command' as const), deadline, callerAborted])
       if (why === 'aborted') {
@@ -357,7 +359,7 @@ export function apply(ctx: Context, config: Config = {}): void {
         await stop('tool call aborted')
         throw toolAborted()
       }
-      if (!commandSettled) {
+      if (!settlement.command) {
         if (attached.process() === undefined) {
           // The wait expired while preparation still ran: nothing is running
           // to keep, so this is the deadline's preparation timeout, with the
@@ -414,7 +416,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       }
       const emptied = await Promise.race([
         range.then(() => true),
-        new Promise<boolean>((resolve) => { setTimeout(() => resolve(false), RANGE_SETTLE_WINDOW_MS) }),
+        new Promise<boolean>((resolve) => { setTimeout(() => { resolve(false) }, RANGE_SETTLE_WINDOW_MS) }),
       ])
       if (emptied) {
         // The range is gone: collect the settlement so no completion notice

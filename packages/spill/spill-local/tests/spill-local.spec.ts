@@ -163,7 +163,7 @@ describe('privateRoot', () => {
     chmodSync(blockedA, 0o500)
     chmodSync(blockedB, 0o500)
     try {
-      expect(() => createPrivateRoot([blockedA, blockedB])).toThrowError()
+      expect(() => createPrivateRoot([blockedA, blockedB])).toThrow()
     } finally {
       chmodSync(blockedA, 0o700)
       chmodSync(blockedB, 0o700)

@@ -70,7 +70,7 @@ describe('FilesBody', () => {
   // fork(context-editor): the row context menu.
   it('opens a row context menu with open, path copies and a chat reference', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
-    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    vi.stubGlobal('navigator', Object.assign({}, navigator, { clipboard: { writeText } }))
     const insertText = vi.fn()
     const inputActions = { captureInsertion: vi.fn(() => ({ start: 0, end: 0 })), insertText }
     const { view, script } = mountBody(ROOT, undefined, { inputActions } as never)

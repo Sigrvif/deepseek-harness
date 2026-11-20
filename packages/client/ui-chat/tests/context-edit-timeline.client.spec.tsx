@@ -30,7 +30,7 @@ describe('fork(context-editor) timeline fold', () => {
   it('matches context-edit replacements as message nodes', () => {
     const replacement = userReplacement(2, 0, 'edited question', 'edited')
     expect(isContextEditReplacement(replacement)).toBe(true)
-    expect(messageDefinition.match(replacement)).toEqual({ id: expect.any(String), role: 'start' })
+    expect(messageDefinition.match(replacement)).toEqual({ id: expect.any(String) as string, role: 'start' })
   })
 
   it('hides excluded replacements from the timeline', () => {

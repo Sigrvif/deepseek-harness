@@ -65,6 +65,7 @@ function decide(
   pressureTokens: number,
   contextWindow: number | undefined,
 ): UserMessage | undefined {
+  // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
   const foldCount = deriveFoldRecords(session.snapshotEvents()).length
   const id = String(session.id)
   const state: NudgeState = states.get(id) ?? {

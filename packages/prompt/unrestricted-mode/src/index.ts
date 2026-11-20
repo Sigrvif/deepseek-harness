@@ -52,7 +52,7 @@ export const Config = z.object({
 export function apply(ctx: Context, config: Config): void {
   ctx.on('system-prompt/assemble', async (_assembly, _context, next) => {
     const original = await next()
-    if (config.enabled.get() !== true) return original
+    if (!config.enabled.get()) return original
     // Delegated subagents tolerate an absent persona; their assemblies carry
     // the subagent:delegation runtime context.
     const isSubagent = original.contexts.some(entry => entry.name === 'subagent:delegation')

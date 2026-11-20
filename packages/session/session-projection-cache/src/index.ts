@@ -398,6 +398,7 @@ export class SessionProjectionCache extends Service {
       return
     }
     try {
+      // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
       this.ctx.sessionProjections.hydrate(session, record.rows, session.snapshotEvents(), SessionLogOffset(0))
       this.ctx.logger.info(`session projection cache: seeded resumed "${session.id}" from cache rows in ${((performance.now() - started) / 1000).toFixed(1)}s`)
     } catch (error) {

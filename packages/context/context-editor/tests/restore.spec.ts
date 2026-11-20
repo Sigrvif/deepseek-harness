@@ -179,7 +179,7 @@ describe('expandCheckpoint', () => {
       surfaceOp: { op: 'replace', startSeq: userSeq, endSeq: assistantSeq },
       sourceEventSeqs: [userSeq, assistantSeq],
     })
-    session.append('compaction/end', { compactionId: CompactionId('cp-1'), turn: null } as never)
+    session.append('compaction/end', { compactionId: CompactionId('cp-1'), turn: null })
     expect(texts(session)).toEqual(['summary of the turn'])
     await expandCheckpoint(ctx, SessionId('expand-cp'), session.surface.nodes[0]!)
     expect(texts(session)).toEqual(['question one', 'answer one'])

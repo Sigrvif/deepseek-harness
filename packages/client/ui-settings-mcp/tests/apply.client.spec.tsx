@@ -8,6 +8,7 @@ import { en, zh } from '../src/client/locales.ts'
 
 /** A client context mock capturing the slot registration like the renderer would. */
 function clientCtx() {
+  const mountMock = vi.fn(async () => ({}))
   const registered: Array<{ options: Record<string, unknown>; component: unknown }> = []
   const registeredLocales: Array<{ ns: string; dicts: unknown }> = []
   const injected: Array<{ name: string; build: () => void }> = []
@@ -18,7 +19,7 @@ function clientCtx() {
   }
   const ctx = {
     configForms: { get: () => form },
-    remote: { $mount: vi.fn(async () => ({})) },
+    remote: { $mount: mountMock },
     effect: (fn: () => unknown, _label?: string) => { fn(); return () => undefined },
     locale: {
       register: (ns: string, dicts: unknown) => { registeredLocales.push({ ns, dicts }) },
@@ -37,14 +38,14 @@ function clientCtx() {
       injected.push({ name: _services.join('+'), build: () => undefined })
     },
   }
-  return { ctx: ctx as unknown as Context, registered, registeredLocales, injected }
+  return { ctx: ctx as unknown as Context, mountMock, registered, registeredLocales, injected }
 }
 
 describe('ui-settings-mcp client apply', () => {
   it('mounts the remote, registers dictionaries, and docks the settings section', async () => {
     const harness = clientCtx()
     await apply(harness.ctx)
-    expect(harness.ctx.remote.$mount).toHaveBeenCalledTimes(1)
+    expect(harness.mountMock).toHaveBeenCalledTimes(1)
     expect(harness.registeredLocales).toHaveLength(1)
     const locale = harness.registeredLocales[0]!
     expect(locale.ns).toBe(NS)

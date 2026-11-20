@@ -151,15 +151,16 @@ export async function applyOperations(
 ): Promise<void> {
   const live = ctx.sessions.get(sessionId)
   if (live !== undefined) {
+    // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
     const events = live.snapshotEvents()
     if (turnOpen(events)) {
       throw new RemoteError('context-editor/busy', `session '${sessionId}' has an open turn`, { sessionId })
     }
     const append = (r: Replacement): SessionEvent => (r.surfaceOp === undefined && r.sourceEventSeqs === undefined
-      ? live.append(r.type, r.data as never)
+      ? live.append(r.type, r.data)
       : live.append(
         r.type,
-        r.data as never,
+        r.data,
         {
           ...(r.surfaceOp === undefined ? {} : { surfaceOp: r.surfaceOp }),
           ...(r.sourceEventSeqs === undefined ? {} : { sourceEventSeqs: r.sourceEventSeqs }),
@@ -188,14 +189,14 @@ export async function applyOperations(
   // validation, then persist only the newly appended events.
   const detached = Session.create(sessionId)
   for (const event of stored) {
-    detached.append(event.type, event.data as never, {
+    detached.append(event.type, event.data, {
       surfaceOp: event.surfaceOp as never,
       ...(event.sourceEventSeqs !== undefined ? { sourceEventSeqs: event.sourceEventSeqs } : {}),
-    } as never)
+    })
   }
   build(stored, r => detached.append(
     r.type,
-    r.data as never,
+    r.data,
     (r.surfaceOp === undefined && r.sourceEventSeqs === undefined
       ? undefined
       : {
@@ -203,6 +204,7 @@ export async function applyOperations(
         ...(r.sourceEventSeqs === undefined ? {} : { sourceEventSeqs: r.sourceEventSeqs }),
       } as never) as never,
   ))
+  // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
   const fresh = detached.snapshotEvents(SessionLogOffset(stored.length))
   const handle = await ctx.sessionPersistence.open(sessionId, 'write')
   try {

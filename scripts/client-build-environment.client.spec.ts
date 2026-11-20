@@ -196,7 +196,7 @@ describe('client build environment', () => {
     // fork(local-test): a manifest carrying dshFork.version adds the fork env.
     const manifestPath = join(fixtureRoot, 'package.json')
     const manifestBytes = readFileSync(manifestPath, 'utf8')
-    const manifest = JSON.parse(manifestBytes)
+    const manifest = JSON.parse(manifestBytes) as Record<string, unknown>
     write(manifestPath, `${JSON.stringify({ ...manifest, dshFork: { version: '2.1.0' } }, null, 2)}\n`)
     expect(repositoryClientBuildEnvironment(fixtureRoot, {
       DSH_CLIENT_COMMIT_HASH: COMMIT_HASH,

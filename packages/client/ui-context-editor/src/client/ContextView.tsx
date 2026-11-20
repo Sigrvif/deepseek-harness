@@ -91,7 +91,7 @@ function ContextPane({ sessionId, api, labels, preview, reload }: {
         const code = (error as { code?: string }).code
         if (code === 'context-editor/requires-branch' && window.confirm(labels('confirm.branch'))) {
           const { sessionId: childId } = await api.createRecoveryBranch({ sessionId: sessionId as never, boundarySeq: startSeq - 1 })
-          window.alert((labels('confirm.branchCreated') ?? 'Created branch {id}').replace('{id}', String(childId)))
+          window.alert(labels('confirm.branchCreated').replace('{id}', String(childId)))
           return
         }
         throw error
@@ -114,9 +114,9 @@ function ContextPane({ sessionId, api, labels, preview, reload }: {
       if (current !== undefined && seq === current[1] + 1) current[1] = seq
       else runs.push([seq, seq])
     }
-    const exclusions = runs.reduce(
+    const exclusions = runs.reduce<Promise<unknown>>(
       (chain, [start, end]) => chain.then(() => api.excludeRange({ sessionId: sessionId as never, startSeq: start, endSeq: end })),
-      Promise.resolve() as Promise<unknown>,
+      Promise.resolve(),
     )
     void exclusions.then(
       () => { setBusy(false); setBatch([]); reload() },
@@ -138,9 +138,9 @@ function ContextPane({ sessionId, api, labels, preview, reload }: {
   const batchEdit = (text: string): void => {
     if (batch.length === 0 || text === '') return
     setBusy(true)
-    const edits = batch.reduce(
+    const edits = batch.reduce<Promise<unknown>>(
       (chain, seq) => chain.then(() => api.editMessage({ sessionId: sessionId as never, targetSeq: seq, text })),
-      Promise.resolve() as Promise<unknown>,
+      Promise.resolve(),
     )
     void edits.then(
       () => { setBusy(false); setBatch([]); reload() },
@@ -158,7 +158,7 @@ function ContextPane({ sessionId, api, labels, preview, reload }: {
           value={search}
           onChange={(event) => { setSearch(event.target.value) }}
         />
-        <span className={styles.total} data-testid="context-total">{(labels('context.total') ?? '{tokens} tokens (est.)').replace('{tokens}', String(preview.totalTokens))}</span>
+        <span className={styles.total} data-testid="context-total">{labels('context.total').replace('{tokens}', String(preview.totalTokens))}</span>
       </div>
       {batch.length > 0 ? (
         <div className={styles.batchBar} data-testid="batch-bar">
@@ -168,7 +168,7 @@ function ContextPane({ sessionId, api, labels, preview, reload }: {
             type="button"
             disabled={busy}
             onClick={() => {
-              const text = window.prompt(labels('prompt.batchEdit') ?? '') ?? ''
+              const text = window.prompt(labels('prompt.batchEdit')) ?? ''
               batchEdit(text)
             }}
           >
@@ -209,7 +209,7 @@ function ContextPane({ sessionId, api, labels, preview, reload }: {
               // glance: the shadowed seq range plus the removed text.
               <span className={styles.text} data-testid={`excluded-${String(row.seq)}`}>
                 <span className={styles.stubRange}>
-                  {(labels('stub.range') ?? 'Excludes #{start}–#{end}')
+                  {labels('stub.range')
                     .replace('{start}', String(row.excludes?.[0] ?? row.seq))
                     .replace('{end}', String(row.excludes?.at(-1) ?? row.seq))}
                 </span>
@@ -357,7 +357,7 @@ function ToolsPane({ sessionId, api, labels, preview, reload }: {
       )
       return
     }
-    params[field as 'temperature'] = value as never
+    params[field as 'temperature'] = value
     setBusy(true)
     api.setParams({ sessionId: sessionId as never, params }).then(
       (saved) => { setBusy(false); setRecord(saved); reload() },
@@ -403,7 +403,7 @@ function ToolsPane({ sessionId, api, labels, preview, reload }: {
           <input
             type="text"
             placeholder={labels('params.stopPlaceholder')}
-            defaultValue={(params['stop'] as string[] | undefined)?.join(', ') ?? ''}
+            defaultValue={params['stop']?.join(', ') ?? ''}
             data-testid="param-stop"
             onBlur={(event) => { setStop(event.target.value) }}
           />
@@ -449,16 +449,16 @@ export function ContextView({ sessionId, api, labels }: ContextViewProps): React
             className={pane === id ? styles.tabActive : styles.tab}
             onClick={() => { setPane(id) }}
           >
-            {labels(`pane.${id}`) ?? id}
+            {labels(`pane.${id}`)}
           </button>
         ))}
       </div>
       {error !== undefined ? (
         <p className={styles.error} data-testid="context-error">
-          {(labels('state.error') ?? 'Context Editor unavailable: {message}').replace('{message}', error)}
+          {labels('state.error').replace('{message}', error)}
         </p>
       ) : preview === undefined ? (
-        <p>{labels('state.loading') ?? ''}</p>
+        <p>{labels('state.loading')}</p>
       ) : pane === 'context' ? (
         <>
           {degraded ? <p className={styles.notice} data-testid="degraded-notice">{labels('state.captureDegraded')}</p> : null}

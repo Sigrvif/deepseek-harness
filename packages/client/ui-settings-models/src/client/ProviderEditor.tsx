@@ -214,7 +214,7 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
   const idleTimeoutInherited = (() => {
     const composed = schema.getPath(fallback, ['streamIdleTimeoutMs'])
     if (typeof composed === 'number') return composed
-    const declared = schema.nodeAtPath(root, [...settingsPath, 'streamIdleTimeoutMs'])?.meta.default
+    const declared: unknown = schema.nodeAtPath(root, [...settingsPath, 'streamIdleTimeoutMs'])?.meta.default
     return typeof declared === 'number' ? declared : undefined
   })()
   const idleTimeoutTrimmed = idleTimeoutText.trim()

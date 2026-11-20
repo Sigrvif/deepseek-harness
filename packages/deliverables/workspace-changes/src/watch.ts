@@ -44,7 +44,7 @@ export class TurnWatcher {
    */
   static async start(root: string, env: WatcherEnvironment): Promise<TurnWatcher | undefined> {
     try {
-      if ((await stat(root)).isDirectory() !== true) return undefined
+      if (!(await stat(root)).isDirectory()) return undefined
     } catch {
       return undefined
     }
@@ -56,10 +56,10 @@ export class TurnWatcher {
     const watcher = watch(root, { ignoreInitial: true, followSymlinks: false, ignored })
     instance.watcher = watcher
     const ready = new Promise<boolean>((resolve) => {
-      watcher.once('ready', () => resolve(true))
-      watcher.once('error', () => resolve(false))
+      watcher.once('ready', () => { resolve(true) })
+      watcher.once('error', () => { resolve(false) })
     })
-    if (await ready === false) {
+    if (!(await ready)) {
       instance.watcher = undefined
       await watcher.close().catch(() => undefined)
       return undefined
@@ -67,7 +67,7 @@ export class TurnWatcher {
     // Later errors, as for a subtree that lost its permissions, end nothing.
     watcher.on('error', () => undefined)
     watcher.on('all', (event, entry) => {
-      if ((event === 'add' || event === 'change' || event === 'unlink') && instance.written.has(entry) !== true) {
+      if ((event === 'add' || event === 'change' || event === 'unlink') && !instance.written.has(entry)) {
         instance.written.set(entry, event)
       }
     })

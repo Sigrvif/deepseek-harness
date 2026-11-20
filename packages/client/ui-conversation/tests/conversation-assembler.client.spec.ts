@@ -2025,7 +2025,7 @@ describe('ConversationNodeAssembler', () => {
       kind: 'msg',
       target: 'test',
       match: event => isContextEditReplacement(event) ? null : { id: String(event.seq), role: 'start' },
-      start: (_context, match) => ({ text: String((match.event.data as { text?: string }).text ?? '') }),
+      start: (_context, match) => ({ text: (match.event.data as { text?: string }).text ?? '' }),
       update: context => context.state,
       buildViewNode: context => node(context, context.state),
     }]

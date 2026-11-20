@@ -72,7 +72,7 @@ export function apply(ctx: Context, config: Config): void {
     const announcement = pending.get(key)
     if (announcement === undefined) return decision
     pending.delete(key)
-    if (config.enabled.get() !== true) return decision
+    if (!config.enabled.get()) return decision
     const summary = ctx.workspaceChanges.summary(agent.session.id, announcement.seq)
     if (summary === undefined || summary.files.length === 0) return decision
     return { ...decision, messages: [...decision.messages, reportMessage(summary)] }

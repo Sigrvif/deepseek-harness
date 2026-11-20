@@ -88,6 +88,7 @@ function formatDuration(elapsedMs: number): string {
 function requestMessages(agent: Agent, turn: number, proposed: readonly UserMessage[]): UserMessage[] {
   const entered: UserMessage[] = []
   for (let seq = agent.session.seq - 1; seq >= 0; seq -= 1) {
+    // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
     const event = agent.session.eventAt(SessionSeq(seq))
     if (event?.type === 'turn/start' && event.data.turn === turn) {
       return [...entered.reverse(), ...proposed]
@@ -109,7 +110,7 @@ function renderText(
   const elapsed = previous === undefined ? 'unavailable' : formatDuration(now - previous)
   const baseline = step === 1 ? 'model-visible message' : 'step context'
   return `Time sampled while preparing turn ${turn}, step ${step}: ${formatTimestamp(now, formatter, timeZone)}\n`
-    + `${browserText === undefined ? '' : `${browserText}\n`}`
+    + (browserText === undefined ? '' : `${browserText}\n`)
     + `Elapsed since the preceding ${baseline}: ${elapsed}.`
 }
 
