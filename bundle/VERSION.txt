@@ -1,3 +1,31 @@
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.35 (2026-11-21)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
+      + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
+
+Fork changes on top of upstream 0.2.2-alpha.2:
+
+  The recorded-session suites close out (2.4.35)
+                      The last pre-existing reds were the recorded
+                      scenarios whose compositions need capabilities this
+                      fork removed by design (PTC/workflow execution,
+                      command confinement, the permission-preset
+                      service, engine auto-compaction) plus a tail of
+                      upstream-composition fixtures. Removed-capability
+                      scenarios now skip with a named reason on every
+                      host and lane instead of failing; the suite's own
+                      leaks are fixed too - Context Fold and the MCP
+                      broker's three meta-tools had reached the minimal
+                      preset through root-scope mounts, and are now
+                      preset-scoped / server-gated. The refresh harness
+                      carries committed job tokens into tool-call and
+                      tool-result text, tokenizes the producer pid inside
+                      job status lines, and canonicalizes the killed-job
+                      settlement/step boundary race; the remaining
+                      fixtures (provider-cwd, session-query-spill,
+                      subagent-fork-schedule, the minimal pins, the pwsh
+                      sidecars) are migrated. Both recorded-session gates
+                      are green with only reasoned skips.
+
 DSLRH (DeepSeek Local Runtime Harness) package 2.4.34 (2026-11-20)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)

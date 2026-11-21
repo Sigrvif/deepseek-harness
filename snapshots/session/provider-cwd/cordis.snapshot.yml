@@ -45,7 +45,12 @@
               - id: deepseek-v4-pro
 
 # The filesystem fixture supplies execution coordinates without a remote service.
+# fork(sandbox-removal): the base composition's filesystem row is `fs-local`
+# here (upstream: `fs-sandbox`); disable the fork's row so the provider-owned
+# filesystem below is the session's only filesystem.
 - id: fs-sandbox
+  disabled: true
+- id: fs-local
   disabled: true
 
 - insert:

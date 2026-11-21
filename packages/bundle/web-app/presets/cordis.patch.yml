@@ -83,6 +83,10 @@
                   thresholdChars: 8192
                   headChars: 4096
                   tailChars: 1024
+          # fork(context-fold): Context Fold rides the presets that want its
+          # tools; minimal stays without it (see the base patch's disabled row).
+          - id: context-fold
+            name: '@deepseek-ai/dsh-context-fold'
           - id: delegation
             name: cordis:group
             group: true

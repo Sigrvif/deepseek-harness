@@ -53,8 +53,14 @@ it('replays highlighted Python stubs, PowerShell and CSV reads with their docume
     if (MODE === 'record') await recordFixture(scaffold, sessionId, FIXTURE)
 
     await expandTurnProcesses(page)
-    await page.locator('[data-sidebar-right-expand]').click()
-    await page.locator('[data-sidebar-right-guide-entry="files"]').click()
+    // fork(context-editor): the Files sidebar opens expanded by default in
+    // this fork (2.4.22), so the expand control and the guide entry exist
+    // only when something collapsed it — click them only then.
+    const expand = page.locator('[data-sidebar-right-expand]')
+    if (await expand.isVisible()) {
+      await expand.click()
+      await page.locator('[data-sidebar-right-guide-entry="files"]').click()
+    }
     const filesTab = page.locator('[data-dockkit-tab]').filter({ has: page.getByText('Files', { exact: true }) })
     const preview = page.locator('[data-textpreview-url]')
     const snapshots: string[] = []

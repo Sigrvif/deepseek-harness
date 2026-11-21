@@ -1142,6 +1142,27 @@ describe('refreshFixtureReplacements', () => {
 })
 
 describe('stabilizeRefreshLog', () => {
+  it('carries committed job tokens onto fresh ids inside tool text', () => {
+    const fresh = [
+      '{"type":"session","id":"same","createdAt":200}',
+      '{"type":"job/registered","seq":2,"time":200,"data":{"jobId":"bash-0123456789abcdef","kind":"bash"}}',
+      '{"type":"assistant/message","seq":3,"time":201,"data":{"message":{"role":"assistant","content":[{"type":"tool-call","id":"c","name":"job_kill","arguments":"{\\"job_id\\":\\"bash-0123456789abcdef\\"}"}]}}}',
+      '{"type":"tool/result","seq":4,"time":202,"data":{"message":{"role":"tool","content":[{"type":"text","text":"requested cancellation of job bash-0123456789abcdef"}]}}}',
+      '',
+    ].join('\n')
+    const existing = [
+      '{"type":"session","id":"same","createdAt":100}',
+      '{"type":"job/registered","seq":2,"time":100,"data":{"jobId":"{{id:1}}","kind":"bash"}}',
+      '{"type":"assistant/message","seq":3,"time":101,"data":{"message":{"role":"assistant","content":[{"type":"tool-call","id":"c","name":"job_kill","arguments":"{\\"job_id\\":\\"{{id:1}}\\"}"}]}}}',
+      '{"type":"tool/result","seq":4,"time":102,"data":{"message":{"role":"tool","content":[{"type":"text","text":"requested cancellation of job {{id:1}}"}]}}}',
+      '',
+    ].join('\n')
+
+    const stabilized = stabilize(fresh, existing)
+    expect(stabilized).not.toContain('bash-0123456789abcdef')
+    expect(stabilized.match(/\{\{id:1\}\}/g)).toHaveLength(3)
+  })
+
   it('preserves unpacked member times when refresh first packs a chunk run', () => {
     const fresh = [
       '{"type":"session","id":"same","createdAt":200}',

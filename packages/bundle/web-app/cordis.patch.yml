@@ -153,8 +153,14 @@
     # tools, a system-prompt section, and growth nudges. Folds land as
     # compaction checkpoints on the session log. See
     # packages/context/context-fold and FORK.md.
+    # fork(context-fold, 2.4.35): the row is DISABLED here and declared inside
+    # the standard/cordis/ptc presets instead — a root-scope mount put the
+    # four fold tools into EVERY preset, including minimal, whose roster is
+    # bash + read_image by design (the same host-plane/preset split the
+    # schedule and compaction rows follow above).
     - id: context-fold
       name: '@deepseek-ai/dsh-context-fold'
+      disabled: true
 
     # fork(job-sentinel): still-running job reports — when the agent steps
     # anyway and one of its background jobs has been running for a while,

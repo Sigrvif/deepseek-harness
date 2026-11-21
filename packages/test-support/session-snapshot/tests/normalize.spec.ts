@@ -603,6 +603,52 @@ describe('normalizeSessionLog', () => {
     expect(out).toContain('"version":0')
     expect(out).not.toContain('durationMs')
   })
+
+  it('tokenizes a producer pid only inside a job status line', () => {
+    const status = JSON.stringify({
+      type: 'tool/result',
+      seq: 2,
+      time: 5,
+      data: { message: { content: [{ type: 'text', text: 'ready\n[status: running, pid 4242; user steered]' }] } },
+    })
+    const prose = JSON.stringify({
+      type: 'tool/result',
+      seq: 3,
+      time: 6,
+      data: { message: { content: [{ type: 'text', text: 'the pid 4242 stays visible' }] } },
+    })
+    const out = normalizeSessionLog(`${header({})}\n${status}\n${prose}\n`, ctx)
+    expect(out).toContain('[status: running, pid {{pid}}; user steered]')
+    expect(out).toContain('the pid 4242 stays visible')
+  })
+})
+
+describe('normalizeSessionSnapshots settlement boundaries', () => {
+  const log = (settledAfterStart: boolean): string => {
+    const boundary = settledAfterStart
+      ? [
+        { type: 'step/start', seq: 3, time: 4, data: { turn: 1, step: 2 } },
+        { type: 'job/settled', seq: 4, time: 5, data: { jobId: 'bash-0123456789abcdef' } },
+      ]
+      : [
+        { type: 'job/settled', seq: 3, time: 4, data: { jobId: 'bash-0123456789abcdef' } },
+        { type: 'step/start', seq: 4, time: 5, data: { turn: 1, step: 2 } },
+      ]
+    return [
+      { type: 'session', version: SESSION_FORMAT_VERSION, id: '11111111-2222-3333-4444-555555555555', createdAt: 0, cwd: '/w', isSeeded: false, delegationDepth: 0 },
+      { type: 'turn/start', seq: 0, time: 1, data: { turn: 1 } },
+      { type: 'step/start', seq: 1, time: 2, data: { turn: 1, step: 1 } },
+      { type: 'step/end', seq: 2, time: 3, data: { turn: 1, step: 1 } },
+      ...boundary,
+    ].map(record => JSON.stringify(record)).join('\n') + '\n'
+  }
+
+  it('canonicalizes a settlement that lands just after the next step starts', () => {
+    const [prompt, trailing] = normalizeSessionSnapshots([log(false), log(true)], ctx)
+    expect(trailing).toBe(prompt)
+    const types = (trailing as string).trimEnd().split('\n').map(line => (JSON.parse(line) as { type: string }).type)
+    expect(types.slice(2)).toEqual(['step/start', 'step/end', 'job/settled', 'step/start'])
+  })
 })
 
 describe('normalizeSessionSnapshot', () => {

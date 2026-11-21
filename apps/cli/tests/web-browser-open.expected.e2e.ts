@@ -91,7 +91,7 @@ describe.skipIf(!builtArtifactsExist)('dsh web browser-open assembled snapshot',
         "opening": true,
         "readyUrl": "http://127.0.0.1:{{port}}/?token={{token}}",
         "status": 200,
-        "stderr": "",
+        "stderr": "[hmr] info: watching %o []",
       }
     `)
   })
@@ -185,7 +185,7 @@ describe.skipIf(!builtArtifactsExist)('dsh web browser-open assembled snapshot',
         "opened": false,
         "opening": false,
         "readyUrl": "http://127.0.0.1:{{port}}/?token={{token}}",
-        "stderr": "",
+        "stderr": "[hmr] info: watching %o []",
       }
     `)
   })

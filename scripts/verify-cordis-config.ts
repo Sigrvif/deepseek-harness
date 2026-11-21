@@ -148,10 +148,10 @@ function validatePresetPlaneSeparation(): string[] {
   const disabled = new Set<string>()
   const overlayRows = new Set<string>()
   for (const file of overlayFiles) {
-    for (const entry of loadEntries(file)) {
-      if (!isRecord(entry)) continue
-      if (entry.disabled === true && typeof entry.id === 'string') disabled.add(entry.id)
-    }
+    // fork(preset-plane): a row can be disabled from inside an `insert` (the
+    // web overlay declares and disables rows that way); walk nested rows too,
+    // or the disable is invisible to this check while the runtime honors it.
+    for (const id of disabledRowIds(loadEntries(file))) disabled.add(id)
     for (const id of rowIds(file)) overlayRows.add(id)
   }
   // The overlay's own inserts are host-plane too; its disables take them back out.
@@ -180,6 +180,28 @@ function loadEntries(file: string): unknown[] {
  */
 function rowIds(file: string): Set<string> {
   return exclusivePlaneRowIds(loadEntries(file))
+}
+
+/**
+ * Collect every row id marked `disabled` anywhere in a patch document,
+ * including rows nested in `insert` arrays and group configs.
+ * @param rows - parsed Loader entries.
+ * @returns ids the document disables.
+ */
+export function disabledRowIds(rows: unknown): Set<string> {
+  const ids = new Set<string>()
+  const walk = (value: unknown): void => {
+    if (isUnknownArray(value)) {
+      for (const item of value) walk(item)
+      return
+    }
+    if (!isRecord(value)) return
+    if (value.disabled === true && typeof value.id === 'string') ids.add(value.id)
+    walk(value.insert)
+    if (isCordisGroupEntry(value)) walk(value.config)
+  }
+  walk(rows)
+  return ids
 }
 
 /**

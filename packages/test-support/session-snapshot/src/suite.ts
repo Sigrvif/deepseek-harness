@@ -209,6 +209,13 @@ export interface Scenario {
    * on every platform.
    */
   pwshOnly?: boolean
+  /**
+   * fork(sandbox-removal): a recorded scenario whose composition exercises a
+   * capability this fork removed by design (PTC execution, command
+   * confinement, the permission-preset service, engine auto-compaction). The
+   * run test skips with this reason on every host; the fixtures stay guarded.
+   */
+  forkSkip?: string
 }
 
 /**
@@ -232,6 +239,9 @@ export function scenarioSkipped(
   hasPwsh?: boolean,
 ): boolean {
   if (recording && (!scenario.recorded || scenario.sessionFormat !== undefined)) return true
+  // fork(sandbox-removal): removed-capability scenarios skip their run test
+  // everywhere; the skip reason rides the Scenario object.
+  if (scenario.forkSkip !== undefined) return true
   if (scenario.posixOnly === true && platform === 'win32') return true
   return scenario.pwshOnly === true && hasPwsh !== true
 }
@@ -1179,7 +1189,51 @@ export function stabilizeRefreshLog(
     }
     if (typeof record.time === 'number') previousEventTime = record.time
   }
-  return records.map(record => JSON.stringify(record)).join('\n') + '\n'
+  // fork(snapshot-refresh, 2.4.35): a job id lives both in the jobId field and
+  // as a literal inside tool-call arguments and tool-result text, but the
+  // field-level volatile mapping above only carries the former. Pair the fresh
+  // job ids with the committed tokens by registration order and rewrite the
+  // whole record, so a refresh converges on the tokenized fixture that replay
+  // compares against instead of writing a mixed one.
+  const jobPairs = fixtureJobIdPairs(freshRecords, existingRecords)
+  return records.map((record) => {
+    let line = JSON.stringify(record)
+    for (const [from, to] of jobPairs) line = line.split(from).join(to)
+    return line
+  }).join('\n') + '\n'
+}
+
+const JOB_ID_LITERAL_RE = /(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|-[0-9a-f]{16})$/i
+const JOB_ID_TOKEN_RE = /^\{\{id:[1-9]\d*\}\}$/
+
+/**
+ * Pair fresh job ids with the committed job-id tokens in registration order.
+ * @param freshRecords The harvested records before volatile preservation.
+ * @param existingRecords The committed fixture records being refreshed.
+ * @returns Literal replacements for job ids that only the committed fixture tokenized.
+ */
+function fixtureJobIdPairs(
+  freshRecords: readonly Record<string, unknown>[],
+  existingRecords: readonly Record<string, unknown>[],
+): [string, string][] {
+  const collect = (source: readonly Record<string, unknown>[]): string[] => {
+    const seen = new Set<string>()
+    return source.flatMap((record) => {
+      if ((record.type !== 'job/registered' && record.type !== 'job/settled')
+        || record.data === null || typeof record.data !== 'object') return []
+      const id = (record.data as Record<string, unknown>).jobId
+      if (typeof id !== 'string' || seen.has(id)) return []
+      seen.add(id)
+      return [id]
+    })
+  }
+  const fresh = collect(freshRecords)
+  const existing = collect(existingRecords)
+  if (fresh.length !== existing.length) return []
+  return fresh.flatMap((from, index) => {
+    const to = existing[index] as string
+    return JOB_ID_TOKEN_RE.test(to) && JOB_ID_LITERAL_RE.test(from) ? [[from, to] as [string, string]] : []
+  })
 }
 
 /**

@@ -1158,7 +1158,11 @@ export function normalizeWebSessionVolatiles(log: string, workspaceCwd?: string)
         .replace(/Anonymous user: [0-9a-f-]{36}(?=\.$)/gi, 'Anonymous user: {{anonymousUserId}}')
         // The checkout path and listener port differ per machine and run.
         .replace(/Current DeepSeek Harness implementation checkout: "(?:[^"\\]|\\.)*"\./g, 'Current DeepSeek Harness implementation checkout: "{{sourceRoot}}".')
+        // fork(branding, 2.4.28): the runtime-context lines name DSLRH in this
+        // fork; match both spellings so the per-run values still tokenize.
+        .replace(/Current DSLRH implementation checkout: "(?:[^"\\]|\\.)*"\./g, 'Current DSLRH implementation checkout: "{{sourceRoot}}".')
         .replace(/Current DeepSeek Harness Web GUI URL: "(?:[^"\\]|\\.)*"\./g, 'Current DeepSeek Harness Web GUI URL: "{{webUrl}}".')
+        .replace(/Current DSLRH Web GUI URL: "(?:[^"\\]|\\.)*"\./g, 'Current DSLRH Web GUI URL: "{{webUrl}}".')
       for (const cwd of cwdSpellings) normalized = replaceWebCwd(normalized, cwd)
       return normalized
     })) as { type?: unknown; data?: { endpoint?: unknown } }

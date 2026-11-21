@@ -2,13 +2,14 @@
   - navigation "Session hierarchy": Use the bash tool to
   - text: Minimal mode
   - button "More actions"
-  - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Context"
   - button "More conversation views"
 - text: "Use the bash tool to run exactly: printf 'MINIMAL_BASH_CARD_OK\\n'. Then reply exactly MINIMAL_PRESET_REQUEST_OK and stop. {{clock}}"
 - button "Copy"
+- button "Edit & resend"
 - status: Completed
 - button "Completed in {{duration}}" [expanded]
 - button "Ran commands" [expanded]
@@ -16,6 +17,12 @@
 - text: "IN { \"command\": \"printf 'MINIMAL_BASH_CARD_OK\\\\n'\" } OUT MINIMAL_BASH_CARD_OK [Command finished with exit code 0]"
 - button "Inspect"
 - paragraph: MINIMAL_PRESET_REQUEST_OK
+- button "Review this turn’s changes in the sidebar": Edited 2 files +0 -0
+- list:
+  - listitem:
+    - button "View changes to .dsh-storages/context_editor.json": .dsh-storages/context_editor.json detected
+  - listitem:
+    - button "View changes to .dsh-storages/session_projcache/sessions/minimal-preset-smoke.json": .dsh-storages/session_projcache/sessions/minimal-preset-smoke.json detected
 - button "Copy"
 - button "Good response"
 - button "Bad response"
@@ -23,7 +30,6 @@
 - text: {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"
 - button "Add files or run commands"
-- 'button "Access mode, current: Workspace Write"': Workspace Write
 - button "Select model, current DeepSeek-V4-Flash": DeepSeek-V4-Flash
 - button "Send message" [disabled]
 - button "1 turns 2 steps · {{throughput}} tok/s": 1 turns 2 steps{{throughput}} tok/s

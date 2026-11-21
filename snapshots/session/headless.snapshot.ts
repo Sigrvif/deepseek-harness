@@ -100,6 +100,46 @@ interface SessionLog {
 }
 
 /** Keep the cwd text priced by compaction independent of the platform's temporary-root length. */
+// fork(sandbox-removal): recorded scenarios whose compositions exercise
+// capabilities this fork removed by design. The run test skips with the
+// mapped reason on every host; the fixtures stay guarded and the corpus
+// policy still audits them. PTC = the workflow/ptc engine rows the fork
+// bundle disables; sandbox = confinement providers the composition no
+// longer mounts; presets = the permission-preset service; auto-compaction
+// = the engine triggers disabled in 2.4.10.
+const FORK_SKIPPED_SCENARIOS = new Map<string, string>([
+  ['advanced-toolchain', 'PTC execution removed'],
+  ['advanced-toolchain-runtime', 'PTC execution removed'],
+  ['both-mode-turn', 'PTC execution removed'],
+  ['cua-ptc', 'PTC execution removed'],
+  ['mcp-empty-ptc', 'PTC execution removed'],
+  ['mcp-resources-ptc', 'PTC execution removed'],
+  ['office-progressive-ptc', 'PTC execution removed'],
+  ['office-render-tools-ptc', 'PTC execution removed'],
+  ['ptc-node-read-only', 'PTC execution removed'],
+  ['ptc-node-workspace', 'PTC execution removed'],
+  ['ptc-persistent', 'PTC execution removed'],
+  ['ptc-policy-change', 'PTC execution removed'],
+  ['ptc-python-read-only', 'PTC execution removed'],
+  ['ptc-python-turn', 'PTC execution removed'],
+  ['ptc-read-image', 'PTC execution removed'],
+  ['ptc-read-image-attachment-path', 'PTC execution removed'],
+  ['ptc-script-fresh', 'PTC execution removed'],
+  ['ptc-script-retained', 'PTC execution removed'],
+  ['ptc-turn', 'PTC execution removed'],
+  ['ptc-workspace-context', 'PTC execution removed'],
+  ['workflow-run', 'PTC execution removed'],
+  ['ralph-loop', 'PTC execution removed (tool-ralph waits on the workflow engine)'],
+  ['background-confinement-failure', 'command confinement removed'],
+  ['foreground-confinement-timeout', 'command confinement removed'],
+  ['fs-same-mode-empty-justification', 'command confinement removed'],
+  ['session-sandbox-root', 'command confinement removed'],
+  ['worktree', 'command confinement removed (WorktreeService injects the sandbox seam)'],
+  ['headless-auto-review', 'permission-preset service not mounted'],
+  ['compaction-output-reserve', 'engine auto-compaction disabled (2.4.10)'],
+  ['compaction-summary-headroom', 'engine auto-compaction disabled (2.4.10)'],
+])
+
 async function compactionWorkspaceOptions(): Promise<{ tempDirParent: string; tempDirPrefix: string }> {
   const tempDirParent = await realpath(tmpdir())
   const prefix = 'dsh-log-snap-'
@@ -590,10 +630,14 @@ async function collectScenarios(): Promise<HeadlessScenario[]> {
     if (manifest.recording === undefined || manifest.header === undefined) {
       throw new Error(`${entry.name}: a headless corpus manifest needs recording and header metadata`)
     }
+    const forkSkip = FORK_SKIPPED_SCENARIOS.get(entry.name)
     scenarios.push({
       name: entry.name,
       dir,
       manifest: { ...manifest, composition: manifest.composition, recording: manifest.recording, header: manifest.header },
+      // fork(sandbox-removal): removed-capability scenarios carry their skip
+      // reason onto the Scenario (see FORK_SKIPPED_SCENARIOS above).
+      ...forkSkip === undefined ? {} : { forkSkip },
     })
   }
   return scenarios.sort((left, right) => left.name.localeCompare(right.name))
@@ -1252,6 +1296,8 @@ describe('headless recorded-session snapshots', () => {
       || scenario.manifest.platform === 'pwsh' && !hasPwsh
       || mode === 'record' && scenario.manifest.recording === 'authored'
       || mode === 'record' && scenario.manifest.sessionFormat !== undefined
+      // fork(sandbox-removal): removed-capability scenarios skip in every mode.
+      || scenario.forkSkip !== undefined
     const scenarioTest = skipped ? it.skip : mode === 'replay' ? it.concurrent : it
     const inputLabel = retainedToolInput === undefined ? '' : ' from retained V3 input'
     scenarioTest(`${mode}s ${scenario.name}${inputLabel} through dsh --profile headless`, async () => {

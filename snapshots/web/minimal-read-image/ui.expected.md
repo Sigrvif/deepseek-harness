@@ -2,13 +2,14 @@
   - navigation "Session hierarchy": Use read_image to inspect red.png.
   - text: Minimal mode
   - button "More actions"
-  - button "Open right sidebar"
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+    - tab "Context"
   - button "More conversation views"
 - text: Use read_image to inspect red.png. Then reply exactly MINIMAL_IMAGE_OK and stop. {{clock}}
 - button "Copy"
+- button "Edit & resend"
 - status: Completed
 - button "Completed in {{duration}}" [expanded]
 - button "Read images" [expanded]
@@ -20,6 +21,14 @@
 - text: {{cwd}}/red.png 1x1px, 69 bytes
 - button "Inspect"
 - paragraph: MINIMAL_IMAGE_OK
+- button "Review this turn’s changes in the sidebar": Edited 3 files +0 -0
+- list:
+  - listitem:
+    - button "View changes to .dsh-home/attachments/v1/objects/b1/b1ff9c8ea3a780bad09b346c423d2d0e46815926879b18e841d928376a946640": .dsh-home/attachments/v1/objects/b1/b1ff9c8ea3a780bad09b346c423d2d0e46815926879b18e841d928376a946640 detected
+  - listitem:
+    - button "View changes to .dsh-storages/context_editor.json": .dsh-storages/context_editor.json detected
+  - listitem:
+    - button "View changes to .dsh-storages/session_projcache/sessions/minimal-image-smoke.json": .dsh-storages/session_projcache/sessions/minimal-image-smoke.json detected
 - button "Copy"
 - button "Good response"
 - button "Bad response"
@@ -27,7 +36,6 @@
 - text: {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"
 - button "Add files or run commands"
-- 'button "Access mode, current: Workspace Write"': Workspace Write
 - button "Select model, current DeepSeek-V4-Flash-Vision-Exp, reasoning effort high": DeepSeek-V4-Flash-Vision-Exp high
 - button "Send message" [disabled]
 - button "1 turns 2 steps · {{throughput}} tok/s": 1 turns 2 steps{{throughput}} tok/s

@@ -21,7 +21,9 @@ import {
 import { REPO_ROOT } from './support.ts'
 
 const DIR = fileURLToPath(new URL('../../../snapshots/web/subagent-fork-schedule', import.meta.url))
-const PIN = join(DIR, '../fresh-round-trip')
+// fork(context-fold): the seeded fork mounts the fork's standard preset, whose
+// roster carries the Context Fold tools; this scenario owns its own pins.
+const PIN = DIR
 const MODE = webSnapshotMode()
 
 it.skipIf(MODE === 'record')('replays inherited schedule tools and refusals in a seeded Web fork', async () => {

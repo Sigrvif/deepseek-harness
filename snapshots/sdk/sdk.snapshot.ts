@@ -232,16 +232,31 @@ async function collectCorpus(): Promise<CorpusScenario[]> {
       if (!existsSync(manifestPath)) continue
       const manifest = parseSnapshotManifest(await readFile(manifestPath, 'utf8'), manifestPath)
       if (manifest.composition === undefined || manifest.recording === undefined || manifest.header === undefined) continue
+      // fork(sandbox-removal): the SDK corpus's PTC scenarios exercise the
+      // workflow/ptc engine rows this fork's bundle disables; their run tests
+      // skip with the reason while the fixtures stay guarded.
+      const forkSkip = SDK_FORK_SKIPPED.get(entry.name)
       scenarios.push({
         key: `${profile}/${entry.name}`,
         name: entry.name,
         dir,
         manifest: { ...manifest, composition: manifest.composition, recording: manifest.recording, header: manifest.header },
+        ...forkSkip === undefined ? {} : { forkSkip },
       })
     }
   }
   return scenarios
 }
+
+// fork(sandbox-removal): recorded SDK scenarios needing removed capabilities.
+const SDK_FORK_SKIPPED = new Map<string, string>([
+  ['ptc-turn', 'PTC execution removed'],
+  ['ptc-cancel', 'PTC execution removed'],
+  ['desktop-ptc-context', 'PTC execution removed'],
+  // tool-error-details composes the ptc-runtime + the Auto review denial
+  // fixture — both ride removed capabilities.
+  ['tool-error-details', 'PTC execution removed (composes ptc-runtime + the permission-preset Auto review)'],
+])
 
 const corpus = await collectCorpus()
 const scenarioByKey = new Map(corpus.map(scenario => [scenario.key, scenario]))
@@ -987,6 +1002,8 @@ describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
   for (const scenario of sdkScenarios) {
     const scenarioTest = recording
       && (scenario.manifest.recording === 'authored' || scenario.manifest.sessionFormat !== undefined)
+      // fork(sandbox-removal): removed-capability scenarios skip in every mode.
+      || scenario.forkSkip !== undefined
       ? it.skip
       : it
     scenarioTest(`${mode}s ${scenario.name} through dsh --profile ${scenario.manifest.profile}`, async () => {

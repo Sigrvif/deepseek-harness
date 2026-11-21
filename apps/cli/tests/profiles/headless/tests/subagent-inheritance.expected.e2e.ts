@@ -94,7 +94,9 @@ async function seedReadOnlyParent(root: string, cwd: string): Promise<void> {
 }
 
 describe('parent-only override inheritance snapshot', () => {
-  it('confines a delegated child through the assembled headless app', async () => {
+  // fork(sandbox-removal): child confinement rides the confinement providers
+  // this fork's composition no longer mounts.
+  it.skip('confines a delegated child through the assembled headless app', async () => {
     let cwd = ''
     const result = await runLoaderSmoke({
       label: 'subagent inheritance headless stream-json snapshot',

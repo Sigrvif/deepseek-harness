@@ -12,7 +12,10 @@ export const inject = ['jobs', 'tools']
 
 const STEER_TEXT = 'STEER_WHILE_WAITING'
 const PRODUCER_OUTPUT = 'producer ready'
-const STEERED_RESULT = 'producer ready\n[status: running, user steered]'
+// fork(context-editor): the bash tool reports the producer's OS pid on the
+// live row (2.4.22), so the released status carries `pid <os pid>` before the
+// steer reason. The pid is per-run; match it rather than pinning a value.
+const STEERED_RESULT = /^producer ready\n\[status: running, pid \d+; user steered\]$/
 
 /** @param {import('@deepseek-ai/cordis').Context} ctx - Scenario-owned runtime. */
 export function apply(ctx) {
@@ -76,7 +79,7 @@ export function apply(ctx) {
     if (barrierError !== undefined) throw barrierError
     if (released === undefined) throw new Error('the steered wait returned no result')
     if (released.isError) throw new Error(`the steered wait failed: ${released.text}`)
-    if (released.text !== STEERED_RESULT) throw new Error(`the steered wait returned ${JSON.stringify(released.text)}`)
+    if (!STEERED_RESULT.test(released.text)) throw new Error(`the steered wait returned ${JSON.stringify(released.text)}`)
     if (released.producer !== 'running') throw new Error('the released wait stopped the producer')
     const input = agent.session.deriveMessages()
       .find(message => message.role === 'user' && JSON.stringify(message.content).includes(STEER_TEXT))

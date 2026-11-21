@@ -248,13 +248,34 @@ export function installBroker(ctx: Context, broker: Volatile<boolean>): () => vo
     },
   }
 
-  const disposers = [
-    rootTools().register(searchTool),
-    rootTools().register(describeTool),
-    rootTools().register(executeTool),
-  ]
+  // fork(mcp-manager, 2.4.35): the trio registers only while it can serve —
+  // broker mode on AND at least one server tool mounted. A root-scope
+  // registration with zero servers put three meta-tools into EVERY preset,
+  // including minimal, whose roster is bash + read_image + working_directory
+  // by design; upstream with no servers configured exposes no MCP tools at
+  // all. Server fibers mount and dispose through the supervisor's sync, and
+  // the pre-step hook below re-syncs before every request, so live edits and
+  // the settings toggle converge on the next step.
+  let trioDisposers: (() => void)[] = []
+  const serverToolsLive = (): boolean => rootTools().definitions()
+    .some(definition => definition.name.startsWith(MCP_TOOL_PREFIX))
+  const syncTrioRegistration = (): void => {
+    const shouldRegister = broker.get() && serverToolsLive()
+    if (shouldRegister === (trioDisposers.length > 0)) return
+    for (const dispose of trioDisposers) dispose()
+    trioDisposers = []
+    if (!shouldRegister) return
+    trioDisposers = [
+      rootTools().register(searchTool),
+      rootTools().register(describeTool),
+      rootTools().register(executeTool),
+    ]
+  }
+  syncTrioRegistration()
+
   ctx.on('agent/pre-step', async ({ agent }, next) => {
     try {
+      syncTrioRegistration()
       const sessionId = (agent as { session?: { id?: string } }).session?.id
       if (sessionId !== undefined) ensureOverride(sessionId)
     } catch (error) {
@@ -265,7 +286,8 @@ export function installBroker(ctx: Context, broker: Volatile<boolean>): () => vo
     return next()
   })
   return () => {
-    for (const dispose of disposers) dispose()
+    for (const dispose of trioDisposers) dispose()
+    trioDisposers = []
     for (const sessionId of overrides.keys()) registerContextEditOverrides(sessionId, undefined)
     overrides.clear()
   }

@@ -191,6 +191,11 @@ function scrubString(
   }
   out = out.replace(LOCAL_SPILL_PATH_RE, (_match, name: string) => `{{spillLocator:${name}}}`)
   out = out.replace(SNAPSHOT_SPILL_PATH_RE, (_match, name: string) => `{{spillLocator:${name}}}`)
+  // fork(context-editor, 2.4.35): the bash tool publishes the producer's OS
+  // pid as live progress (2.4.22), which renders in a job status line. The
+  // pid is per-run; tokenize it only inside `[status: ...]` so user and tool
+  // text that happens to mention a pid stays regression-visible.
+  out = out.replace(/(\[status:[^\]]*?\bpid )\d+/g, '$1{{pid}}')
   // Exact event-read results render the target as pretty JSON inside a
   // distinctive envelope. Restrict time scrubbing to that fenced target so
   // neighbor, model, bash, and unrelated tool text remains regression-visible.
@@ -492,13 +497,40 @@ export function normalizeSessionSnapshots(
     return normalizeSessionFormatMetadata(currentLog, nativeWriterOutput
       ? sessionHeaderVersion(log, 'source Session snapshot') : undefined)
   })
-  return redactSessionSnapshotIds(comparableLogs).map(log => projectSessionSnapshot(
+  return redactSessionSnapshotIds(comparableLogs).map(log => canonicalizeSettlementBoundaries(projectSessionSnapshot(
     scrubSessionSnapshot(normalizeSessionLog(
       log,
       { ...ctx, sessionIds: [] },
       { ...normalizeOptions, identityMode: 'preserve' },
     )),
-  ))
+  )))
+}
+
+/**
+ * fork(settlement-race, 2.4.35): a killed background job settles on its own
+ * process-exit clock, so the `job/settled` record lands either just before or
+ * just after the boundary into the following step. Both orders are the same
+ * runtime behavior — the model sees the notice on its next step either way —
+ * but an exact recording would flake. Move a settlement that trails a
+ * `step/start` back in front of it, the order a prompt settlement produces.
+ *
+ * @param rawLog Comparison-ready Session JSONL.
+ * @returns The same records with adjacent settlement boundaries canonicalized.
+ */
+function canonicalizeSettlementBoundaries(rawLog: string): string {
+  const lines = rawLog.split('\n').filter(line => line.trim().length > 0)
+  const records = lines.map(line => JSON.parse(line) as Record<string, unknown>)
+  let changed = false
+  for (let index = 1; index < records.length - 1; index++) {
+    if (records[index]?.type !== 'step/start' || records[index - 1]?.type !== 'step/end') continue
+    let end = index + 1
+    while (records[end]?.type === 'job/settled') end++
+    if (end === index + 1) continue
+    const settled = records.splice(index + 1, end - index - 1)
+    records.splice(index, 0, ...settled)
+    changed = true
+  }
+  return `${(changed ? records.map(record => JSON.stringify(record)) : lines).join('\n')}\n`
 }
 
 /**

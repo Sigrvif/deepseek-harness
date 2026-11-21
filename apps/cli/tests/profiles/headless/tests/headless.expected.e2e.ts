@@ -302,7 +302,8 @@ async function persistedLogs(cwd: string, root: string = join(cwd, '.sessions'))
 
 describe('headless stream-json snapshots', () => {
 
-  it('preserves Auto through shutdown and requires its integration when reopening', async () => {
+  // fork(sandbox-removal): Auto rides the unmounted permission-preset service.
+  it.skip('preserves Auto through shutdown and requires its integration when reopening', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'headless-auto-shutdown-'))
     const options = {
       cwd,
@@ -419,7 +420,9 @@ describe('headless stream-json snapshots', () => {
     expect(result.stderr).toBe(await readFile(headlessReasoningExpected, 'utf8'))
   }, LOADER_SMOKE_TEST_TIMEOUT_MS)
 
-  it('projects the same run as JSON events under a generated session identity', async () => {
+  // fork(sandbox-removal): the run passes --permission-mode, which requires
+  // the permission-preset service this composition does not mount.
+  it.skip('projects the same run as JSON events under a generated session identity', async () => {
     const task = 'Prove the machine-readable product headless profile path.'
     const result = await runLoaderSmoke({
       label: 'product headless profile json snapshot',
@@ -486,7 +489,9 @@ describe('headless stream-json snapshots', () => {
     expect(result.stderr).toContain('omit --session-id to start a new Session')
   }, LOADER_SMOKE_TEST_TIMEOUT_MS)
 
-  it('resumes one persisted Session across two real --session-id wakes', async () => {
+  // fork(sandbox-removal): the second wake passes --permission-mode and the
+  // test inspects sandbox/mode records, both removed with the sandbox.
+  it.skip('resumes one persisted Session across two real --session-id wakes', async () => {
     const firstTask = 'Record the first wake of the resume proof.'
     const secondTask = 'Continue from the first wake of the resume proof.'
     const env = {
@@ -544,7 +549,9 @@ describe('headless stream-json snapshots', () => {
     }
   }, LOADER_SMOKE_TEST_TIMEOUT_MS * 2)
 
-  it.each(['allow', 'deny', 'malformed', 'failed'])('runs Auto review with noninteractive %s results', async (mode) => {
+  // fork(sandbox-removal): the Auto preset rides the permission-preset
+  // service, which this fork's composition does not mount.
+  it.skip.each(['allow', 'deny', 'malformed', 'failed'])('runs Auto review with noninteractive %s results', async (mode) => {
     const result = await runLoaderSmoke({
       label: `headless Auto review ${mode}`,
       tempDirPrefix: 'headless-auto-',
@@ -585,7 +592,8 @@ describe('headless stream-json snapshots', () => {
     expect(events.at(-1)).toMatchObject({ type: 'final', reason: { kind: 'completed' } })
   }, LOADER_SMOKE_TEST_TIMEOUT_MS)
 
-  it('rejects Auto selection without the experimental integration', async () => {
+  // fork(sandbox-removal): Auto rides the unmounted permission-preset service.
+  it.skip('rejects Auto selection without the experimental integration', async () => {
     const result = await runLoaderSmoke({
       label: 'headless absent Auto integration', tempDirPrefix: 'headless-auto-absent-',
       binScript: dshBinScript, configPath: headlessOverlayPath,
@@ -598,7 +606,8 @@ describe('headless stream-json snapshots', () => {
     expect(events[0]?.message).toContain('auto')
   }, LOADER_SMOKE_TEST_TIMEOUT_MS)
 
-  it('resumes an Auto denial with caller attribution and saved policy', async () => {
+  // fork(sandbox-removal): Auto rides the unmounted permission-preset service.
+  it.skip('resumes an Auto denial with caller attribution and saved policy', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'headless-auto-resume-'))
     const args = ['--profile', 'headless', '--patch', headlessOverlayPath, '--patch', autoReviewOverlayPath, '--json']
     try {
@@ -1093,7 +1102,9 @@ describe('headless stream-json snapshots', () => {
     }
   }, LOADER_SMOKE_TEST_TIMEOUT_MS)
 
-  it('runs a keyless Agent Team with peer mail, dependent tasks, waiting, and Lead aggregation', async () => {
+  // fork(sandbox-removal): the Team profile delegates through the workflow
+  // engine the fork disables, so no workflow child is ever persisted.
+  it.skip('runs a keyless Agent Team with peer mail, dependent tasks, waiting, and Lead aggregation', async () => {
     let projection: unknown
     const result = await runLoaderSmoke({
       label: 'Agent Teams headless snapshot',

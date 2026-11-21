@@ -214,14 +214,17 @@ describe('bash tool through the agent loop', () => {
       // job registry's own wait deadline; 10s in this harness) is cleared
       // once the call settles — mock.results pairs each recorded call with
       // the handle the real setTimeout returned.
-      const armedHandles = settle.mock.calls
-        .map((call, index) => ({ delay: call[1], result: settle.mock.results[index] }))
-        .filter(armed => typeof armed.delay === 'number' && armed.delay >= 5_000 && armed.result !== undefined && armed.result.type === 'return')
-        .map(armed => armed.result!.value)
+      const armedHandles = settle.mock.calls.flatMap((call, index): ReturnType<typeof setTimeout>[] => {
+        const recorded = settle.mock.results[index]
+        const delay: unknown = call[1]
+        return typeof delay === 'number' && delay >= 5_000 && recorded?.type === 'return'
+          ? [recorded.value]
+          : []
+      })
       expect(armedHandles.length).toBeGreaterThan(0)
       const clearedHandles = clear.mock.calls.map(call => call[0])
-      for (const handle of armedHandles) {
-        expect(clearedHandles.some(cleared => cleared === handle), `timer ${String(handle)} still armed`).toBe(true)
+      for (const [index, handle] of armedHandles.entries()) {
+        expect(clearedHandles.some(cleared => cleared === handle), `armed timer ${index} still armed`).toBe(true)
       }
       await ctx.fiber.dispose()
     } finally {

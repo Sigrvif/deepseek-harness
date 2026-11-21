@@ -18343,6 +18343,9 @@ importers:
       '@deepseek-ai/dsh-config-editor':
         specifier: workspace:*
         version: link:../../packages/boot/config-editor
+      '@deepseek-ai/dsh-context-fold':
+        specifier: workspace:*
+        version: link:../../packages/context/context-fold
       '@deepseek-ai/dsh-cordis-host-runner':
         specifier: workspace:*
         version: link:../../packages/extensions/cordis-host-runner

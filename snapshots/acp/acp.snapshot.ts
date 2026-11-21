@@ -34,8 +34,10 @@ const controllerCases: readonly {
   { name: 'cancel-tool-calls', hasModelTurn: true },
   { name: 'escalation-approved', hasModelTurn: true },
   { name: 'escalation-rejected', hasModelTurn: true },
-  { name: 'fs-escalation-approved', hasModelTurn: true },
-  { name: 'fs-same-mode', hasModelTurn: true },
+  // fork(sandbox-removal): these recordings exercise the confinement
+  // providers the fork composition no longer mounts; skipped with the reason.
+  { name: 'fs-escalation-approved', hasModelTurn: true, forkSkip: 'command confinement removed' },
+  { name: 'fs-same-mode', hasModelTurn: true, forkSkip: 'command confinement removed' },
   {
     name: 'image-compaction',
     hasModelTurn: true,

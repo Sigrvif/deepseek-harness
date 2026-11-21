@@ -37,13 +37,13 @@ function echoDefinition(): ToolDefinition {
   }
 }
 
-async function mounted(broker: Volatile<boolean> = createVolatile(true)) {
+async function mounted(broker: Volatile<boolean> = createVolatile(true), withServerTools = true) {
   const ctx = new Context()
   contexts.push(ctx)
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(NativeToolExecutor)
-  ctx.tools.register(echoDefinition())
+  if (withServerTools) ctx.tools.register(echoDefinition())
   const disposeBroker = installBroker(ctx, broker)
   const sessionId = 'session-broker-test'
   const agent = { session: { id: sessionId, snapshotEvents: () => [] } } as unknown as Agent
@@ -104,6 +104,21 @@ describe('brokerDenyNames', () => {
 })
 
 describe('installBroker', () => {
+  // fork(mcp-manager, 2.4.35): a root-scope registration with zero servers
+  // put the trio into every preset, including minimal; it now follows the
+  // mounted server tools.
+  it('registers the trio only while a server tool is mounted', async () => {
+    const { ctx, step, visible } = await mounted(createVolatile(true), false)
+    await step()
+    expect(visible()).not.toContain('mcp_search_tools')
+    const dispose = ctx.tools.register(echoDefinition())
+    await step()
+    expect(visible()).toContain('mcp_search_tools')
+    dispose()
+    await step()
+    expect(visible()).not.toContain('mcp_search_tools')
+  })
+
   it('hides server tools and shows exactly the broker trio on the first step', async () => {
     const { step, visible } = await mounted()
     await step()
