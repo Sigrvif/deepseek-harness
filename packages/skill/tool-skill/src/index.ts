@@ -11,7 +11,7 @@ import z from '@deepseek-ai/schemastery'
 import type { Agent, PreStepDecision } from '@deepseek-ai/dsh-agent'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import { SessionSeq, type UserMessage } from '@deepseek-ai/dsh-session'
+import { SessionSeq, type Session, type UserMessage } from '@deepseek-ai/dsh-session'
 import {
   escapeText,
   isModelInvocable,
@@ -21,6 +21,34 @@ import {
   type SkillInvocationSource,
   type SkillSummary,
 } from '@deepseek-ai/dsh-skill'
+
+// fork(workflow-stage, 2.4.36): the session's workflow stage is a durable log
+// fact — the last `workflow/stage` event — read straight from the session, so
+// no service couples this plugin to the workflow plugins. Compositions that
+// never mount them simply have no such event and keep every skill visible.
+type WorkflowStage = 'spec' | 'execute'
+
+/** The session's logged stage; the last event wins, null = unarmed. */
+function sessionWorkflowStage(session: Session | undefined): WorkflowStage | null {
+  if (session === undefined || typeof (session as { snapshotEvents?: unknown }).snapshotEvents !== 'function') return null
+  // oxlint-disable-next-line typescript/no-deprecated -- Existing synchronous history read; migration deferred.
+  const events = session.snapshotEvents()
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    // Structural on purpose: this package's program does not carry the
+    // workflow-stage event-map augmentation, and must not depend on it.
+    const event = events[index] as { type?: unknown; data?: { stage?: unknown } } | undefined
+    if (event?.type !== 'workflow/stage') continue
+    const stage = event.data?.stage
+    return stage === 'spec' || stage === 'execute' ? stage : null
+  }
+  return null
+}
+
+/** A skill's frontmatter `metadata.stage`, when it carries a valid stage value. */
+function skillStageOf(skill: Pick<SkillSummary, 'metadata'>): WorkflowStage | undefined {
+  const stage = skill.metadata?.stage
+  return stage === 'spec' || stage === 'execute' ? stage : undefined
+}
 
 export const name = 'tool-skill'
 export const inject = ['agents', 'tools', 'skills', 'workingDirectory']
@@ -149,6 +177,19 @@ export function apply(ctx: Context, config: Config = {}): void {
       if (!isModelInvocable(skill)) {
         throw new Error(`skill "${args.name}" is not available for model invocation`)
       }
+      // fork(workflow-stage, 2.4.36): a stage-tagged skill outside its stage
+      // does not load for the model; the redirect names where the session is
+      // so a drifted model is put back on the workflow. The user's /name
+      // gesture bypasses this boundary deliberately: a human invocation
+      // always wins.
+      const sessionStage = sessionWorkflowStage(exec.agent?.session)
+      const mismatchedStage = skillStageOf(skill)
+      if (sessionStage !== null && mismatchedStage !== undefined && mismatchedStage !== sessionStage) {
+        const redirect = sessionStage === 'execute'
+          ? 'the spec is approved; continue with working-in-steps'
+          : 'finish the spec first (/spec approve moves the session forward)'
+        throw new Error(`skill "${skill.name}" belongs to the ${mismatchedStage} stage, but this session is in the ${sessionStage} stage — ${redirect}`)
+      }
       return {
         name: skill.name,
         provider: skill.provider,
@@ -227,6 +268,15 @@ export function apply(ctx: Context, config: Config = {}): void {
       : { skills: [], complete: true }
     signal.throwIfAborted()
     const skills = snapshot.skills.filter(isModelInvocable)
+      // fork(workflow-stage, 2.4.36): a stage-tagged skill catalogs only in
+      // its stage, so the visible roster states what the session is for. An
+      // unarmed session (no logged stage) keeps every skill visible.
+      .filter((skill) => {
+        const sessionStage = sessionWorkflowStage(agent.session)
+        if (sessionStage === null) return true
+        const skillStage = skillStageOf(skill)
+        return skillStage === undefined || skillStage === sessionStage
+      })
     const entries = catalogSourceEntries(skills, catalogDescriptionMaxLength)
     const incomplete = !snapshot.complete
     const digest = digestCatalogEntries(entries, incomplete)

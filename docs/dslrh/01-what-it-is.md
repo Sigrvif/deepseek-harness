@@ -16,7 +16,7 @@ DSLRH is a self-contained local build of a **fork of DeepSeek Harness 0.2.2-alph
 
 ## Boot flow
 
-1. The launcher exports `DSH_HOME` (default: the bundle's `dsh-home`), `DSH_TELEMETRY_DISABLED=1`, `SLR_RUNTIME_API_KEY=slr-local`, and `DSH_BUNDLED_SKILL_DIR` (the bundled superpowers skills). Pre-set values always win.
+1. The launcher exports `DSH_HOME` (default: the bundle's `dsh-home`), `DSH_TELEMETRY_DISABLED=1`, `SLR_RUNTIME_API_KEY=slr-local`, and `DSH_BUNDLED_SKILL_DIR` (the bundled workflow skills). Pre-set values always win.
 2. `app/lib/bin.js` parses CLI flags (`--profile`, `--patch`, `--dump-config`, …), resolves the profile — **`web`** is the shipped one — creating it from a template on first use, and boots the Cordis loader.
 3. The profile's `package.json` names its bundles in order: `@deepseek-ai/dsh-base` (the host core) then `@deepseek-ai/dsh-web-app` (the web host + browser roster). Each bundle contributes a `cordis.patch.yml`: **one list of plugin rows**. Rows activate by service availability, not by file order.
 4. Patch layers apply **last-write-wins per row id**: base bundle → web-app bundle → the four **agent preset** patches → your profile's `dsh-home/profiles/web/cordis.patch.yml` (where the Settings UI writes) → an optional home-level patch → `--patch` CLI overlays → a final derived patch that disables the telemetry row when `DSH_TELEMETRY_DISABLED` is set. A patch **replaces** the row's whole `config`; the settings service does field-level merging when it writes.

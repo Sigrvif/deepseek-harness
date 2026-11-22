@@ -1,6 +1,8 @@
 ---
 name: working-in-steps
 description: Use when doing multi-step or multi-file work - turn the spec into a todo list, work it one verified step at a time, and check the result against SPEC.md before calling it done
+metadata:
+  stage: execute
 ---
 
 # Working in Steps
@@ -29,9 +31,9 @@ the whole method.
 - A failing step is a bug: switch to systematic-debugging. One change,
   re-run, read the actual output. Three failed attempts in a row — stop,
   re-read SPEC.md, reconsider the approach before touching anything again.
-- If the project has a test suite, run it after your changes. Fixing a bug
-  in a project with tests: add the failing test first when the framework
-  makes that cheap.
+- For a behavior change or a bug fix, follow test-driven-development: the
+  failing test comes first. If the project has a test suite, run it after
+  your changes.
 
 ## Updates to earlier work
 

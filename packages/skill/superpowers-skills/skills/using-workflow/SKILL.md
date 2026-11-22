@@ -1,12 +1,14 @@
 ---
-name: using-superpowers
+name: using-workflow
 description: Use when starting any task - check the skill catalog and invoke matching skills before acting, and know when skills are overkill
 ---
 
-# Using Superpowers
+# Using Workflow Skills
 
 Skills are short instruction files for common workflows. The session's skill
-catalog lists every available skill with a one-line description.
+catalog lists every available skill with a one-line description. The catalog
+follows the session's stage: while a spec is being written it shows the
+spec-stage skills; once the spec is approved it shows the execution skills.
 
 ## Before starting a task
 

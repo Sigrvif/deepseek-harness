@@ -122,6 +122,8 @@ interface SkillSummary {
   readonly provider: string
   /** Provider-specific base for relative resources. */
   readonly resourceBase?: SkillResourceBase
+  /** Parsed optional metadata object from frontmatter, when the provider supplied one. */
+  readonly metadata?: Readonly<Record<string, unknown>>
 }
 ```
 
@@ -231,6 +233,16 @@ interface Config {
 Before each later model step, the consumer applies exact tool visibility and compares the entries and completeness with the newest recognizable visible catalog message in the session log. A changed observation contributes a durable replacement to the pre-step decision; deleting every skill appends an explicit empty replacement. Incomplete discovery publishes the available subset with a warning and optional `incomplete: true` source metadata; absence of that flag means complete. Recovery republishes the catalog even when its entries are unchanged. If compaction hides every historical catalog message, the next observation re-establishes the current catalog; a complete empty view with no prior catalog emits nothing. These catalog messages are session history, not World State.
 
 The model-facing `skill({ name })` tool validates the kebab-case name, finds the summary in the invocation-neutral catalog, rejects it before loading unless `isModelInvocable` permits access, then rereads the complete definition for the calling agent cwd and rechecks the policy before returning content. It reports an unresolved skill as unknown or no longer available and returns a tool result containing `<skill_content name="...">`, `<skill_resources>`, and `<skill_instructions>`. `resourceBase` resolves explicitly referenced scripts, references, and assets only as needed; the loaded result does not enumerate a skill directory. Body-only edits therefore change later tool calls without producing catalog messages or rewriting earlier tool results.
+
+## Workflow stages
+
+The bundled workflow skills (see `@deepseek-ai/dsh-workflow-stage`, fork) tag themselves with frontmatter `metadata: { stage: 'spec' | 'execute' }`; the router skill is untagged and every untagged skill stays visible in all stages. A session's stage is a durable log fact — the log-only `workflow/stage` event, whole-value replace, folded by the `workflow-stage` projection unit — so resume and fork restore it. The workflow arms at the first `agent/pre-step` that observes a *visible* invocation of a stage-tagged skill; a session that never invokes one (bootstrap-only, or skills disabled) keeps the full catalog and no stage section, exactly as before.
+
+Approval is user-owned: the `/spec` command (`approve`, default, or `reopen`) appends the transition between turns or queues it for the next accepted in-turn pre-step, and a `SPEC.md` carrying a `Status: approved` line upgrades an armed spec stage as a file fallback. The fallback never fights the command: removing the file does not reopen, and a `/spec reopen` is sticky — once the log records a spec stage after an execute one, the file stops driving the stage. While armed:
+
+- the `workflow:stage` system-prompt section (order `WORKFLOW_STAGE`, 2340) names the stage and its discipline per request;
+- the session catalog and the `skill` tool read the stage straight from the session log — no service couples them to the plugin — and narrow stage-tagged skills to the current stage; a stage-mismatched model load is refused with a redirect naming the stage, while the user `/name` gesture always wins;
+- the transition to execute retires visible `spec`-stage skill invocations from the surface — each becomes a single-seq Context-Editor-style replace whose replacement is a one-line `skill-retired` tombstone. The durable log keeps the originals, so `decompress` and `search_context` still read them; fold windows simply no longer need to pin the retired body.
 
 ## Browser Session catalog
 

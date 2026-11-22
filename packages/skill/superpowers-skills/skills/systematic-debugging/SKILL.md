@@ -1,6 +1,8 @@
 ---
 name: systematic-debugging
 description: Use when something fails or behaves unexpectedly, before proposing any fix - read the error, reproduce it, change one thing at a time
+metadata:
+  stage: execute
 ---
 
 # Systematic Debugging

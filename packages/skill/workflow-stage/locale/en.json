@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Workflow Stage Tracking",
+    "description": "Tracks the session's workflow stage: a per-stage discipline prompt section, stage-narrowed skill catalogs, and retirement of the spec-stage instructions once the spec is approved."
+  }
+}

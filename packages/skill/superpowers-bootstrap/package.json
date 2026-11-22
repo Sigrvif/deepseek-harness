@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-superpowers-bootstrap",
-  "description": "Automatic superpowers bootstrap: load the using-superpowers skill on every fresh user prompt (fork)",
+  "description": "Automatic workflow bootstrap: load the using-workflow skill on every fresh user prompt (fork)",
   "version": "0.2.2-alpha.2",
   "publishConfig": {
     "access": "public"

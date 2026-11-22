@@ -75,8 +75,8 @@ describe('planFold', () => {
       { kind: 'user', text: 'first user message stays visible' },
     ])
     session.append('user/message', createUserMessage({
-      content: [{ type: 'text', text: '<skill_content name="using-superpowers">…' }],
-      source: { kind: 'skill-invocation', name: 'using-superpowers', form: 'instructions' },
+      content: [{ type: 'text', text: '<skill_content name="using-workflow">…' }],
+      source: { kind: 'skill-invocation', name: 'using-workflow', form: 'instructions' },
     }), { surfaceOp: 'append' })
     addTurn(session, 2, [
       { kind: 'assistant', text: 'assistant answer with plenty of body text to fold away' },

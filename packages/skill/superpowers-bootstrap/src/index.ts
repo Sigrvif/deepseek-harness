@@ -1,23 +1,25 @@
 /**
- * @deepseek-ai/dsh-superpowers-bootstrap — automatic superpowers bootstrap.
+ * @deepseek-ai/dsh-superpowers-bootstrap — automatic workflow bootstrap.
  *
- * fork(superpowers): loads the bundled `using-superpowers` skill once per
- * session — on the first fresh user prompt that has no visible invocation
- * already — exactly as if the user had typed `/using-superpowers` themselves,
- * so the workflow discipline reaches the users who would forget to invoke it
- * without re-sending the body on every turn of a long back-and-forth. If a
- * later compaction drops the invocation out of the model's visible surface,
- * the next prompt re-asserts it once; a Context Editor exclusion of the
- * invocation is respected and does not re-trigger. The skills themselves live
- * in `@deepseek-ai/dsh-superpowers-skills` (vendored from superpowers 7.0.1,
- * MIT — see that package's README); this plugin only decides whether the
- * bootstrap fires.
+ * fork(superpowers, 2.4.36): loads the bundled `using-workflow` skill (the
+ * router, renamed from `using-superpowers` when the set was relabeled
+ * "workflow skills") once per session — on the first fresh user prompt that
+ * has no visible invocation already — exactly as if the user had typed
+ * `/using-workflow` themselves, so the workflow discipline reaches the users
+ * who would forget to invoke it without re-sending the body on every turn of
+ * a long back-and-forth. If a later compaction drops the invocation out of
+ * the model's visible surface, the next prompt re-asserts it once; a Context
+ * Editor exclusion of the invocation is respected and does not re-trigger.
+ * The skills themselves live in `@deepseek-ai/dsh-superpowers-skills`
+ * (vendored from superpowers 7.0.1, MIT — see that package's README); this
+ * plugin only decides whether the bootstrap fires.
  *
  * The toggle is a volatile config field projected into the settings system as
- * the `superpowers-bootstrap` namespace, surfaced on the General settings
- * page by `@deepseek-ai/dsh-client-ui-fork-auto-skills`. Volatile writes
- * commit into the stable reference without remounting, so the gate is read
- * per fire and a flip takes effect on the next prompt.
+ * the `superpowers-bootstrap` namespace (the internal id is unchanged so
+ * saved settings survive), surfaced on the General settings page by
+ * `@deepseek-ai/dsh-client-ui-fork-auto-skills`. Volatile writes commit into
+ * the stable reference without remounting, so the gate is read per fire and a
+ * flip takes effect on the next prompt.
  *
  * @module @deepseek-ai/dsh-superpowers-bootstrap
  */
@@ -42,12 +44,12 @@ export const name = 'superpowers-bootstrap'
 /** Required services: the skill registry and the per-agent working directory. */
 export const inject = ['skills', 'workingDirectory']
 
-/** The skill every session is bootstrapped with. */
-export const BOOTSTRAP_SKILL = 'using-superpowers'
+/** The skill every session is bootstrapped with (the workflow router). */
+export const BOOTSTRAP_SKILL = 'using-workflow'
 
 /** Runtime toggle projected to the browser. */
 export interface Config {
-  /** Keep the using-superpowers skill loaded in every session. */
+  /** Keep the using-workflow skill loaded in every session. */
   autoUsingSuperpowers: Volatile<boolean>
 }
 
@@ -57,11 +59,11 @@ export const Config = z.object({
 })
 
 /**
- * A whitespace-bounded `/using-superpowers` token, the same shape tool-skill's
+ * A whitespace-bounded `/using-workflow` token, the same shape tool-skill's
  * gesture scan uses, so an explicit invocation in the same prompt suppresses
  * the automatic one instead of doubling it.
  */
-const EXPLICIT_GESTURE = /(^|\s)\/using-superpowers(?=\s|$)/
+const EXPLICIT_GESTURE = /(^|\s)\/using-workflow(?=\s|$)/
 
 /**
  * Whether the claimed batch carries at least one direct user message. A turn's

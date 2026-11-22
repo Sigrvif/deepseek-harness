@@ -40,22 +40,25 @@ Shell child processes get a scrubbed environment: anything matching `KEY|PASSWOR
 
 ## Skills
 
-Skill roots, highest precedence first: project `<root>/.dsh/skills` → `<root>/.agents/skills` → runtime → preset `customSkillDirs` → `$DSH_HOME/skills` → `~/.agents/skills` → **bundled superpowers** (lowest). Roots are watched; catalogs update live.
+Skill roots, highest precedence first: project `<root>/.dsh/skills` → `<root>/.agents/skills` → runtime → preset `customSkillDirs` → `$DSH_HOME/skills` → `~/.agents/skills` → **bundled workflow skills** (lowest). Roots are watched; catalogs update live.
 
-The bundled set is **six workflow skills rewritten for this fork** (2.4.13), derived from superpowers 7.0.1 (MIT) for DSLRH's audience — small local models doing small projects, often with no repository:
+The bundled set is **seven workflow skills rewritten for this fork** (2.4.13; `test-driven-development` returned 2.4.36), derived from superpowers 7.0.1 (MIT) for DSLRH's audience — small local models doing small projects, often with no repository:
 
 | Skill | Role |
 |---|---|
-| `using-superpowers` | Check the catalog before acting; skip skills for trivial asks; dsh tool names |
-| `brainstorming` | Clarify open requests, settle the approach, write the short `SPEC.md` |
-| `working-in-steps` | Spec → todo list → one verified step at a time; updates edit existing files |
-| `systematic-debugging` | Read the error, reproduce, one change at a time, three strikes → rethink |
-| `verification-before-completion` | Run the real command and quote its output before any "done/fixed" claim |
-| `dispatching-parallel-agents` | Genuinely independent tasks → one focused `subagent` each |
+| `using-workflow` | Check the catalog before acting; skip skills for trivial asks; dsh tool names (renamed from `using-superpowers` at 2.4.36) |
+| `brainstorming` — stage: spec | Clarify open requests, settle the approach, write the short `SPEC.md` (`Status: draft`) |
+| `working-in-steps` — stage: execute | Spec → todo list → one verified step at a time; updates edit existing files |
+| `test-driven-development` — stage: execute | One failing test first, watch it fail, minimal code, watch it pass, refactor |
+| `systematic-debugging` — stage: execute | Read the error, reproduce, one change at a time, three strikes → rethink |
+| `verification-before-completion` — stage: execute | Run the real command and quote its output before any "done/fixed" claim |
+| `dispatching-parallel-agents` — stage: execute | Genuinely independent tasks → one focused `subagent` each |
 
-The **spec loop** is the spine: non-trivial work gets a short `SPEC.md` in the working folder (goal, approach, requirements, non-goals — a screenful, plain language). The user approves it and can point at it when the model drifts; `working-in-steps` re-reads it before claiming done; requirement changes update the spec first. Upstream's repo-centric skills (git worktrees, branch/PR lifecycle, subagent implementer/reviewer pipelines, TDD dogma, skill-authoring meta-process, maintainer bug-report bundling) are deliberately absent; their kernels live inside the six above. The whole set is ~280 lines with no sidecar files — short enough for a small model to hold, and the per-step catalog block shrank with it.
+The **spec loop** is the spine: non-trivial work gets a short `SPEC.md` in the working folder (goal, approach, requirements, non-goals — a screenful, plain language, headed by a `Status:` line). The user approves it and can point at it when the model drifts; `working-in-steps` re-reads it before claiming done; requirement changes update the spec first. Upstream's repo-centric skills (git worktrees, branch/PR lifecycle, subagent implementer/reviewer pipelines, skill-authoring meta-process, maintainer bug-report bundling) are deliberately absent; their kernels live inside the seven above. The set stays small — short enough for a small model to hold, and the per-step catalog block shrank with it.
 
-**Auto-bootstrap:** once per session, on the first prompt that doesn't already invoke a skill, the harness injects `using-superpowers` as if the user typed `/using-superpowers` (re-asserted once if compaction drops it). Off switch: **Settings → General → Auto Superpowers**.
+**Auto-bootstrap:** once per session, on the first prompt that doesn't already invoke a skill, the harness injects `using-workflow` as if the user typed `/using-workflow` (re-asserted once if compaction drops it). Off switch: **Settings → General → Auto Workflow**.
+
+**Workflow stages** (2.4.36): every skill except the router tags its stage (`metadata: { stage: … }` in the frontmatter). The session's stage is a durable log fact (`workflow/stage`): the workflow arms the first time a staged skill is invoked, the catalog then shows only the current stage's skills (plus untagged ones), and a short discipline section rides the system prompt naming the stage and its rules — while the spec is open that means *no implementation before approval*. Approval is the user's call: **`/spec approve`** (or the model flipping SPEC.md's `Status:` line to `approved`, which the harness honors) moves the session to the execution stage — the catalog switches to the execution skills, and the brainstorming instructions are **retired from the visible surface** (a one-line tombstone replaces them; the session log keeps the originals, so folds and searches still see them). `/spec reopen` goes back. Sessions that never invoke a staged skill are untouched: full catalog, no section.
 
 ## MCP servers
 

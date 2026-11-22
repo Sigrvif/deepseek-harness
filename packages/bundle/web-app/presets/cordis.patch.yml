@@ -123,6 +123,8 @@
               searchTimeoutMs: 60000
           - id: tool-cordis
             name: '@deepseek-ai/dsh-tool-cordis'
+          - id: workflow-stage
+            name: '@deepseek-ai/dsh-workflow-stage'
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
             config:

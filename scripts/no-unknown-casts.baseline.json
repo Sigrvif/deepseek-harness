@@ -2131,5 +2131,12 @@
   },
   "website/tests/raw-markdown.spec.ts": {
     "016337c62f55ffcdfc006da693aaf9bb20c3bb49260939c0d50191117c48934e": 1
+  },
+  "packages/skill/workflow-stage/tests/workflow-stage.spec.ts": {
+    "2a645fe04abd627d9070dd149867763b68918167eeadbd329b62b4da8c3a0997": 1,
+    "adde8ff911f0e0ab3ee25f685c79d15e035608bb85775be8bd8d9b983957f993": 1,
+    "d93839414ca30a36d945d0a2a0aa29689222a2776e6651c5b24276dd8b1dad02": 1,
+    "e2874579b7dc5be084b125b75baa2cb0dbfd94edf7a3bd142be7731edfc7d793": 1,
+    "cbd64530a867ef30247f1661d8524c3702c522ca5df3eb23aa592c1a496e47b1": 1
   }
 }

@@ -419,7 +419,7 @@ For the patch-file route the API key comes from the environment: export
 `SLR_RUNTIME_API_KEY=slr-local` into `dsh-home/.env`.
 
 The launchers also export `DSH_BUNDLED_SKILL_DIR` pointing at the bundled
-superpowers skills shipped inside the app, so every session's skill catalog
+workflow skills shipped inside the app, so every session's skill catalog
 includes them (see `VERSION.txt`). Override the variable to use a different
 bundled root; project and user skill directories always outrank it.
 
@@ -580,7 +580,7 @@ across this fork's whole 2.x line, so nothing converts. The one rule:
    you had deliberately changed settings, port those entries over by hand —
    the file is plain YAML, one entry per plugin. Typically that is your
    model id and port inside the `llm-pi-ai` (SLR Runtime) entry, plus any
-   deliberate flips (theme, Auto Superpowers, the upload toggle). Do not
+   deliberate flips (theme, Auto Workflow, the upload toggle). Do not
    copy the old patch file wholesale: the shipped patch is where deliberate
    fixes live (v2.4.4, for example, corrected the preset's model id from a
    full path to the bare GGUF filename — wholesale-copying an older patch
@@ -605,7 +605,7 @@ lose the easy rollback a fresh folder gives you.
 
 ## Resetting settings
 
-All Settings-UI state (theme, language, Auto Superpowers, the upload toggle,
+All Settings-UI state (theme, language, Auto Workflow, the upload toggle,
 model providers) lives in one file per profile:
 
     dsh-home/profiles/web/cordis.patch.yml

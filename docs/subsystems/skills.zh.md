@@ -122,6 +122,8 @@ interface SkillSummary {
   readonly provider: string
   /** Provider-specific base for relative resources. */
   readonly resourceBase?: SkillResourceBase
+  /** Parsed optional metadata object from frontmatter, when the provider supplied one. */
+  readonly metadata?: Readonly<Record<string, unknown>>
 }
 ```
 
@@ -231,6 +233,16 @@ interface Config {
 在后续每个模型步骤之前，消费方都会应用精确的工具可见性，并将条目与完整性同会话日志中最新一条可识别且仍可见的目录消息比较。观测变化时，会向 pre-step 决策提供一条持久的替换目录；删除所有 skill 时会追加显式的空替换。发现不完整时会发布可用子集，并附带警告和可选的 `incomplete: true` 来源元数据；缺少该标记表示完整。恢复后即使条目未变也会重新发布目录。如果压缩（compaction）隐藏了所有历史目录消息，下一次观测会重新建立当前目录；完整的空视图在从未发布目录时不发送任何内容。这些目录消息属于会话历史，而非 World State。
 
 面向模型的 `skill({ name })` 工具校验 kebab-case 名称，在与调用策略无关的目录中查找摘要，并在加载前通过 `isModelInvocable` 拒绝无权访问的 skill；随后它根据调用方 agent 的 cwd 重新读取完整定义，并在返回内容前再次检查策略。该工具将无法解析的 skill 报告为未知或已不可用，并返回包含 `<skill_content name="...">`、`<skill_resources>` 和 `<skill_instructions>` 的工具结果。`resourceBase` 仅按需解析显式引用的脚本、参考资料和资产；加载结果不枚举 skill 目录。因此，仅修改正文会改变后续工具调用，而不会生成目录消息或改写先前工具结果。
+
+## 工作流阶段
+
+内置的工作流技能（见 `@deepseek-ai/dsh-workflow-stage`，分支包）以 frontmatter `metadata: { stage: 'spec' | 'execute' }` 标注自身阶段；路由技能不标注，未标注的技能在所有阶段保持可见。会话阶段是持久的日志事实——仅记录的 `workflow/stage` 事件，整体替换、末值生效，由 `workflow-stage` 投影单元折叠——因此恢复与分叉都会还原它。工作流在首个观察到*可见*阶段技能调用的 `agent/pre-step` 处武装；从未调用过阶段技能的会话（仅引导、或技能被关闭）保持完整目录且无阶段段落，与从前完全一致。
+
+批准由用户掌握：`/spec` 命令（默认 `approve`，或 `reopen`）在轮次间追加切换，或在开放的轮次内排队到下一个被接受的就地 pre-step；带 `Status: approved` 行的 `SPEC.md` 作为文件回退升级已武装的 spec 阶段。该回退绝不与命令对抗：删除文件不会重新打开，而 `/spec reopen` 是粘性的——一旦日志在 execute 之后记录了 spec 阶段，文件便不再驱动阶段。武装期间：
+
+- `workflow:stage` 系统提示段落（顺序 `WORKFLOW_STAGE`，2340）在每次请求中说明阶段及其纪律；
+- 会话目录与 `skill` 工具直接从会话日志读取阶段——没有服务把它们与该插件耦合——并把阶段技能收窄到当前阶段；阶段不匹配的模型加载被拒绝并附带回当前阶段的重定向，而用户 `/name` 手势永远优先；
+- 切换到 execute 时，可见的 `spec` 阶段技能调用从表面退役——每条变为单 seq 的 Context-Editor 式替换，替代内容是一行 `skill-retired` 墓碑。持久日志保留原文，因此 `decompress` 与 `search_context` 仍可读取；折叠窗口也不再需要钉住已退役的内容。
 
 ## 浏览器 Session 目录
 

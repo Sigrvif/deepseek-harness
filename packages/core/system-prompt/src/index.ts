@@ -155,6 +155,8 @@ const SECTION_ORDERS = {
   TOOL_WEB_FETCH: 2100,
   TOOL_LSP: 2200,
   TOOL_SESSION_QUERY: 2300,
+  // fork(workflow-stage): the workflow stage discipline precedes the fold guidance.
+  WORKFLOW_STAGE: 2340,
   // fork(context-fold): context-folding guidance rides with the context family.
   CONTEXT_FOLD: 2350,
   TOOL_GOAL: 2400,

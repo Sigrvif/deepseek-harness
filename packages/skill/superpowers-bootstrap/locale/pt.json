@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Superpowers automático",
-    "description": "Carrega a habilidade de fluxo using-superpowers no primeiro prompt de uma sessão."
+    "title": "Fluxo de trabalho automático",
+    "description": "Carrega a habilidade using-workflow no primeiro prompt de uma sessão."
   }
 }

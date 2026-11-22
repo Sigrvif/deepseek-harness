@@ -18,7 +18,8 @@ const EXPECTED = [
   'brainstorming',
   'dispatching-parallel-agents',
   'systematic-debugging',
-  'using-superpowers',
+  'test-driven-development',
+  'using-workflow',
   'verification-before-completion',
   'working-in-steps',
 ]
@@ -26,6 +27,7 @@ const EXPECTED = [
 /**
  * Upstream skills dropped in the fork rewrite. A reference to one of these
  * in a shipped body is a dangling instruction: the skill cannot be loaded.
+ * `test-driven-development` returned in 2.4.36 as an execution-stage skill.
  */
 const REMOVED = [
   'diagnosing-superpowers',
@@ -34,15 +36,26 @@ const REMOVED = [
   'receiving-code-review',
   'requesting-code-review',
   'subagent-driven-development',
-  'test-driven-development',
   'using-git-worktrees',
   'writing-plans',
   'writing-skills',
 ]
 
+/** The workflow stage each skill belongs to; absent means every stage. */
+const STAGES: Record<string, string | undefined> = {
+  brainstorming: 'spec',
+  'dispatching-parallel-agents': 'execute',
+  'systematic-debugging': 'execute',
+  'test-driven-development': 'execute',
+  'using-workflow': undefined,
+  'verification-before-completion': 'execute',
+  'working-in-steps': 'execute',
+}
+
 interface Frontmatter {
   name: string
   description: string
+  stage: string | undefined
   body: string
 }
 
@@ -58,7 +71,8 @@ function parseSkill(raw: string): Frontmatter | undefined {
   const name = field('name')
   const description = field('description')
   if (name === undefined || name === '' || description === undefined || description === '') return undefined
-  return { name, description, body: (split[2] ?? '').trim() }
+  const stageLine = /^\s{2}stage:\s*(\S+)\s*$/m.exec(split[1] ?? '')
+  return { name, description, stage: stageLine?.[1], body: (split[2] ?? '').trim() }
 }
 
 function skillDirs(): string[] {
@@ -74,7 +88,7 @@ function readSkill(dir: string): { raw: string; parsed: Frontmatter | undefined 
 }
 
 describe('bundled superpowers skills', () => {
-  it('ships exactly the tailored six skills, one SKILL.md each', () => {
+  it('ships exactly the tailored seven skills, one SKILL.md each', () => {
     expect(skillDirs()).toEqual(EXPECTED)
     for (const dir of skillDirs()) {
       expect(readdirSync(join(SKILLS_DIR, dir))).toEqual(['SKILL.md'])
@@ -106,9 +120,16 @@ describe('bundled superpowers skills', () => {
     }
   })
 
+  it('tags every skill with the workflow stage it belongs to', () => {
+    for (const dir of skillDirs()) {
+      const { parsed } = readSkill(dir)
+      expect(parsed!.stage, `${dir}: stage tag matches the stage contract`).toBe(STAGES[dir])
+    }
+  })
+
   it('keeps the bootstrap skill the superpowers-bootstrap plugin injects', () => {
-    expect(EXPECTED).toContain('using-superpowers')
-    const { parsed } = readSkill('using-superpowers')
-    expect(parsed!.name).toBe('using-superpowers')
+    expect(EXPECTED).toContain('using-workflow')
+    const { parsed } = readSkill('using-workflow')
+    expect(parsed!.name).toBe('using-workflow')
   })
 })

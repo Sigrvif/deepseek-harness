@@ -1,6 +1,8 @@
 ---
 name: verification-before-completion
 description: Use when about to claim anything is done, fixed, or working - run the real command now and quote its output; evidence before claims
+metadata:
+  stage: execute
 ---
 
 # Verification Before Completion

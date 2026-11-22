@@ -1,7 +1,7 @@
 /**
  * Fork auto-superpowers toggle, browser half: registers a localized
  * `settings.general.item` Switch row over the `superpowers-bootstrap`
- * namespace, so the automatic using-superpowers bootstrap stays discoverable
+ * namespace, so the automatic using-workflow bootstrap stays discoverable
  * and flippable from the General settings page. Static wiring — the form
  * reads and writes ride the shared configForms service; no remote of its own.
  * @module @deepseek-ai/dsh-client-ui-fork-auto-skills/client

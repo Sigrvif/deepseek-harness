@@ -19,13 +19,13 @@ const SIGNAL = new AbortController().signal
 function skill(overrides: Partial<SkillDefinition> = {}): SkillDefinition {
   return {
     name: BOOTSTRAP_SKILL,
-    path: '/skills/using-superpowers/SKILL.md',
+    path: '/skills/using-workflow/SKILL.md',
     description: 'Use when starting any conversation',
     invocation: { modelInvocable: true, userInvocable: true },
     source: 'bundled',
     provider: 'filesystem',
-    resourceBase: { kind: 'directory', path: '/skills/using-superpowers' },
-    content: '# Using Superpowers\n\nInvoke relevant skills BEFORE any response.',
+    resourceBase: { kind: 'directory', path: '/skills/using-workflow' },
+    content: 'test content\nInvoke relevant skills BEFORE any response.',
     ...overrides,
   }
 }
@@ -71,7 +71,7 @@ function stubSession() {
 
 async function mounted(options: {
   enabled?: boolean
-  /** The registry's answer for `using-superpowers`; null means the skill is missing. */
+  /** The registry's answer for `using-workflow`; null means the skill is missing. */
   skill?: SkillDefinition | null
   session?: ReturnType<typeof stubSession>['session']
 } = {}) {
@@ -100,7 +100,7 @@ function entered(decision: PreStepDecision): { kind: 'enter'; messages: UserMess
 }
 
 describe('superpowers-bootstrap', () => {
-  it('injects the using-superpowers body on the first fresh user prompt', async () => {
+  it('injects the using-workflow body on the first fresh user prompt', async () => {
     const { step } = await mounted()
     const decision = entered(await step([prompt('Fix the login bug')]))
     expect(decision.messages).toHaveLength(2)
@@ -109,7 +109,7 @@ describe('superpowers-bootstrap', () => {
     expect((injected.source as { name?: string }).name).toBe(BOOTSTRAP_SKILL)
     expect((injected.source as { form?: string }).form).toBe('instructions')
     expect(injected.content[0]).toMatchObject({ type: 'text' })
-    expect((injected.content[0] as { text: string }).text).toContain('<skill_content name="using-superpowers">')
+    expect((injected.content[0] as { text: string }).text).toContain('<skill_content name="using-workflow">')
   })
 
   it('injects once per session, not again while the invocation stays visible', async () => {
@@ -176,7 +176,7 @@ describe('superpowers-bootstrap', () => {
 
   it('stays silent when the user already invoked the skill themselves', async () => {
     const { step } = await mounted()
-    const decision = entered(await step([prompt('/using-superpowers then fix the login bug')]))
+    const decision = entered(await step([prompt('/using-workflow then fix the login bug')]))
     expect(decision.messages).toHaveLength(1)
   })
 

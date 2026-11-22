@@ -1,5 +1,5 @@
 ---
-description: "Six superpowers workflow skills — using-superpowers, brainstorming, working-in-steps, systematic-debugging, verification-before-completion, dispatching-parallel-agents — shipped as the bundled skill root through DSH_BUNDLED_SKILL_DIR (derived from superpowers 7.0.1, MIT)."
+description: "Seven workflow skills — using-workflow, brainstorming, working-in-steps, test-driven-development, systematic-debugging, verification-before-completion, dispatching-parallel-agents — shipped as the bundled skill root through DSH_BUNDLED_SKILL_DIR (derived from superpowers 7.0.1, MIT) and stage-tagged for workflow-stage narrowing."
 kind: "package-reference"
 ---
 
@@ -7,7 +7,7 @@ kind: "package-reference"
 
 ## Summary
 
-Every session's skill catalog ships with six workflow skills built for small projects: check the catalog before acting (`using-superpowers`), clarify an open-ended request into a short `SPEC.md` (`brainstorming`), work one verified step at a time (`working-in-steps`), debug by reproducing before fixing (`systematic-debugging`), demand evidence before any done claim (`verification-before-completion`), and parallelize independent tasks through subagents (`dispatching-parallel-agents`). The package is data: its `skills/` directory is a skill root the shipped launchers expose through `DSH_BUNDLED_SKILL_DIR`, discovered as the lowest-precedence `bundled` source. The set derives from Jesse Vincent's superpowers 7.0.1 (MIT), rewritten for local models doing small projects, often without a repository.
+Every session's skill catalog ships with seven workflow skills built for small projects: check the catalog before acting (`using-workflow`), clarify an open-ended request into a short `SPEC.md` (`brainstorming`), work one verified step at a time (`working-in-steps`), write the failing test first (`test-driven-development`), debug by reproducing (`systematic-debugging`), demand evidence before done claims (`verification-before-completion`), and parallelize through subagents (`dispatching-parallel-agents`). Every skill except the router tags its stage in frontmatter metadata, so the catalog narrows to the session's stage once the workflow arms. The set derives from Jesse Vincent's superpowers 7.0.1 (MIT), rewritten for local models doing small projects.
 
 ## Table of Contents
 
@@ -27,10 +27,11 @@ The shipped launchers export `DSH_BUNDLED_SKILL_DIR` pointing at this package's 
 
 | Skill | Role |
 |---|---|
-| `using-superpowers` | When to load skills (and when not to); dsh tool names. |
-| `brainstorming` | Clarify an open-ended request, settle the approach, write the short `SPEC.md`. |
-| `working-in-steps` | Spec → todo list → one verified step at a time; updates edit existing files. |
-| `systematic-debugging` | Read the error, reproduce, one change at a time, three strikes → rethink. |
+| `using-workflow` | When to load skills (and when not to); dsh tool names (renamed from `using-superpowers` at 2.4.36). |
+| `brainstorming` — stage: spec | Clarify an open-ended request, settle the approach, write the short `SPEC.md` (`Status: draft`). |
+| `working-in-steps` — stage: execute | Spec → todo list → one verified step at a time; updates edit existing files. |
+| `test-driven-development` — stage: execute | One failing test first, minimal code, refactor (returned 2.4.36). |
+| `systematic-debugging` — stage: execute | Read the error, reproduce, one change at a time, three strikes → rethink. |
 | `verification-before-completion` | Evidence before any "done/fixed/works" claim. |
 | `dispatching-parallel-agents` | Independent tasks → one focused `subagent` each. |
 
@@ -49,11 +50,11 @@ The package has no configuration: it ships data only, and `src/index.ts` carries
 <a id="understand-the-implementation"></a>
 ## Understand the implementation
 
-Each skill is one `SKILL.md` with dsh-contract frontmatter (kebab-case `name`, non-empty `description`), and the directory holds exactly six skills with no sidecar files (~280 lines total). The `skill-filesystem` provider parses the frontmatter with the dsh parser, publishes the set in the session catalog with descriptions truncated at 500 characters, and re-reads changed files so body edits land without a restart. `tests/skills.spec.ts` enforces the whole contract over this directory: the exact set, the parser and catalog limits, no references to dropped upstream skills, and the bootstrap-name pin shared with `superpowers-bootstrap`.
+Each skill is one `SKILL.md` with dsh-contract frontmatter (kebab-case `name`, non-empty `description`, optional `metadata.stage`), and the directory holds exactly seven skills with no sidecar files. The `skill-filesystem` provider parses the frontmatter with the dsh parser, publishes the set in the session catalog with descriptions truncated at 500 characters, and re-reads changed files so body edits land without a restart. `tests/skills.spec.ts` enforces the whole contract over this directory: the exact set, the parser/catalog/stage limits, no references to dropped upstream skills, and the bootstrap-name pin shared with `superpowers-bootstrap`.
 
 | Source | Owns |
 |---|---|
-| `skills/<name>/SKILL.md` | The six rewritten skill bodies and their frontmatter. |
+| `skills/<name>/SKILL.md` | The seven rewritten skill bodies and their frontmatter. |
 | `src/index.ts` | Attribution constants only: upstream version, upstream project, and the `skills/` subdir name. |
 | `tests/skills.spec.ts` | The directory set, parser/catalog contract, and cross-package name pins. |
 | `LICENSE` | Upstream MIT license text, preserved verbatim beside the skills it covers. |
@@ -64,7 +65,7 @@ Each skill is one `SKILL.md` with dsh-contract frontmatter (kebab-case `name`, n
 ## Further Exploration
 
 - [Skill discovery and precedence](../skill-filesystem/README.md) — how `bundled` ranks against project and user roots.
-- [Automatic bootstrap](../superpowers-bootstrap/README.md) — the plugin that injects `using-superpowers` once per session.
+- [Automatic bootstrap](../superpowers-bootstrap/README.md) — the plugin that injects `using-workflow` once per session.
 - [DSLRH documentation](../../../docs/dslrh/README.md) — the fork's user-facing record of the bundled set.
 
 -----
@@ -76,11 +77,11 @@ Each skill is one `SKILL.md` with dsh-contract frontmatter (kebab-case `name`, n
 
 #### What the model sees
 
-One catalog line per skill — its `name` plus the frontmatter `description` — in the session's `skill-catalog` message, and a full body whenever the model reads that skill through the `skill` tool; the automatic bootstrap additionally injects the `using-superpowers` body verbatim once per session.
+One catalog line per skill — its `name` plus the frontmatter `description` — in the session's `skill-catalog` message, and a full body whenever the model reads that skill through the `skill` tool; the automatic bootstrap additionally injects the `using-workflow` body verbatim once per session.
 
 #### Token effect
 
-The catalog adds six short lines per session, and each `skill` read costs that skill's body alone — roughly 260–460 words; nothing else in this package reaches a request.
+The catalog adds seven short lines per session (narrowed to the stage once the workflow arms), and each `skill` read costs that skill's body alone — roughly 200–460 words; nothing else in this package reaches a request.
 
 #### KV Cache effect
 
@@ -101,6 +102,6 @@ The catalog message publishes once and stays in the reused prefix, skill bodies 
 <details>
 <summary>Working context for maintainers — click to expand</summary>
 
-Fork addition (FORK.md §1, 2.4.13 — before that, the fifteen upstream skills were vendored verbatim). Derived from superpowers 7.0.1 — skills and runtime bootstrap for coding agents by Jesse Vincent — MIT license; `LICENSE` is preserved verbatim beside the skills it covers. `using-superpowers`, `brainstorming`, `systematic-debugging`, `verification-before-completion`, and `dispatching-parallel-agents` keep their upstream names and intent; `working-in-steps` absorbs the kernels of upstream's writing-plans, executing-plans, test-driven-development, and requesting-code-review; the repo-centric upstream workflows (git worktrees, branch/PR lifecycle, subagent implementer/reviewer pipelines, the skill-authoring meta-process) are dropped. The `src/index.ts` docstring still calls the set "vendored verbatim"; the shipped bodies are the fork rewrite, so FORK.md §1 and this README own the description.
+Fork addition (FORK.md §1, 2.4.13 — before that, the fifteen upstream skills were vendored verbatim). Derived from superpowers 7.0.1 — skills and runtime bootstrap for coding agents by Jesse Vincent — MIT license; `LICENSE` is preserved verbatim beside the skills it covers. `brainstorming`, `systematic-debugging`, `verification-before-completion`, and `dispatching-parallel-agents` keep their upstream names and intent; the router is `using-workflow` (renamed from `using-superpowers` at 2.4.36, when the set was relabelled "workflow skills"); `working-in-steps` absorbs the kernels of upstream's writing-plans, executing-plans, and requesting-code-review; `test-driven-development` returned as its own skill at 2.4.36; the repo-centric upstream workflows (git worktrees, branch/PR lifecycle, subagent implementer/reviewer pipelines, the skill-authoring meta-process) are dropped. The `src/index.ts` docstring still calls the set "vendored verbatim"; the shipped bodies are the fork rewrite, so FORK.md §1 and this README own the description.
 
 </details>

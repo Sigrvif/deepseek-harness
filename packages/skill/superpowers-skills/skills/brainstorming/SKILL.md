@@ -1,6 +1,8 @@
 ---
 name: brainstorming
 description: Use when the user asks for something new to be built or designed and the request leaves real choices open - clarifies what they want, settles the approach, writes a short SPEC.md
+metadata:
+  stage: spec
 ---
 
 # Brainstorming
@@ -42,8 +44,8 @@ stuck, suggest something specific rather than asking open-ended questions.
 
 When the approach is settled, write `SPEC.md` in the working folder —
 unless they prefer another name or place, or the task is small enough that
-the conversation itself was the spec. Keep it under a screenful, in plain
-language:
+the conversation itself was the spec. Start it with a `Status: draft`
+line, and keep it under a screenful, in plain language:
 
 - **Goal** — what they want and why, one or two lines.
 - **Approach** — the option chosen, one line.
@@ -51,13 +53,16 @@ language:
 - **Non-goals** — what NOT to do; the traps you could fall into.
 
 Show it to them and ask "does this match what you want?". Their approval
-or correction is the green light — then switch to working-in-steps and
-build.
+is the green light: they send `/spec approve` (or tell you — then flip the
+Status line to `approved` yourself). The session moves to the execution
+stage, these instructions step aside, and working-in-steps takes over the
+building.
 
 ## While the spec exists
 
 - A later change request updates SPEC.md first (with their agreement),
-  then the work.
+  then the work. If they want to reopen the spec itself, that is their
+  call to make — `/spec reopen` on their side.
 - If they say "this isn't what I asked for", re-read SPEC.md before
   replying — either the work drifted from it, or the spec needs updating,
   and the file says which.

@@ -36,6 +36,7 @@
     "packages/prompt/delivery-style/README.md",
     "packages/prompt/unrestricted-mode/README.md",
     "packages/skill/superpowers-bootstrap/README.md",
-    "packages/skill/superpowers-skills/README.md"
+    "packages/skill/superpowers-skills/README.md",
+    "packages/skill/workflow-stage/README.md"
   ]
 }

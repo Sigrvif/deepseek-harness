@@ -1,6 +1,8 @@
 ---
 name: dispatching-parallel-agents
 description: Use when several genuinely independent tasks could run at once - one focused subagent each, dispatched together, then verify their work yourself
+metadata:
+  stage: execute
 ---
 
 # Dispatching Parallel Agents

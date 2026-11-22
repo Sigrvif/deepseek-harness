@@ -7,7 +7,7 @@ kind: "package-reference"
 
 ## Summary
 
-The **Auto Superpowers** switch in Settings → General controls the fork's automatic superpowers bootstrap. On (the default), every session gets the `using-superpowers` skill loaded once; off, skills load only when the user or the model invokes them. The row reads and writes the `superpowers-bootstrap` namespace through the shared configForms service and saves each flip immediately. A save that the Host refuses keeps the accepted value and shows an inline error instead.
+The **Auto Workflow** switch in Settings → General controls the fork's automatic workflow bootstrap (relabelled from "Auto Superpowers" at 2.4.36). On (the default), every session gets the `using-workflow` skill loaded once; off, skills load only when the user or the model invokes them. The row reads and writes the `superpowers-bootstrap` namespace through the shared configForms service and saves each flip immediately. A save that the Host refuses keeps the accepted value and shows an inline error instead.
 
 ## Table of Contents
 
@@ -70,7 +70,7 @@ Nothing: the row is a browser-side surface that registers no tool, prompt sectio
 
 #### Token effect
 
-None of its own. The switch's reach is indirect — with the bootstrap active, the Host injects the `using-superpowers` message once per session (a few hundred tokens); off, sessions carry nothing extra.
+None of its own. The switch's reach is indirect — with the bootstrap active, the Host injects the `using-workflow` message once per session (a few hundred tokens); off, sessions carry nothing extra.
 
 #### KV Cache effect
 

@@ -71,6 +71,12 @@ export interface SkillSummary {
   readonly provider: string
   /** Provider-specific base for relative resources. */
   readonly resourceBase?: SkillResourceBase
+  // fork(workflow-stage, 2.4.36): frontmatter metadata rides the summary too,
+  // so catalog consumers (tool-skill's stage filter) can read `metadata.stage`
+  // without loading every body. Optional and additive; summaries without it
+  // are unchanged.
+  /** Parsed optional metadata object from frontmatter, when the provider supplied one. */
+  readonly metadata?: Readonly<Record<string, unknown>>
 }
 
 /** Provider catalog entry used by the registry to merge and later load skills. */
@@ -777,6 +783,8 @@ function toSummary(skill: SkillDefinition | SkillCandidate): SkillSummary {
     source,
     provider,
     ...resourceBase !== undefined ? { resourceBase } : {},
+    // fork(workflow-stage, 2.4.36): carry frontmatter metadata onto the summary.
+    ...skill.metadata !== undefined ? { metadata: skill.metadata } : {},
   }
 }
 

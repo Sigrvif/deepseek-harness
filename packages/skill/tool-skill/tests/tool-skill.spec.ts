@@ -1229,3 +1229,97 @@ describe('user-explicit invocation injection', () => {
     expect(invoked).toEqual(['shared-skill'])
   })
 })
+
+// fork(workflow-stage, 2.4.36): stage-tagged skills catalog and load only in
+// their stage; the user's /name gesture is the human override.
+describe('dsh-tool-skill workflow-stage narrowing', () => {
+  function registerStagedSkills(ctx: Context): void {
+    ctx.skills.register({
+      name: 'brainstorming',
+      description: 'Spec stage skill',
+      source: 'runtime',
+      content: 'Brainstorm body.',
+      metadata: { stage: 'spec' },
+    })
+    ctx.skills.register({
+      name: 'working-in-steps',
+      description: 'Execute stage skill',
+      source: 'runtime',
+      content: 'Working body.',
+      metadata: { stage: 'execute' },
+    })
+    ctx.skills.register({
+      name: 'using-workflow',
+      description: 'Stageless router',
+      source: 'runtime',
+      content: 'Router body.',
+    })
+  }
+
+  function catalogEntryNames(prefix: Message[]): string[] {
+    const catalog = prefix.find(message => (message.source as { kind?: string }).kind === 'skill-catalog')
+    const entries = (catalog?.source as { entries?: { name: string }[] }).entries ?? []
+    return entries.map(entry => entry.name)
+  }
+
+  it('catalogs only the session stage among stage-tagged skills', async () => {
+    const home = await tempDir('tool-stage-catalog')
+    const ctx = await setup(home)
+    registerStagedSkills(ctx)
+
+    const stagedAgent = (stage: 'spec' | 'execute'): Agent => {
+      const agent = agentForCwd(`/workspace-${stage}`)
+      agent.session.append('workflow/stage', { stage })
+      return agent
+    }
+
+    expect(catalogEntryNames(await composePrefixForAgent(ctx, stagedAgent('execute')))).toEqual(['using-workflow', 'working-in-steps'])
+    expect(catalogEntryNames(await composePrefixForAgent(ctx, stagedAgent('spec')))).toEqual(['brainstorming', 'using-workflow'])
+    // An unarmed session keeps every skill visible.
+    expect(catalogEntryNames(await composePrefix(ctx, '/workspace'))).toEqual(['brainstorming', 'using-workflow', 'working-in-steps'])
+  })
+
+  it('refuses a stage-mismatched model load with a redirect, and loads it unarmed', async () => {
+    const home = await tempDir('tool-stage-refusal')
+    const ctx = await setup(home)
+    registerStagedSkills(ctx)
+    const session = Session.create(SessionId('stage-refusal'))
+    session.append('workflow/stage', { stage: 'execute' })
+    const agent = sessionAgent(session)
+    openMessageTurn(session)
+
+    const refused = await executeToolFixture(ctx, {
+      signal: testToolSignal,
+      callId: ToolCallId('stage-refused'),
+      name: 'skill',
+      arguments: { name: 'brainstorming' },
+      agent,
+    })
+    expect(refused.isError).toBe(true)
+    expect(JSON.stringify(refused.content)).toContain('belongs to the spec stage')
+    expect(JSON.stringify(refused.content)).toContain('working-in-steps')
+
+    const allowed = await executeToolFixture(ctx, {
+      signal: testToolSignal,
+      callId: ToolCallId('stage-allowed'),
+      name: 'skill',
+      arguments: { name: 'working-in-steps' },
+      agent,
+    })
+    expect(allowed.isError).toBe(false)
+    expect(JSON.stringify(allowed.content)).toContain('Working body.')
+
+    const unarmed = Session.create(SessionId('stage-unarmed'))
+    const unarmedAgent = sessionAgent(unarmed)
+    openMessageTurn(unarmed)
+    const loaded = await executeToolFixture(ctx, {
+      signal: testToolSignal,
+      callId: ToolCallId('stage-unarmed'),
+      name: 'skill',
+      arguments: { name: 'brainstorming' },
+      agent: unarmedAgent,
+    })
+    expect(loaded.isError).toBe(false)
+    expect(JSON.stringify(loaded.content)).toContain('Brainstorm body.')
+  })
+})

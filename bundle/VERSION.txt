@@ -1,8 +1,33 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.35 (2026-11-21)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.36 (2026-11-22)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
+
+  The workflow gains stages (2.4.36)
+                      The bundled workflow skills are a pipeline -
+                      brainstorming owns the spec stage, the execution
+                      skills own the build - and small models follow it
+                      best when the context carries only the stage they
+                      are in. The session's stage is now a durable log
+                      fact (workflow/stage): the catalog shows only the
+                      current stage's skills, a short discipline section
+                      rides the system prompt, and approving the spec
+                      (/spec approve, or a SPEC.md "Status: approved"
+                      line) retires the brainstorming instructions from
+                      the visible surface instead of letting them ride
+                      pinned forever (the log keeps the originals).
+                      test-driven-development returns as a seventh,
+                      execution-stage skill - the narrowing pays for its
+                      context. The set is relabelled from "Superpowers"
+                      to "Workflow Skills" (the router is now
+                      using-workflow) across the settings UI and its
+                      eight languages, so nobody expects the original
+                      fifteen-skill set; the MIT attribution stays.
+
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.35 (2026-11-21)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
+      + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
   The recorded-session suites close out (2.4.35)
                       The last pre-existing reds were the recorded

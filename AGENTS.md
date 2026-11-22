@@ -26,13 +26,13 @@ Source of the fold semantics, growth-nudge cadence, and prompt corpus behind `pa
 
 ### 4. superpowers — https://github.com/obra/superpowers
 
-Fifteen vendored workflow skills in `packages/skill/superpowers-skills/skills` (MIT; the upstream LICENSE is kept beside them). Local adaptations are minimal and marked in that package's README: one Platform Adaptation line and `skills/using-superpowers/references/dsh-tools.md`. Update: copy the new release's `skills/` over the vendored tree, re-apply the two adaptations, bump `UPSTREAM_VERSION` in `src/index.ts`, confirm the frontmatter still matches the dsh skill parser (`name` kebab-case + `description`; see `skill-filesystem`), and run the `superpowers-bootstrap` and skill suites.
+Source of the seven bundled workflow skills in `packages/skill/superpowers-skills/skills` (MIT; the upstream LICENSE is kept beside them). The set was rewritten for the fork in 2.4.13 (six skills; the fifteen upstream skills were vendored verbatim before that), `test-driven-development` returned 2.4.36, and the router is `using-workflow` (renamed from `using-superpowers`, 2.4.36) — the tree is now a fork rewrite, not a vendoring. Update check: diff upstream's skill bodies against the rewrite, port deliberate improvements into the short forms, keep the stage tags (`metadata.stage`), and run the skills/bootstrap/workflow-stage suites.
 
 ## Repository layout
 
 Upstream layout (full list: [packages/README.md](packages/README.md)): `vendor/` pinned Cordis, `packages/<group>/<pkg>/` (`@deepseek-ai/dsh-*`), `apps/`, `docs/`, `scripts/`, `.agents/` (workflows/notes), `snapshots/`.
 
-Fork additions (all documented in [FORK.md](FORK.md) §1): `packages/context/context-editor`, `packages/context/context-fold`, `packages/skill/superpowers-skills`, `packages/skill/superpowers-bootstrap`, `packages/client/ui-context-editor`, `packages/client/ui-fork-info`, `packages/client/ui-fork-auto-skills`.
+Fork additions (all documented in [FORK.md](FORK.md) §1): `packages/context/context-editor`, `packages/context/context-fold`, `packages/skill/superpowers-skills`, `packages/skill/superpowers-bootstrap`, `packages/skill/workflow-stage`, `packages/client/ui-context-editor`, `packages/client/ui-fork-info`, `packages/client/ui-fork-auto-skills`.
 
 ## Documentation contract
 

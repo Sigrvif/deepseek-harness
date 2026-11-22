@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Auto-Superpowers",
-    "description": "Lädt die using-superpowers-Workflow-Fähigkeit in den ersten Prompt einer Sitzung."
+    "title": "Auto-Workflow",
+    "description": "Lädt die using-workflow-Fähigkeit in den ersten Prompt einer Sitzung."
   }
 }

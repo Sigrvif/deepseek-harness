@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Auto Superpowers",
-    "description": "Loads the using-superpowers workflow skill into the first prompt of a session."
+    "title": "Auto Workflow",
+    "description": "Loads the using-workflow skill into the first prompt of a session."
   }
 }

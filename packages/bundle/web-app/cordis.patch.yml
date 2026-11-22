@@ -190,8 +190,8 @@
       name: '@deepseek-ai/dsh-unrestricted-mode'
 
     # fork(superpowers): automatic superpowers bootstrap — loads the bundled
-    # `using-superpowers` skill on every fresh user prompt, as if the user had
-    # typed /using-superpowers. The volatile `autoUsingSuperpowers` toggle is
+    # `using-workflow` skill on every fresh user prompt, as if the user had
+    # typed /using-workflow. The volatile `autoUsingSuperpowers` toggle is
     # surfaced on the General settings page by ui-fork-auto-skills. See
     # packages/skill/superpowers-bootstrap and FORK.md.
     - id: superpowers-bootstrap
