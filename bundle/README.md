@@ -603,6 +603,24 @@ Equivalently, you can upgrade in place: copy everything **except**
 `dsh-home/` from the new bundle over the old folder. Same result, but you
 lose the easy rollback a fresh folder gives you.
 
+**Coming from 2.4.36.** That package was assembled with a defect on both
+platforms: its `dsh-home/` carried the profile files at the top level
+(`dsh-home/cordis.patch.yml` and three siblings) instead of under
+`dsh-home/profiles/web/`. dsh reads a `cordis.patch.yml` at the top of
+`dsh-home/` as a home-level patch that outranks the profile's own, so under
+2.4.36 a default-model or provider change made in Settings was silently
+undone at the next start. A fresh-folder upgrade is unaffected — the copy
+list above never includes those files. If you upgrade in place:
+
+- delete the four files at the top of the old `dsh-home/` (`cordis.patch.yml`,
+  `cordis.yml`, `package.json`, `pnpm-workspace.yaml`); leave
+  `dsh-home/profiles/web/` alone;
+- make sure the two SLR Runtime entries are present in
+  `dsh-home/profiles/web/cordis.patch.yml`. A 2.4.36 install that started
+  from an empty `dsh-home` never received them there — they only existed in
+  the misplaced file. The new archive's copy of that file has them; port any
+  settings you changed by hand as in step 4.
+
 ## Resetting settings
 
 All Settings-UI state (theme, language, Auto Workflow, the upload toggle,

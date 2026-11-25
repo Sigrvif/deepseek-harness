@@ -1,8 +1,42 @@
-DSLRH (DeepSeek Local Runtime Harness) package 2.4.36 (2026-11-22)
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.37 (2026-11-25)
 Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
       + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
 Fork changes on top of upstream 0.2.2-alpha.2:
+
+  Package repair: Windows GUI launcher, profile layout (2.4.37)
+                      No program code changed; the 2.4.36 archives
+                      were assembled wrong in four places.
+                      (1) The Windows GUI launcher (dsh-gui.cmd)
+                      exited before the server started: its
+                      browser/gui-launcher.js was the unpatched
+                      upstream copy, which knows only the npm-tree
+                      entry point
+                      app\node_modules\@deepseek-ai\dsh\lib\bin.js.
+                      The fork's copy, which accepts app\lib\bin.js,
+                      is back and now lives in the repository.
+                      (2) On both platforms the shipped profile
+                      files sat at the top of dsh-home instead of
+                      dsh-home/profiles/web. dsh reads
+                      dsh-home/cordis.patch.yml as a home-level
+                      patch that outranks the profile's own, so a
+                      default-model or provider change made in
+                      Settings was silently undone at the next
+                      start.
+                      (3) The Windows librewolf.cfg had lost the
+                      fork's devtools.debugger.remote-enabled line.
+                      (4) The Windows archive carried twenty
+                      nested copies of @img/colour, and both
+                      carried a stray script (app/probe/).
+                      Trees are now assembled and verified by
+                      scripts (bundle-tools/assemble-trees.sh,
+                      verify-trees.sh, smoke-linux.sh).
+                      Upgrading from 2.4.36: see README, "Upgrading
+                      from an earlier package".
+
+DSLRH (DeepSeek Local Runtime Harness) package 2.4.36 (2026-11-22)
+Base: DeepSeek Harness fork of 0.2.2-alpha.2 (pristine upstream release)
+      + Node.js v24.22.1 + LibreWolf 158.0.1-2 (portable/AppImage)
 
   The workflow gains stages (2.4.36)
                       The bundled workflow skills are a pipeline -
